@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use OtaniCalendar\Calendar\Month;
-use OtaniCalendar\Ics\Parser;
+use MuseumCalendar\Calendar\Month;
+use MuseumCalendar\Ics\Parser;
 use PHPUnit\Framework\TestCase;
 
 final class IcsParserTest extends TestCase

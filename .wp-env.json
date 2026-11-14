@@ -5,7 +5,7 @@
   "mariadbVersion": "10.11",
   "port": 8888,
   "testsEnvironment": false,
-  "plugins": ["./plugins/otani-calendar"],
+  "plugins": ["./plugins/museum-calendar"],
   "mappings": { "workspace": "." },
   "config": {
     "WP_DEBUG": true,

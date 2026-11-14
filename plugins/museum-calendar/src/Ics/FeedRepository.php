@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-namespace OtaniCalendar\Ics;
+namespace MuseumCalendar\Ics;
 
-use OtaniCalendar\Admin\Settings;
-use OtaniCalendar\Calendar\Month;
+use MuseumCalendar\Admin\Settings;
+use MuseumCalendar\Calendar\Month;
 use RuntimeException;
 use Throwable;
 
 final class FeedRepository
 {
-    public const CACHE = 'otani_calendar_feed';
-    public const LOCK = 'otani_calendar_feed_lock';
+    public const CACHE = 'museum_calendar_feed';
+    public const LOCK = 'museum_calendar_feed_lock';
     public const INTERVAL = 900;
     public const MAX_AGE = 86400;
 

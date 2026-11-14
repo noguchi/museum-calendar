@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace OtaniCalendar\Ics;
+namespace MuseumCalendar\Ics;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use OtaniCalendar\Calendar\Month;
+use MuseumCalendar\Calendar\Month;
 use RuntimeException;
 use Sabre\VObject\Component\VCalendar;
 use Sabre\VObject\DateTimeParser;
@@ -90,7 +90,7 @@ final class Parser
             }
             if ($event->DTSTART->hasTime() && !isset($event->DTEND) && !isset($event->DURATION)) {
                 $event->add('DTEND', $event->DTSTART->getDateTime($zone)->modify('+1 second'));
-                $event->add('X-OTANI-POINT', 'TRUE');
+                $event->add('X-MUSEUM-POINT', 'TRUE');
             }
         }
         $previousLimit = VObjectSettings::$maxRecurrences;
@@ -117,7 +117,7 @@ final class Parser
             if ($end < $start) {
                 throw new RuntimeException('invalid_duration');
             }
-            $point = isset($event->{'X-OTANI-POINT'}) || $end == $start;
+            $point = isset($event->{'X-MUSEUM-POINT'}) || $end == $start;
             $day = max($start->setTime(0, 0), $from);
             while ($day < $until && ($day < $end || ($point && $day->format('Y-m-d') === $start->format('Y-m-d')))) {
                 $date = $day->format('Y-m-d');

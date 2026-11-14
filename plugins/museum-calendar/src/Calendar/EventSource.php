@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace OtaniCalendar\Calendar;
+namespace MuseumCalendar\Calendar;
 
 interface EventSource
 {

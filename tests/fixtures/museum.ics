@@ -1,6 +1,6 @@
 BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Otani Museum//Test calendar//JA
+PRODID:-//Museum Calendar//Test calendar//JA
 X-WR-TIMEZONE:Asia/Tokyo
 BEGIN:VEVENT
 UID:weekly-tour

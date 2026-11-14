@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace OtaniCalendar\Ics;
+namespace MuseumCalendar\Ics;
 
-use OtaniCalendar\Calendar\EventSource;
-use OtaniCalendar\Calendar\Month;
+use MuseumCalendar\Calendar\EventSource;
+use MuseumCalendar\Calendar\Month;
 
 final class Source implements EventSource
 {

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use OtaniCalendar\Calendar\Month;
+use MuseumCalendar\Calendar\Month;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test';
 test('calendar renders events, styles and navigates between months', async ({ page }, testInfo) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/?pagename=calendar-demo&otani_month=2026-11');
-  const calendar = page.locator('.otani-calendar');
+  await page.goto('/?pagename=calendar-demo&museum_month=2026-11');
+  const calendar = page.locator('.museum-calendar');
   await expect(calendar.locator('caption')).toHaveText('2026年11月');
   await expect(calendar.getByText('日時変更ガイド', { exact: true })).toBeVisible();
   await expect(calendar.getByText('終日展示', { exact: true })).toHaveCount(3);
@@ -27,13 +27,14 @@ test('administrator can save the ICS URL without exposing it and CSRF is rejecte
   await page.locator('#user_pass').fill('password');
   await page.locator('#wp-submit').click();
   await expect(page).toHaveURL(/\/wp-admin\//);
-  await page.goto('/wp-admin/options-general.php?page=otani-calendar');
+  await page.goto('/wp-admin/options-general.php?page=museum-calendar');
+  await expect(page.getByRole('heading', { name: 'Museum Calendar', exact: true })).toBeVisible();
   await expect(page.getByLabel('ICS URL', { exact: true })).toHaveValue('');
   await expect(page.getByText('URLは保存済みです。空欄のまま保存すると変更されません。')).toBeVisible();
-  const secret = 'https://calendar.google.com/otani-fixture/browser/basic.ics';
+  const secret = 'https://calendar.google.com/museum-fixture/browser/basic.ics';
   expect(await page.content()).not.toContain(secret);
   const invalidPost = await page.request.post('/wp-admin/admin-post.php', {
-    form: { action: 'otani_calendar_save', disconnect: '1' },
+    form: { action: 'museum_calendar_save', disconnect: '1' },
   });
   expect(invalidPost.status()).toBe(403);
   await page.getByLabel('ICS URL', { exact: true }).fill(secret);
@@ -47,7 +48,7 @@ test('administrator can save the ICS URL without exposing it and CSRF is rejecte
 });
 
 test('invalid months are rejected', async ({ page }) => {
-  await page.goto('/?pagename=calendar-demo&otani_month=2026-13');
+  await page.goto('/?pagename=calendar-demo&museum_month=2026-13');
   await expect(page.getByText('年月の指定が正しくありません。')).toBeVisible();
-  await expect(page.locator('.otani-calendar table')).toHaveCount(0);
+  await expect(page.locator('.museum-calendar table')).toHaveCount(0);
 });

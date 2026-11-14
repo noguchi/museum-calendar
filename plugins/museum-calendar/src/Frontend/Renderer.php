@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace OtaniCalendar\Frontend;
+namespace MuseumCalendar\Frontend;
 
-use OtaniCalendar\Calendar\EventSource;
-use OtaniCalendar\Calendar\Month;
+use MuseumCalendar\Calendar\EventSource;
+use MuseumCalendar\Calendar\Month;
 
 final class Renderer
 {

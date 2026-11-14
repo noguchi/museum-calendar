@@ -24,7 +24,7 @@ function dockerReady() {
 function prepareTestConfig() {
   const config = JSON.parse(readFileSync('.wp-env.json', 'utf8'));
   config.port = 8889;
-  config.config.OTANI_CALENDAR_TEST_FIXTURES = true;
+  config.config.MUSEUM_CALENDAR_TEST_FIXTURES = true;
   config.plugins.push('./tests/support/ics-fixture');
   writeFileSync(testConfig, `${JSON.stringify(config, null, 2)}\n`);
 }
@@ -51,7 +51,7 @@ function php(args, test = false) {
 
 function dependencies(test = false) {
   php(['composer', 'install', '--no-interaction', '--prefer-dist'], test);
-  wpEnv(['run', 'cli', '--env-cwd=workspace/plugins/otani-calendar', 'composer', 'install', '--no-dev', '--no-interaction', '--prefer-dist'], test);
+  wpEnv(['run', 'cli', '--env-cwd=workspace/plugins/museum-calendar', 'composer', 'install', '--no-dev', '--no-interaction', '--prefer-dist'], test);
 }
 
 function seed(test = false) {
@@ -90,6 +90,7 @@ try {
       startTest();
       wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/tests/integration/plugin.php'], true);
       wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/tests/integration/ics.php'], true);
+      wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/tests/integration/migration.php'], true);
       break;
     case 'e2e':
       startTest();
@@ -100,10 +101,11 @@ try {
       startTest();
       php(['php', 'scripts/lint.php'], true);
       php(['composer', 'validate', '--strict'], true);
-      wpEnv(['run', 'cli', '--env-cwd=workspace/plugins/otani-calendar', 'composer', 'validate', '--strict'], true);
+      wpEnv(['run', 'cli', '--env-cwd=workspace/plugins/museum-calendar', 'composer', 'validate', '--strict'], true);
       php(['php', 'vendor/bin/phpunit'], true);
       wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/tests/integration/plugin.php'], true);
       wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/tests/integration/ics.php'], true);
+      wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/tests/integration/migration.php'], true);
       seed(true);
       run(path.join(root, 'node_modules/.bin/playwright'), ['test']);
       break;

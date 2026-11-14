@@ -8,13 +8,13 @@ if (!in_array(wp_get_environment_type(), ['local', 'development'], true)) {
 }
 update_option('timezone_string', 'Asia/Tokyo');
 update_option('start_of_week', 1);
-if (defined('OTANI_CALENDAR_TEST_FIXTURES') && OTANI_CALENDAR_TEST_FIXTURES) {
-    update_option('otani_calendar_ics_url', 'https://calendar.google.com/otani-fixture/browser/basic.ics', false);
-    delete_option('otani_calendar_feed');
-    update_option('otani_calendar_demo', false);
-    (new \OtaniCalendar\Ics\FeedRepository())->load(true);
-} elseif (!get_option('otani_calendar_ics_url', '')) {
-    update_option('otani_calendar_demo', true);
+if (defined('MUSEUM_CALENDAR_TEST_FIXTURES') && MUSEUM_CALENDAR_TEST_FIXTURES) {
+    update_option('museum_calendar_ics_url', 'https://calendar.google.com/museum-fixture/browser/basic.ics', false);
+    delete_option('museum_calendar_feed');
+    update_option('museum_calendar_demo', false);
+    (new \MuseumCalendar\Ics\FeedRepository())->load(true);
+} elseif (!get_option('museum_calendar_ics_url', '')) {
+    update_option('museum_calendar_demo', true);
 }
 
 $page = get_page_by_path('calendar-demo', OBJECT, 'page');
@@ -24,7 +24,7 @@ if (!$page) {
         'post_status' => 'publish',
         'post_name' => 'calendar-demo',
         'post_title' => 'カレンダー動作確認',
-        'post_content' => '<!-- wp:shortcode -->[otani_calendar]<!-- /wp:shortcode -->',
+        'post_content' => '<!-- wp:shortcode -->[museum_calendar]<!-- /wp:shortcode -->',
     ], true);
     if (is_wp_error($id)) {
         WP_CLI::error($id->get_error_message());

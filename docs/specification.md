@@ -1,8 +1,8 @@
-# ICS連携の仕様（0.2.0）
+# Museum Calendar for WordPressの仕様（0.3.0）
 
 ## 入力・接続
 
-- WordPress「設定 → Otani Calendar」で1つのICS URLを登録。
+- WordPress「設定 → Museum Calendar」で1つのICS URLを登録。
 - 公開用・非公開用のどちらも、URLへのGETだけで取得できる形式に対応。OAuth/APIキーは不要。
 - 変更と手動更新には管理者権限とnonceを要求。
 - 保存済みURLは画面に再出力しない。入力欄が空なら維持、接続解除チェックで明示的に消去。
@@ -37,8 +37,8 @@
 
 ## 表示
 
-- `[otani_calendar]` で当月を表示。月曜始まり、前月・翌月リンク、スマホでの表内横スクロール。
-- URLのotani_monthで月送り。`[otani_calendar month="2026-11"]` は固定月表示。
+- `[museum_calendar]` で当月を表示。月曜始まり、前月・翌月リンク、スマホでの表内横スクロール。
+- URLのmuseum_monthで月送り。`[museum_calendar month="2026-11"]` は固定月表示。
 - 表示範囲1900-01〜2100-12。不正な年月は案内を表示。
 - 公開するのはタイトルと時間だけ。説明、参加者、添付、元のICS URLは出力しない。
 - 終日を先、時刻付きは開始順に並べる。タイトルと時間をHTMLエスケープ。

@@ -1,0 +1,16 @@
+.museum-calendar { --calendar-line: #d6d0c4; --calendar-accent: #635440; color: #29251f; font-family: inherit; max-width: 960px; margin: 2rem auto; }
+.museum-calendar__demo { padding: .75rem 1rem; background: #f8f1dc; font-size: .875rem; }
+.museum-calendar__notice { padding: .75rem 1rem; background: #f8f1dc; font-size: .875rem; }
+.museum-calendar__nav { display: flex; justify-content: space-between; margin: 1rem 0; }
+.museum-calendar__nav a { color: var(--calendar-accent); padding: .5rem 1rem; border: 1px solid var(--calendar-line); border-radius: .25rem; }
+.museum-calendar__scroll { overflow-x: auto; }
+.museum-calendar table { border-collapse: collapse; width: 100%; min-width: 540px; table-layout: fixed; }
+.museum-calendar caption { font-size: 1.5rem; font-weight: 600; padding: 0 0 1rem; text-align: center; }
+.museum-calendar th, .museum-calendar td { border: 1px solid var(--calendar-line); padding: .5rem; }
+.museum-calendar th { background: #f4f1eb; text-align: center; }
+.museum-calendar td { height: 6.5rem; vertical-align: top; font-size: .875rem; }
+.museum-calendar ul { margin: .5rem 0 0; padding: 0; list-style: none; }
+.museum-calendar li { padding: .4rem; background: #f4f1eb; border-left: 2px solid var(--calendar-accent); }
+.museum-calendar li strong, .museum-calendar li span { display: block; overflow-wrap: anywhere; }
+.museum-calendar li span { font-size: .75rem; margin-top: .25rem; }
+.museum-calendar :focus-visible { outline: 3px solid #3069a1; outline-offset: 3px; }

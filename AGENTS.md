@@ -2,7 +2,7 @@
 
 - 仕様の正本は `docs/specification.md`。現在は読み取り専用のICS連携に対応。
 - WordPress本体・node_modules・vendorを直接改変しない。
-- プラグインは `plugins/otani-calendar`。配布ZIPにテストや開発環境を含めない。
+- プラグインは `plugins/museum-calendar`。配布ZIPにテストや開発環境を含めない。
 - プラグインの実行用vendorは配布ZIPに含める。ルートの開発用vendorは含めない。
 - ICS URLは秘密情報になりうる。HTML・ログ・エラーメッセージに出力しない。
 - ICS解析はsabre/vobjectを使用。繰り返しやタイムゾーンの処理を独自実装しない。

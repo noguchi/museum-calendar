@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3f194f79f3f197fff519c6116e8ef415",
+    "content-hash": "bf073786e9246609377cdecef1c4ef2e",
     "packages": [
         {
             "name": "sabre/uri",

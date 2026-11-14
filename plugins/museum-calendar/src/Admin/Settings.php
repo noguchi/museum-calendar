@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace OtaniCalendar\Admin;
+namespace MuseumCalendar\Admin;
 
-use OtaniCalendar\Ics\FeedRepository;
+use MuseumCalendar\Ics\FeedRepository;
 use Throwable;
 use WP_Error;
 
 final class Settings
 {
-    public const OPTION = 'otani_calendar_ics_url';
+    public const OPTION = 'museum_calendar_ics_url';
 
     public static function url(): string
     {
@@ -56,17 +56,17 @@ final class Settings
             update_option(self::OPTION, $url, false);
             FeedRepository::clear();
         }
-        update_option('otani_calendar_demo', false);
+        update_option('museum_calendar_demo', false);
         return true;
     }
 
     public static function register(): void
     {
         add_action('admin_menu', static function (): void {
-            add_options_page('Otani Calendar', 'Otani Calendar', 'manage_options', 'otani-calendar', [self::class, 'page']);
+            add_options_page('Museum Calendar', 'Museum Calendar', 'manage_options', 'museum-calendar', [self::class, 'page']);
         });
-        add_action('admin_post_otani_calendar_save', [self::class, 'handleSave']);
-        add_action('admin_post_otani_calendar_refresh', [self::class, 'handleRefresh']);
+        add_action('admin_post_museum_calendar_save', [self::class, 'handleSave']);
+        add_action('admin_post_museum_calendar_refresh', [self::class, 'handleRefresh']);
     }
 
     private static function authorize(string $action): void
@@ -79,21 +79,21 @@ final class Settings
 
     public static function handleSave(): void
     {
-        self::authorize('otani_calendar_save');
+        self::authorize('museum_calendar_save');
         $result = self::save(wp_unslash($_POST));
-        wp_safe_redirect(add_query_arg('result', is_wp_error($result) ? 'invalid' : 'saved', admin_url('options-general.php?page=otani-calendar')));
+        wp_safe_redirect(add_query_arg('result', is_wp_error($result) ? 'invalid' : 'saved', admin_url('options-general.php?page=museum-calendar')));
         exit;
     }
 
     public static function handleRefresh(): void
     {
-        self::authorize('otani_calendar_refresh');
+        self::authorize('museum_calendar_refresh');
         try {
             (new FeedRepository())->load(true);
         } catch (Throwable $error) {
             // Show the generic persisted status on the settings page.
         }
-        wp_safe_redirect(admin_url('options-general.php?page=otani-calendar'));
+        wp_safe_redirect(admin_url('options-general.php?page=museum-calendar'));
         exit;
     }
 
@@ -105,7 +105,7 @@ final class Settings
         $state = get_option(FeedRepository::CACHE, []);
         ?>
         <div class="wrap">
-            <h1>Otani Calendar</h1>
+            <h1>Museum Calendar</h1>
             <p>GoogleカレンダーなどのICS URLを登録すると、予定のタイトルと時間をサイトに表示します。</p>
             <p>表示時刻は日本時間。通常15分ごとに更新し、取得失敗時は最長24時間まで前回の予定を表示します。</p>
             <?php if (($_GET['result'] ?? '') === 'saved') : ?>
@@ -114,10 +114,10 @@ final class Settings
                 <div class="notice notice-error"><p>URLを保存できませんでした。公開インターネット上のHTTPS URLを指定してください。</p></div>
             <?php endif; ?>
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                <input type="hidden" name="action" value="otani_calendar_save">
-                <?php wp_nonce_field('otani_calendar_save'); ?>
-                <p><label for="otani-ics-url"><strong>ICS URL</strong></label></p>
-                <input type="password" id="otani-ics-url" name="url" value="" class="large-text" autocomplete="new-password" spellcheck="false">
+                <input type="hidden" name="action" value="museum_calendar_save">
+                <?php wp_nonce_field('museum_calendar_save'); ?>
+                <p><label for="museum-ics-url"><strong>ICS URL</strong></label></p>
+                <input type="password" id="museum-ics-url" name="url" value="" class="large-text" autocomplete="new-password" spellcheck="false">
                 <p><?php echo self::url() === '' ? '未設定です。' : 'URLは保存済みです。空欄のまま保存すると変更されません。'; ?></p>
                 <p>非公開URLは閲覧用の秘密情報です。保存済みURLは画面に再表示しません。掲載してよい予定だけを含むカレンダーを指定してください。</p>
                 <p><label><input type="checkbox" name="disconnect" value="1">接続を解除し、保存済みの予定を消去する</label></p>
@@ -129,12 +129,12 @@ final class Settings
             <?php if (!empty($state['error'])) : ?><p role="alert"><?php echo esc_html($state['error']); ?></p><?php endif; ?>
             <?php if (self::url() !== '') : ?>
                 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-                    <input type="hidden" name="action" value="otani_calendar_refresh">
-                    <?php wp_nonce_field('otani_calendar_refresh'); ?>
+                    <input type="hidden" name="action" value="museum_calendar_refresh">
+                    <?php wp_nonce_field('museum_calendar_refresh'); ?>
                     <?php submit_button('今すぐ更新', 'secondary'); ?>
                 </form>
             <?php endif; ?>
-            <p>固定ページに <code>[otani_calendar]</code> を置いて表示します。</p>
+            <p>固定ページに <code>[museum_calendar]</code> を置いて表示します。</p>
         </div>
         <?php
     }

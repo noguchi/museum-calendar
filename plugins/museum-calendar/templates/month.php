@@ -1,23 +1,23 @@
 <?php
-/** @var \OtaniCalendar\Calendar\Month $month */
+/** @var \MuseumCalendar\Calendar\Month $month */
 /** @var array $events */
 if (!defined('ABSPATH')) {
     exit;
 }
 ?>
-<section class="otani-calendar" aria-label="月間カレンダー">
-    <?php if ($demo) : ?><p class="otani-calendar__demo">動作確認用サンプル — 実際の開館情報ではありません</p><?php endif; ?>
-    <?php if ($notice !== '') : ?><p class="otani-calendar__notice" role="status"><?php echo esc_html($notice); ?></p><?php endif; ?>
+<section class="museum-calendar" aria-label="月間カレンダー">
+    <?php if ($demo) : ?><p class="museum-calendar__demo">動作確認用サンプル — 実際の開館情報ではありません</p><?php endif; ?>
+    <?php if ($notice !== '') : ?><p class="museum-calendar__notice" role="status"><?php echo esc_html($notice); ?></p><?php endif; ?>
     <?php if ($showNavigation) : ?>
-    <nav class="otani-calendar__nav" aria-label="表示月の切り替え">
+    <nav class="museum-calendar__nav" aria-label="表示月の切り替え">
         <?php foreach ([-1 => '前月', 1 => '翌月'] as $direction => $label) : ?>
             <?php if ($month->adjacent($direction) !== null) : ?>
-                <a href="<?php echo esc_url(add_query_arg('otani_month', $month->adjacent($direction))); ?>"><?php echo esc_html($label); ?></a>
+                <a href="<?php echo esc_url(add_query_arg('museum_month', $month->adjacent($direction))); ?>"><?php echo esc_html($label); ?></a>
             <?php endif; ?>
         <?php endforeach; ?>
     </nav>
     <?php endif; ?>
-    <div class="otani-calendar__scroll" tabindex="0" role="region" aria-label="月間予定表（横にスクロールできます）">
+    <div class="museum-calendar__scroll" tabindex="0" role="region" aria-label="月間予定表（横にスクロールできます）">
         <table>
             <caption><?php echo esc_html($month->label()); ?></caption>
             <thead><tr>
@@ -48,5 +48,5 @@ if (!defined('ABSPATH')) {
             </tbody>
         </table>
     </div>
-    <?php if ($events === []) : ?><p class="otani-calendar__empty">この月の予定はありません。</p><?php endif; ?>
+    <?php if ($events === []) : ?><p class="museum-calendar__empty">この月の予定はありません。</p><?php endif; ?>
 </section>

@@ -1,9 +1,12 @@
-# Otani Calendar 開発用モノレポ
+# Museum Calendar for WordPress
 
-[![Calendar checks](https://github.com/noguchi/otani-calendar/actions/workflows/ci.yml/badge.svg)](https://github.com/noguchi/otani-calendar/actions/workflows/ci.yml)
+ミュージアムカレンダープラグイン
+
+[![Calendar checks](https://github.com/noguchi/museum-calendar/actions/workflows/ci.yml/badge.svg)](https://github.com/noguchi/museum-calendar/actions/workflows/ci.yml)
 
 WordPress環境、ICSカレンダープラグイン、自動テストをまとめたリポジトリです。
 GoogleカレンダーなどのICS URLを取得し、月間カレンダーに表示します。APIキーは不要です。
+英語名は **Museum Calendar for WordPress**、管理画面での略称は **Museum Calendar** です。
 
 ## 起動
 
@@ -20,7 +23,7 @@ npm run check
 Linuxでブラウザー用ライブラリが不足する場合は `npx playwright install --with-deps chromium`。
 
 - 確認ページ: http://localhost:8888/?pagename=calendar-demo
-- ICS設定: http://localhost:8888/wp-admin/options-general.php?page=otani-calendar
+- ICS設定: http://localhost:8888/wp-admin/options-general.php?page=museum-calendar
 - 開発専用ログイン: `admin` / `password`
 - 独立したテスト環境: http://localhost:8889/
 
@@ -29,9 +32,9 @@ Linuxでブラウザー用ライブラリが不足する場合は `npx playwrigh
 ## ICS URLの登録
 
 1. Googleカレンダーの「設定 → カレンダーの統合」でiCal形式のURLを取得。
-2. WordPressの「設定 → Otani Calendar」に貼り付け、「設定を保存」。
+2. WordPressの「設定 → Museum Calendar」に貼り付け、「設定を保存」。
 3. 「今すぐ更新」を押し、最終成功日時を確認。
-4. 固定ページに `[otani_calendar]` を置く。確認ページには設定済みです。
+4. 固定ページに `[museum_calendar]` を置く。確認ページには設定済みです。
 
 公開用URLはカレンダーの一般公開設定が必要です。非公開URLは閲覧用の秘密情報なので、Gitや公開ページに書かないでください。
 保存済みURLは設定画面にも再表示しません。空欄で保存すると既存値を維持し、接続解除チェックで消去します。
@@ -68,13 +71,22 @@ URLはDBに保存されるため、DBバックアップも適切に保管して�
 
 - `.wp-env.json`: WordPress 7.1.4 / PHP 8.3系列 / MariaDB 10.11系列。
 - ルートのComposer: PHPUnitなど開発用。
-- `plugins/otani-calendar/composer.json`: sabre/vobjectなど実行用。こちらのvendorは配布ZIPに必要。
+- `plugins/museum-calendar/composer.json`: sabre/vobjectなど実行用。こちらのvendorは配布ZIPに必要。
 - 両方のcomposer.lockとpackage-lock.jsonをGit管理。
 - vendor、node_modules、実行時データ、秘密情報、生成ZIPはGit対象外。
 - `.cache/wp-env` は環境生成物。`.wp-env.test.json` はスクリプトで生成するテスト設定。
 
 GitHub ActionsでPRとmainへの変更を検証し、`v*` タグでは配布ZIPを生成します。本番への自動配備は行いません。
 Renovateは接続後に依存更新のPRを作成します。WordPress本体の更新PRとDB移行テストは未実装です。
+
+## 旧名称からの移行
+
+0.3.0でOtani CalendarからMuseum Calendar for WordPressへ名称を変更しました。
+旧プラグインを無効化してから `museum-calendar` をインストール・有効化してください。同時に有効化しないでください。
+初回読み込み時に旧ICS設定・キャッシュ・サンプル表示設定を引き継ぎます。新しい設定があれば優先します。
+旧 `[otani_calendar]` と `otani_month` の月送りリンクも引き続き使えます。新規ページには `[museum_calendar]` を使用してください。
+CSSクラスは `museum-calendar` / `museum-calendar__…` に変更したため、独自CSSは合わせて更新してください。
+旧設定は復旧用に保持しますが、移行後の変更は旧設定へ反映しません。詳しくは[運用手順](docs/operations.md)を参照してください。
 
 [運用手順](docs/operations.md) · [仕様](docs/specification.md)
 
