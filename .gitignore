@@ -1,0 +1,52 @@
+# Dependencies are restored from committed lock files.
+node_modules/
+vendor/
+
+# Generated WordPress environments and local-only working notes.
+/.cache/
+/.local/
+/.wp-env.*.json
+/wordpress/
+/wp-content/
+/uploads/
+wp-config.php
+
+# Credentials and environment-specific settings.
+.env
+.env.*
+!.env.example
+.secrets/
+secrets/
+credentials*.json
+client_secret*.json
+service-account*.json
+service_account*.json
+*-credentials.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Build outputs, test reports and database backups.
+/dist/
+/test-results/
+/playwright-report/
+/.phpunit.cache/
+/coverage/
+*.log
+*.zip
+*.tar
+*.tar.gz
+*.sql
+*.sql.*
+*.sqlite
+*.sqlite3
+*.dump
+
+# OS/editor temporary files.
+.DS_Store
+._*
+.idea/
+*.swp
+*.swo
+*~

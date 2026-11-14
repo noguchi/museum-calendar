@@ -1,0 +1,30 @@
+{
+  "name": "otani-calendar-workspace",
+  "version": "0.2.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "setup": "node scripts/tasks.mjs setup",
+    "dev": "node scripts/tasks.mjs dev",
+    "stop": "node scripts/tasks.mjs stop",
+    "seed": "node scripts/tasks.mjs seed",
+    "wp": "node scripts/tasks.mjs wp",
+    "check": "node scripts/tasks.mjs check",
+    "test:unit": "node scripts/tasks.mjs unit",
+    "test:integration": "node scripts/tasks.mjs integration",
+    "test:e2e": "node scripts/tasks.mjs e2e",
+    "package": "node scripts/package.mjs",
+    "check:updates": "node scripts/check-updates.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@wordpress/env": "12.1.0"
+  },
+  "overrides": {
+    "isomorphic-git": "1.44.13",
+    "qs": "6.17.1",
+    "rimraf": "6.1.4"
+  }
+}

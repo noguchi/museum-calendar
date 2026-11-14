@@ -1,0 +1,13 @@
+{
+  "name": "otani-museum/calendar",
+  "description": "Read-only ICS calendar for WordPress",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "require": { "php": ">=8.3", "sabre/vobject": "^4.5" },
+  "autoload": { "psr-4": { "OtaniCalendar\\": "src/" } },
+  "config": {
+    "platform": { "php": "8.3.0" },
+    "sort-packages": true,
+    "allow-plugins": false
+  }
+}
