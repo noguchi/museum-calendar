@@ -7,8 +7,9 @@ if (!in_array(wp_get_environment_type(), ['local', 'development'], true)) {
     WP_CLI::error('サンプルデータは開発環境にのみ作成できます。');
 }
 update_option('timezone_string', 'Asia/Tokyo');
-update_option('start_of_week', 1);
 if (defined('MUSEUM_CALENDAR_TEST_FIXTURES') && MUSEUM_CALENDAR_TEST_FIXTURES) {
+    // The browser tests expect Monday first. The development site keeps the week start its administrator chose.
+    update_option('start_of_week', 1);
     update_option('museum_calendar_ics_url', 'https://calendar.google.com/museum-fixture/browser/basic.ics', false);
     delete_option('museum_calendar_feed');
     update_option('museum_calendar_demo', false);
