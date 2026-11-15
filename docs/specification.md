@@ -1,4 +1,4 @@
-# Museum Calendar for WordPressの仕様（0.4.0）
+# Museum Calendar for WordPressの仕様（0.5.0）
 
 ## 動作環境
 
@@ -54,7 +54,138 @@
 - テーマ向けの目印として、月間カレンダーのルートに `id="museum-calendar"`、本日のセルに `aria-current="date"`、各予定の `li` にタイトルを入れた `data-title` を出力。
 - 前月と翌月のリンクは `#museum-calendar` 付きで、月送りの後もカレンダーの位置に戻る。同じページに置く月間カレンダーは1つを想定。
 - スタイルはハンドル `museum-calendar` で登録する。テンプレートから `do_shortcode()` で呼ぶテーマは `wp_enqueue_style('museum-calendar')` でheadに読み込める。
+- 色・寸法、表示する予定、HTMLはテーマから変更できる。方法は「カスタマイズ」を参照。この節のマークアップと並び順は、テーマが変更していない既定の表示のもの。
 - ICS未設定かつ開発環境でサンプルオプションが有効な場合のみ、明示したサンプルを表示。
+
+## カスタマイズ
+
+テーマから、色・寸法、表示する予定、HTMLを変更できる。プラグインのファイルは編集しない。何も指定しなければ既定の表示のまま。
+
+### CSS変数
+
+- 色と寸法はCSSカスタムプロパティで変更する。テーマのCSSで `:root` などに宣言する。
+- プラグインのCSSは変数を宣言しない。未指定の変数には表の既定値を使う。
+
+| 変数 | 既定値 | 用途 |
+| --- | --- | --- |
+| `--museum-calendar-text` | `#29251f` | 月間カレンダーと本日の予定の文字色 |
+| `--museum-calendar-line` | `#d6d0c4` | 罫線と枠線 |
+| `--museum-calendar-accent` | `#635440` | 前月・翌月リンクの文字色、本日のセルの枠 |
+| `--museum-calendar-surface` | `#f4f1eb` | 曜日見出しの背景 |
+| `--museum-calendar-notice-background` | `#f8f1dc` | サンプル表示と前回データの案内の背景 |
+| `--museum-calendar-today-background` | `#fbf6e6` | 本日のセルの背景 |
+| `--museum-calendar-focus` | `#3069a1` | キーボードフォーカスの枠 |
+| `--museum-calendar-max-width` | `960px` | 月間カレンダーと本日の予定の最大幅 |
+| `--museum-calendar-min-width` | `540px` | 月間の表の最小幅。これより狭い画面では表内を横スクロール |
+| `--museum-calendar-cell-height` | `6.5rem` | 日付セルの高さ |
+| `--museum-calendar-event-background` | `--museum-calendar-surface` の値 | 月間カレンダーの予定の背景 |
+| `--museum-calendar-event-accent` | `--museum-calendar-accent` の値 | 月間カレンダーの予定の左線 |
+
+```css
+:root {
+  --museum-calendar-accent: #1d4f7a;
+  --museum-calendar-cell-height: 5rem;
+}
+```
+
+### 予定の変更
+
+- `museum_calendar_events` フィルターで、表示する前の予定を変更できる。月間カレンダーと本日の予定の両方に適用する。
+- 第1引数は、日付（`YYYY-MM-DD`）をキーにした予定のリスト。第2引数は対象の月（`YYYY-MM`）。本日の予定でも、その月の全日分を渡す。
+
+```php
+add_filter('museum_calendar_events', function (array $events, string $month): array {
+    foreach ($events as $date => $day) {
+        $events[$date] = array_filter($day, fn (array $event): bool => $event['title'] !== '館内整理');
+    }
+    return $events;
+}, 10, 2);
+```
+
+予定1件は次のキーを持つ配列。
+
+| キー | 型 | 内容 |
+| --- | --- | --- |
+| `title` | string | タイトル |
+| `time` | string | 表示用の時間。終日は `終日`、時刻付きは `10:30–16:30`、終了のない予定は `10:30` |
+| `all_day` | bool | 終日予定ならtrue |
+| `start` | string | その日の開始時刻（`H:i`）。前日から続く日は `00:00`。終日予定は空文字 |
+| `end` | string | その日の終了時刻（`H:i`）。翌日へ続く日は `24:00`。終日予定と終了のない予定は空文字 |
+
+- 戻り値では `title` だけが必須。`time`、`start`、`end` を省略すると空文字、`all_day` を省略するとfalseになる。
+- 独自のキーを追加できる。追加したキーはそのままテンプレートに渡る。
+- 1日の中の並び順は戻り値の順。配列のキーは無視する。
+- 予定が0件になった日は、予定のない日として表示する。
+- 戻り値の形式が正しくない場合は予定を表示せず、「この月の予定を表示できません」「本日の予定を表示できません」と案内する。予定のない月や日としては表示しない。
+- 正しくない形式: 全体が配列でない、キーが `YYYY-MM-DD` でない、1日分が配列でない、予定が配列でない、`title` が文字列でない、`time`・`start`・`end` が文字列でない、`all_day` が真偽値でない。
+- 既定のテンプレートは、フィルターが返したタイトルと時間もHTMLエスケープする。
+
+### テンプレートの差し替え
+
+- テーマに `museum-calendar/month.php`（月間カレンダー）または `museum-calendar/today.php`（本日の予定）を置くと、プラグインのテンプレートの代わりに使う。子テーマ、親テーマの順に探す。
+- 元にするファイルは、プラグインの `templates/month.php` と `templates/today.php`。
+- 外側の `section` 要素、サンプル表示、前回データの案内はプラグインが出力する。テンプレートが出力するのはその内側だけで、これらを消すことはできない。
+
+```html
+<section class="museum-calendar" id="museum-calendar" aria-label="月間カレンダー">
+  <p class="museum-calendar__demo">…</p>                  <!-- サンプル表示のときだけ -->
+  <p class="museum-calendar__notice" role="status">…</p>  <!-- 前回取得した予定を表示しているときだけ -->
+  <!-- month.php の出力 -->
+</section>
+
+<section class="museum-calendar-today" aria-label="本日の予定">
+  <p class="museum-calendar-today__demo">…</p>
+  <p class="museum-calendar-today__notice" role="status">…</p>
+  <!-- today.php の出力 -->
+</section>
+```
+
+- テンプレートに渡すのは次の変数だけ。プラグインのクラスやICS URLは渡さない。
+- 変数の値はエスケープしていない。テンプレートで `esc_html()`、`esc_attr()`、`esc_url()` を使って出力する。
+- テンプレートで例外が起きた場合は、その出力を捨てて表示できない旨を案内する。
+
+`month.php` の変数:
+
+| 変数 | 型 | 内容 |
+| --- | --- | --- |
+| `$month` | string | 表示する月（`YYYY-MM`） |
+| `$label` | string | 見出し用の年月。例: `2026年11月` |
+| `$weekdays` | array | 曜日の表示名。キーは1（月）〜7（日）で、月曜から並ぶ |
+| `$weeks` | array | 週のリスト。1週は7つのセルで、月曜から並ぶ。月の外のセルはnull |
+| `$previous` | array または null | 前月。`month`（`YYYY-MM`）と `url` を持つ。固定月表示のときと表示範囲の外はnull |
+| `$next` | array または null | 翌月。形式は `$previous` と同じ |
+| `$empty` | bool | その月に予定が1件もなければtrue |
+
+`$weeks` のセルは次のキーを持つ配列。
+
+| キー | 型 | 内容 |
+| --- | --- | --- |
+| `date` | string | 日付（`YYYY-MM-DD`） |
+| `day` | int | 日 |
+| `weekday` | int | 曜日。1（月）〜7（日） |
+| `today` | bool | 本日ならtrue |
+| `events` | array | その日の予定のリスト。予定がなければ空の配列。1件の形式は「予定の変更」の表と同じ |
+
+`today.php` の変数:
+
+| 変数 | 型 | 内容 |
+| --- | --- | --- |
+| `$today` | DateTimeImmutable | 本日。タイムゾーンはAsia/Tokyo |
+| `$weekday` | string | 本日の曜日の表示名。例: `日` |
+| `$events` | array | 本日の予定のリスト。予定がなければ空の配列 |
+
+- `$previous['url']` と `$next['url']` は `#museum-calendar` 付きで、月送りの後もカレンダーの位置に戻る。
+
+### 既定のCSSを使わない
+
+- テーマのCSSだけで表示する場合は、`wp_deregister_style('museum-calendar')` を呼ぶ。既定のCSSを読み込まなくなり、ショートコードはそのまま表示する。
+- プラグインは `init` でスタイルを登録する。`wp_enqueue_scripts` など、それより後のアクションで呼ぶ。
+
+```php
+add_action('wp_enqueue_scripts', function (): void {
+    wp_deregister_style('museum-calendar');
+});
+```
 
 ## 今回の対象外
 
