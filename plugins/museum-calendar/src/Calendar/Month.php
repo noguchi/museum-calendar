@@ -10,6 +10,9 @@ use InvalidArgumentException;
 
 final class Month
 {
+    /** Keyed by ISO 8601 weekday number, so the order is Monday first. */
+    public const WEEKDAYS = [1 => '月', 2 => '火', 3 => '水', 4 => '木', 5 => '金', 6 => '土', 7 => '日'];
+
     private DateTimeImmutable $first;
 
     public function __construct(string $value)

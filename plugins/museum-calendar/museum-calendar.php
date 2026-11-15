@@ -38,8 +38,11 @@ register_deactivation_hook(__FILE__, static function (): void {
 
 add_action('wp_enqueue_scripts', static function (): void {
     $post = get_queried_object();
-    if ($post instanceof \WP_Post && has_shortcode($post->post_content, 'museum_calendar')) {
-        wp_enqueue_style('museum-calendar', plugins_url('assets/calendar.css', __FILE__), [], '0.3.0');
+    if (!$post instanceof \WP_Post) {
+        return;
+    }
+    if (has_shortcode($post->post_content, 'museum_calendar') || has_shortcode($post->post_content, 'museum_calendar_today')) {
+        wp_enqueue_style('museum-calendar');
     }
 });
 
@@ -51,19 +54,10 @@ add_action('init', static function (): void {
     } else {
         wp_clear_scheduled_hook('museum_calendar_refresh_feed');
     }
-    $render = static function ($attributes): string {
-        $attributes = shortcode_atts(['month' => ''], (array) $attributes, 'museum_calendar');
-        $requested = $attributes['month'];
-        $queryMonth = $_GET['museum_month'] ?? '';
-        if ($requested === '' && is_string($queryMonth)) {
-            $requested = sanitize_text_field(wp_unslash($queryMonth));
-        }
-        $today = new \DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo'));
-        try {
-            $month = new \MuseumCalendar\Calendar\Month($requested ?: $today->format('Y-m'));
-        } catch (\InvalidArgumentException $exception) {
-            return '<p class="museum-calendar-notice">年月の指定が正しくありません。</p>';
-        }
+    // A theme that calls do_shortcode() from a template runs too late for the head, so it enqueues this handle itself.
+    wp_register_style('museum-calendar', plugins_url('assets/calendar.css', __FILE__), [], '0.3.0');
+
+    $renderer = static function (): \MuseumCalendar\Frontend\Renderer|string {
         $demo = false;
         $notice = '';
         if (\MuseumCalendar\Admin\Settings::url() !== '') {
@@ -83,13 +77,44 @@ add_action('init', static function (): void {
         } else {
             return '<p class="museum-calendar-notice">カレンダーの接続が設定されていません。</p>';
         }
-        wp_enqueue_style('museum-calendar', plugins_url('assets/calendar.css', __FILE__), [], '0.3.0');
+        return new \MuseumCalendar\Frontend\Renderer($source, $demo, $notice);
+    };
+
+    add_shortcode('museum_calendar', static function ($attributes) use ($renderer): string {
+        $attributes = shortcode_atts(['month' => ''], (array) $attributes, 'museum_calendar');
+        $requested = $attributes['month'];
+        $queryMonth = $_GET['museum_month'] ?? '';
+        if ($requested === '' && is_string($queryMonth)) {
+            $requested = sanitize_text_field(wp_unslash($queryMonth));
+        }
+        $today = new \DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo'));
         try {
-            return (new \MuseumCalendar\Frontend\Renderer($source, $demo, $notice))
-                ->render($month, $today, $attributes['month'] === '');
+            $month = new \MuseumCalendar\Calendar\Month($requested ?: $today->format('Y-m'));
+        } catch (\InvalidArgumentException $exception) {
+            return '<p class="museum-calendar-notice">年月の指定が正しくありません。</p>';
+        }
+        $calendar = $renderer();
+        if (is_string($calendar)) {
+            return $calendar;
+        }
+        wp_enqueue_style('museum-calendar');
+        try {
+            return $calendar->render($month, $today, $attributes['month'] === '');
         } catch (\Throwable $error) {
             return '<p class="museum-calendar-notice" role="status">この月の予定を表示できません。</p>';
         }
-    };
-    add_shortcode('museum_calendar', $render);
+    });
+
+    add_shortcode('museum_calendar_today', static function () use ($renderer): string {
+        $calendar = $renderer();
+        if (is_string($calendar)) {
+            return $calendar;
+        }
+        wp_enqueue_style('museum-calendar');
+        try {
+            return $calendar->renderToday(new \DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo')));
+        } catch (\Throwable $error) {
+            return '<p class="museum-calendar-notice" role="status">本日の予定を表示できません。</p>';
+        }
+    });
 });

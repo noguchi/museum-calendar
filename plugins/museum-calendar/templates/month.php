@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
         <table>
             <caption><?php echo esc_html($month->label()); ?></caption>
             <thead><tr>
-                <?php foreach (['月', '火', '水', '木', '金', '土', '日'] as $weekday) : ?>
+                <?php foreach ($month::WEEKDAYS as $weekday) : ?>
                     <th scope="col"><?php echo esc_html($weekday); ?></th>
                 <?php endforeach; ?>
             </tr></thead>

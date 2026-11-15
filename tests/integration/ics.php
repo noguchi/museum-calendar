@@ -92,6 +92,7 @@ try {
     $check(get_option(FeedRepository::CACHE, null) === null, 'Changed source retained previous source data.');
     $mode = 'http_error';
     $check(str_contains(do_shortcode('[museum_calendar]'), '現在、予定を取得できません'), 'Initial HTTP failure was not handled.');
+    $check(str_contains(do_shortcode('[museum_calendar_today]'), '現在、予定を取得できません'), 'Today shortcode did not handle the HTTP failure.');
     $mode = 'ok';
     $body = $fixture;
     $feed->load(true);
@@ -101,6 +102,11 @@ try {
     $before = $requests;
     $feed->load();
     $check($requests === $before + 1, 'Expired cache was not refreshed.');
+    $state = get_option(FeedRepository::CACHE);
+    $state['body'] = 'not a calendar';
+    update_option(FeedRepository::CACHE, $state, false);
+    $html = do_shortcode('[museum_calendar_today]');
+    $check(str_contains($html, '本日の予定を表示できません') && !str_contains($html, 'another-secret'), 'Unreadable feed was not handled by the today shortcode.');
 
     wp_set_current_user(0);
     $check(is_wp_error(Settings::save(['disconnect' => '1'])), 'Unauthorized settings change was allowed.');
