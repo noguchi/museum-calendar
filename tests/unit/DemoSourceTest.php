@@ -23,6 +23,27 @@ final class DemoSourceTest extends TestCase
         self::assertSame([self::OPEN, self::TEA_ROOM], $events['2026-11-08'], 'Sunday');
     }
 
+    public function testSamplesFollowTheWeekdayOfEachDate(): void
+    {
+        $samples = [
+            1 => [self::CLOSED],
+            2 => [self::OPEN, self::TOUR],
+            3 => [self::OPEN, self::TOUR],
+            4 => [self::OPEN, self::TOUR],
+            5 => [self::OPEN, self::TOUR],
+            6 => [self::OPEN, self::TEA_ROOM],
+            7 => [self::OPEN, self::TEA_ROOM],
+        ];
+        $tokyo = new DateTimeZone('Asia/Tokyo');
+        foreach (['2026-06', '2026-07', '2026-11'] as $month) {
+            $events = (new DemoSource())->forMonth(new Month($month));
+            self::assertCount((int) (new DateTimeImmutable($month . '-01', $tokyo))->format('t'), $events);
+            foreach ($events as $date => $day) {
+                self::assertSame($samples[(int) (new DateTimeImmutable($date, $tokyo))->format('N')], $day, $date);
+            }
+        }
+    }
+
     public function testCoversEveryDayOfTheMonthAndNoOther(): void
     {
         $events = (new DemoSource())->forMonth(new Month('2024-02'));

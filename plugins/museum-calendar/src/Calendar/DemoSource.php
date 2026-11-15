@@ -11,7 +11,7 @@ final class DemoSource implements EventSource
     private const TOUR = ['title' => 'ツアー（サンプル）', 'time' => '11:00–12:00', 'all_day' => false, 'start' => '11:00', 'end' => '12:00'];
     private const TEA_ROOM = ['title' => '茶室（サンプル）', 'time' => '12:00–16:00', 'all_day' => false, 'start' => '12:00', 'end' => '16:00'];
 
-    /** Monday first, in the column order of Month::weeks(). */
+    /** Monday first, the default column order of Month::weeks(). */
     private const WEEK = [
         [self::CLOSED],
         [self::OPEN, self::TOUR],

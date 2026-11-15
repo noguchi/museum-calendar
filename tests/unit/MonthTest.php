@@ -28,6 +28,50 @@ final class MonthTest extends TestCase
         self::assertSame(range(1, 31), array_values(array_filter(array_merge(...$weeks))));
     }
 
+    public function testWeekdayOrderStartsAtTheGivenWeekday(): void
+    {
+        self::assertSame([1, 2, 3, 4, 5, 6, 7], Month::weekdayOrder(1));
+        self::assertSame([4, 5, 6, 7, 1, 2, 3], Month::weekdayOrder(4));
+        self::assertSame([7, 1, 2, 3, 4, 5, 6], Month::weekdayOrder(7));
+    }
+
+    #[DataProvider('invalidWeekdays')]
+    public function testWeekdayOrderRejectsNumbersOutsideTheWeek(int $weekday): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        Month::weekdayOrder($weekday);
+    }
+
+    public static function invalidWeekdays(): array
+    {
+        return [[0], [8]];
+    }
+
+    #[DataProvider('grids')]
+    public function testWeeksStartOnTheGivenWeekday(string $month, int $firstWeekday, array $firstWeek, array $lastWeek, int $days): void
+    {
+        $weeks = (new Month($month))->weeks($firstWeekday);
+        self::assertSame($firstWeek, $weeks[0]);
+        self::assertSame($lastWeek, $weeks[count($weeks) - 1]);
+        foreach ($weeks as $week) {
+            self::assertCount(7, $week);
+        }
+        self::assertSame(range(1, $days), array_values(array_filter(array_merge(...$weeks))));
+    }
+
+    public static function grids(): array
+    {
+        return [
+            '2026-11 starts on a Sunday, Monday first' => ['2026-11', 1, [null, null, null, null, null, null, 1], [30, null, null, null, null, null, null], 30],
+            '2026-11 starts on a Sunday, Sunday first' => ['2026-11', 7, [1, 2, 3, 4, 5, 6, 7], [29, 30, null, null, null, null, null], 30],
+            '2026-11 starts on a Sunday, Saturday first' => ['2026-11', 6, [null, 1, 2, 3, 4, 5, 6], [28, 29, 30, null, null, null, null], 30],
+            '2026-06 starts on a Monday, Monday first' => ['2026-06', 1, [1, 2, 3, 4, 5, 6, 7], [29, 30, null, null, null, null, null], 30],
+            '2026-06 starts on a Monday, Sunday first' => ['2026-06', 7, [null, 1, 2, 3, 4, 5, 6], [28, 29, 30, null, null, null, null], 30],
+            '2026-07 starts on a Wednesday, Monday first' => ['2026-07', 1, [null, null, 1, 2, 3, 4, 5], [27, 28, 29, 30, 31, null, null], 31],
+            '2026-07 starts on a Wednesday, Sunday first' => ['2026-07', 7, [null, null, null, 1, 2, 3, 4], [26, 27, 28, 29, 30, 31, null], 31],
+        ];
+    }
+
     public function testNavigationCrossesYearBoundary(): void
     {
         self::assertSame('2025-12', (new Month('2026-01'))->adjacent(-1));

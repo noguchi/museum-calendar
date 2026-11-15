@@ -10,7 +10,7 @@ use InvalidArgumentException;
 
 final class Month
 {
-    /** Keyed by ISO 8601 weekday number, so the order is Monday first. */
+    /** Keyed by ISO 8601 weekday number. */
     public const WEEKDAYS = [1 => '月', 2 => '火', 3 => '水', 4 => '木', 5 => '金', 6 => '土', 7 => '日'];
 
     private DateTimeImmutable $first;
@@ -39,10 +39,19 @@ final class Month
         return $value >= '1900-01' && $value <= '2100-12' ? $value : null;
     }
 
-    /** @return list<list<int|null>> Monday-first weeks, without adjacent-month dates. */
-    public function weeks(): array
+    /** @return list<int> The seven ISO 8601 weekday numbers in column order. */
+    public static function weekdayOrder(int $firstWeekday): array
     {
-        $cells = array_fill(0, (int) $this->first->format('N') - 1, null);
+        if ($firstWeekday < 1 || $firstWeekday > 7) {
+            throw new InvalidArgumentException('Expected an ISO 8601 weekday number between 1 and 7.');
+        }
+        return array_map(static fn (int $column): int => ($firstWeekday - 1 + $column) % 7 + 1, range(0, 6));
+    }
+
+    /** @return list<list<int|null>> Weeks in the column order of weekdayOrder(), without adjacent-month dates. */
+    public function weeks(int $firstWeekday = 1): array
+    {
+        $cells = array_fill(0, array_search((int) $this->first->format('N'), self::weekdayOrder($firstWeekday), true), null);
         for ($day = 1; $day <= (int) $this->first->format('t'); $day++) {
             $cells[] = $day;
         }
