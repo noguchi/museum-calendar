@@ -1,20 +1,15 @@
 <?php
 /**
- * Returns a function that runs a callback with Japanese weekday and month names in the WordPress locale.
- * The ja locale is not installed on the test site, so these names stand in for it.
+ * Returns a function that runs a callback with the site in Japanese.
+ * The test site is in en_US. The fixture plugin supplies the Japanese weekday and month names.
  */
 return static function (callable $render): string {
-    $locale = $GLOBALS['wp_locale'];
-    $GLOBALS['wp_locale'] = clone $locale;
-    foreach (['日', '月', '火', '水', '木', '金', '土'] as $number => $name) {
-        $GLOBALS['wp_locale']->weekday_abbrev[$locale->get_weekday($number)] = $name;
-    }
-    foreach (array_keys($locale->month) as $number) {
-        $GLOBALS['wp_locale']->month[$number] = (int) $number . '月';
+    if (!switch_to_locale('ja')) {
+        throw new RuntimeException('The test site could not switch to Japanese.');
     }
     try {
         return $render();
     } finally {
-        $GLOBALS['wp_locale'] = $locale;
+        restore_previous_locale();
     }
 };

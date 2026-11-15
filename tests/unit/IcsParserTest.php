@@ -141,6 +141,12 @@ final class IcsParserTest extends TestCase
         ], $events);
     }
 
+    public function testEventWithoutSummaryIsUntitled(): void
+    {
+        $events = $this->parse("BEGIN:VEVENT\nUID:untitled\nDTSTART;VALUE=DATE:20261110\nEND:VEVENT");
+        self::assertSame(['2026-11-10' => [$this->allDay('（無題）')]], $events);
+    }
+
     public function testEmptyCalendarIsValid(): void
     {
         self::assertSame([], $this->parse(''));

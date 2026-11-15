@@ -1,14 +1,17 @@
 <?php
 /**
  * A theme replaces this file with museum-calendar/month.php. The plugin prints the surrounding section and the notices.
+ * With lang="en" on the shortcode, "the site language" below is English.
  *
  * @var string $month YYYY-MM
  * @var string $label The month in the WordPress format for monthly archives, in the site language
  * @var array<int, string> $weekdays ISO 8601 weekday number => abbreviated name in the site language, in column order
- * @var list<list<array{date: string, day: int, weekday: int, today: bool, events: list<array{title: string, time: string, all_day: bool, start: string, end: string}>}|null>> $weeks each week in column order, null is a cell outside the month
+ * @var list<list<array{date: string, day: int, weekday: int, today: bool, events: list<array{title: string, label: string, label_lang: string, time: string, all_day: bool, start: string, end: string}>}|null>> $weeks each week in column order, null is a cell outside the month. title is the registered title and label is the text to print for it. label_lang is 'ja' when label is Japanese text in an English calendar, otherwise ''
  * @var array{month: string, url: string, label: string}|null $previous label is the month name in the site language
  * @var array{month: string, url: string, label: string}|null $next
  * @var bool $empty
+ * @var string $lang 'ja' or 'en', the language of the shortcode
+ * @var array{scroll_label: string, empty: string} $text The plugin's own text in that language, not escaped
  */
 if (!defined('ABSPATH')) {
     exit;
@@ -24,7 +27,7 @@ if (!defined('ABSPATH')) {
     <?php endif; ?>
 </nav>
 <?php endif; ?>
-<div class="museum-calendar__scroll" tabindex="0" role="region" aria-label="月間予定表（横にスクロールできます）">
+<div class="museum-calendar__scroll" tabindex="0" role="region" aria-label="<?php echo esc_attr($text['scroll_label']); ?>">
     <table>
         <caption><?php echo esc_html($label); ?></caption>
         <thead><tr>
@@ -42,7 +45,7 @@ if (!defined('ABSPATH')) {
                                 <?php if ($cell['events'] !== []) : ?>
                                     <ul>
                                         <?php foreach ($cell['events'] as $event) : ?>
-                                            <li data-title="<?php echo esc_attr($event['title']); ?>"><strong><?php echo esc_html($event['title']); ?></strong><span><?php echo esc_html($event['time']); ?></span></li>
+                                            <li data-title="<?php echo esc_attr($event['title']); ?>"><strong<?php if ($event['label_lang'] !== '') : ?> lang="<?php echo esc_attr($event['label_lang']); ?>"<?php endif; ?>><?php echo esc_html($event['label']); ?></strong><span><?php echo esc_html($event['time']); ?></span></li>
                                         <?php endforeach; ?>
                                     </ul>
                                 <?php endif; ?>
@@ -54,4 +57,4 @@ if (!defined('ABSPATH')) {
         </tbody>
     </table>
 </div>
-<?php if ($empty) : ?><p class="museum-calendar__empty">この月の予定はありません。</p><?php endif; ?>
+<?php if ($empty) : ?><p class="museum-calendar__empty"><?php echo esc_html($text['empty']); ?></p><?php endif; ?>

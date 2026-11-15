@@ -6,6 +6,7 @@ namespace MuseumCalendar\Ics;
 use DateTimeImmutable;
 use DateTimeZone;
 use MuseumCalendar\Calendar\Month;
+use MuseumCalendar\Frontend\Language;
 use RuntimeException;
 use Sabre\VObject\Component\VCalendar;
 use Sabre\VObject\DateTimeParser;
@@ -124,8 +125,8 @@ final class Parser
                 $dayStart = $allDay ? '' : ($start->format('Y-m-d') === $date ? $start->format('H:i') : '00:00');
                 $dayEnd = $allDay || $point ? '' : ($end->format('Y-m-d') === $date ? $end->format('H:i') : '24:00');
                 $result[$date][] = [
-                    'title' => (string) $event->SUMMARY ?: '（無題）',
-                    'time' => $allDay ? '終日' : $dayStart . ($dayEnd === '' ? '' : '–' . $dayEnd),
+                    'title' => (string) $event->SUMMARY ?: Language::Japanese->text('untitled'),
+                    'time' => $allDay ? Language::Japanese->text('all_day') : $dayStart . ($dayEnd === '' ? '' : '–' . $dayEnd),
                     'all_day' => $allDay,
                     'start' => $dayStart,
                     'end' => $dayEnd,
