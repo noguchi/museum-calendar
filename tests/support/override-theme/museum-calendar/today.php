@@ -17,6 +17,7 @@ $lines = [
     'this=' . (isset($this) ? 'visible' : 'hidden'),
     'scope=' . $scope,
     'today=' . $today->format('Y-m-d') . ' ' . $today->getTimezone()->getName(),
+    'date=' . $date,
     'weekday=' . $weekday,
 ];
 foreach ($events as $event) {

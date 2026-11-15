@@ -38,8 +38,47 @@ try {
     $today = $now->format('Y-m-d');
     $html = do_shortcode('[museum_calendar]');
     $check(preg_match('/<td data-weekday="' . $now->format('N') . '" aria-current="date">\s*<time datetime="' . $today . '">/', $html) === 1, 'The current month must mark today.');
-    $html = do_shortcode('[museum_calendar_today]');
-    $check(str_contains($html, '<time datetime="' . $today . '">' . $now->format('n/j') . '</time>'), 'Today shortcode must show the date in Asia/Tokyo.');
+    $dateLine = static fn (string $date, string $label): string
+        => '<p class="museum-calendar-today__date"><time datetime="' . $date . '">' . $label . '</time></p>';
+    $weekdayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    // The ja locale is not installed on the test site, so Japanese weekday names stand in for it.
+    $inJapanese = static function (callable $render) use ($weekdayNames): string {
+        $locale = $GLOBALS['wp_locale'];
+        $GLOBALS['wp_locale'] = clone $locale;
+        foreach ($weekdayNames as $number => $name) {
+            $GLOBALS['wp_locale']->weekday_abbrev[$locale->get_weekday($number)] = $name;
+        }
+        try {
+            return $render();
+        } finally {
+            $GLOBALS['wp_locale'] = $locale;
+        }
+    };
+    $dateFormat = get_option('date_format');
+    try {
+        update_option('date_format', 'Y.m.d');
+        $html = do_shortcode('[museum_calendar_today]');
+        $check(str_contains($html, $dateLine($today, $now->format('Y.m.d'))), 'Today shortcode must show the date in Asia/Tokyo, in the WordPress date format.');
+        $check(!str_contains($html, 'museum-calendar-today__weekday'), 'Today must not print a weekday outside the date format.');
+        update_option('date_format', 'n月j日(D)');
+        $check(str_contains($inJapanese(static fn (): string => do_shortcode('[museum_calendar_today]')), $dateLine($today, $now->format('n月j日') . '(' . $weekdayNames[(int) $now->format('w')] . ')')), 'A date format with a weekday must print the weekday of the site language.');
+        $check(str_contains(do_shortcode('[museum_calendar_today]'), $dateLine($today, wp_date('n月j日(D)', $now->getTimestamp(), $tokyo))), 'A date format with a weekday is wrong in the language of the test site.');
+        $fallback = $dateLine($today, $now->format('Y年n月j日'));
+        update_option('date_format', '');
+        $check(get_option('date_format') === '', 'The empty date format was not stored.');
+        $check(str_contains(do_shortcode('[museum_calendar_today]'), $fallback), 'An empty date format must fall back to Y年n月j日.');
+        foreach ([false, null, 0, []] as $invalid) {
+            $stored = static fn () => $invalid;
+            add_filter('option_date_format', $stored);
+            try {
+                $check(str_contains(do_shortcode('[museum_calendar_today]'), $fallback), 'A date format that is not a string must fall back to Y年n月j日: ' . var_export($invalid, true));
+            } finally {
+                remove_filter('option_date_format', $stored);
+            }
+        }
+    } finally {
+        update_option('date_format', $dateFormat);
+    }
     $check(str_contains($html, '動作確認用サンプル'), 'Sample today must be labelled as a sample.');
     $samples = match ((int) $now->format('N')) {
         1 => ['休館（サンプル）'],
@@ -137,26 +176,26 @@ try {
     $html = (new Renderer($source))->render(new Month('2026-11'), new DateTimeImmutable('2026-11-14 15:30', new DateTimeZone('UTC')));
     $check(preg_match($currentCell, $html) === 1, 'Today must be judged in Asia/Tokyo.');
 
-    $dateLine = static fn (string $date, string $label, string $weekday): string
-        => '<time datetime="' . $date . '">' . $label . '</time><span class="museum-calendar-today__weekday">' . $weekday . '</span>';
-    $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo));
-    $check(str_contains($html, $dateLine('2026-11-15', '11/15', '日')), 'Today date or weekday is wrong on a Sunday.');
+    $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo), 'n/j');
+    $check(str_contains($html, $dateLine('2026-11-15', '11/15')), 'Today date is wrong on a Sunday.');
     $order = array_map(static fn (string $item) => strpos($html, $item), ['<strong>Zebra</strong>', '<strong>&lt;script&gt;alert(1)&lt;/script&gt;</strong>', '<strong>Alpha</strong>']);
     $check(!in_array(false, $order, true) && $order[0] < $order[1] && $order[1] < $order[2], 'Today must list its events in source order.');
     $check(!str_contains($html, '<script>') && !str_contains($html, '<img'), 'Today event was not escaped.');
     $check(str_contains($html, '<li data-title="&lt;script&gt;alert(1)&lt;/script&gt;">'), 'Today event title attribute is missing or unescaped.');
     $check(!str_contains($html, 'Tomorrow'), 'Today must not list another day.');
     $check(!str_contains($html, '本日の予定はありません') && !str_contains($html, '動作確認用サンプル') && !str_contains($html, 'role="status"'), 'Today showed a message that does not apply.');
-    $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo));
-    $check(str_contains($html, $dateLine('2026-11-14', '11/14', '土')), 'Today date or weekday is wrong on a Saturday.');
+    $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'Y年n月j日');
+    $check(str_contains($html, $dateLine('2026-11-14', '2026年11月14日')), 'Today date is wrong on a Saturday.');
     $check(str_contains($html, '本日の予定はありません。') && !str_contains($html, '<ul'), 'A day without events must say so.');
-    $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-16 12:00', $tokyo));
-    $check(str_contains($html, $dateLine('2026-11-16', '11/16', '月')) && str_contains($html, '<strong>Tomorrow</strong>'), 'Today is wrong on a Monday.');
-    $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2027-01-05 12:00', $tokyo));
-    $check(str_contains($html, $dateLine('2027-01-05', '1/5', '火')), 'Today date must not be zero-padded.');
-    $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-14 15:30', new DateTimeZone('UTC')));
-    $check(str_contains($html, $dateLine('2026-11-15', '11/15', '日')) && str_contains($html, '<strong>Zebra</strong>'), 'Today must be judged in Asia/Tokyo.');
-    $html = (new Renderer($source, false, '<b>前回の予定</b>'))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo));
+    $html = $inJapanese(static fn (): string => (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-16 12:00', $tokyo), 'n月j日(D)'));
+    $check(str_contains($html, $dateLine('2026-11-16', '11月16日(月)')) && str_contains($html, '<strong>Tomorrow</strong>'), 'Today is wrong on a Monday.');
+    $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2027-01-05 12:00', $tokyo), 'Y/m/d n/j');
+    $check(str_contains($html, $dateLine('2027-01-05', '2027/01/05 1/5')), 'Today date must be padded only where the format says so.');
+    $html = $inJapanese(static fn (): string => (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-14 15:30', new DateTimeZone('UTC')), 'n月j日(D) H:i'));
+    $check(str_contains($html, $dateLine('2026-11-15', '11月15日(日) 00:30')) && str_contains($html, '<strong>Zebra</strong>'), 'Today must be judged in Asia/Tokyo.');
+    $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo), '<b>n/j</b>');
+    $check(str_contains($html, $dateLine('2026-11-15', '&lt;b&gt;11/15&lt;/b&gt;')), 'Today date was not escaped.');
+    $html = (new Renderer($source, false, '<b>前回の予定</b>'))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo), 'n/j');
     $check(str_contains($html, '<p class="museum-calendar-today__notice" role="status">&lt;b&gt;前回の予定&lt;/b&gt;</p>'), 'Stale notice is missing or unescaped in today.');
 
     $months = [];
@@ -173,10 +212,10 @@ try {
         $check(str_contains($html, '<li data-title="Zulu"><strong>Zulu</strong><span>終日</span></li>') && !str_contains($html, 'Zebra'), 'A filter must be able to rename an event in the month.');
         $check(!str_contains($html, 'script') && !str_contains($html, 'Tomorrow'), 'A filter must be able to remove events from the month.');
         $check(strpos($html, '<strong>Alpha</strong>') < strpos($html, '<strong>Zulu</strong>'), 'A filter must be able to reorder the events of a day in the month.');
-        $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo));
+        $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo), 'n/j');
         $check(str_contains($html, '<strong>Zulu</strong>') && !str_contains($html, 'Zebra') && !str_contains($html, 'script'), 'A filter must be able to rename and remove events in today.');
         $check(strpos($html, '<strong>Alpha</strong>') < strpos($html, '<strong>Zulu</strong>'), 'A filter must be able to reorder the events of today.');
-        $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-16 12:00', $tokyo));
+        $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-16 12:00', $tokyo), 'n/j');
         $check(str_contains($html, '本日の予定はありません。') && !str_contains($html, '<ul'), 'A day emptied by a filter must read as a day without events.');
         $check($months === ['2026-11', '2026-11', '2026-11'], 'A filter must receive the month as YYYY-MM.');
     } finally {

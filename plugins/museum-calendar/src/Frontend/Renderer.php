@@ -65,11 +65,14 @@ final class Renderer
         ]));
     }
 
-    public function renderToday(DateTimeImmutable $today): string
+    /** @param string $dateFormat PHP date format. wp_date() translates the month and weekday names in it. */
+    public function renderToday(DateTimeImmutable $today, string $dateFormat): string
     {
-        $today = $today->setTimezone(new DateTimeZone('Asia/Tokyo'));
+        $tokyo = new DateTimeZone('Asia/Tokyo');
+        $today = $today->setTimezone($tokyo);
         return $this->frame('museum-calendar-today', ' aria-label="本日の予定"', self::template('today', [
             'today' => $today,
+            'date' => wp_date($dateFormat, $today->getTimestamp(), $tokyo),
             'weekday' => Month::WEEKDAYS[(int) $today->format('N')],
             'events' => $this->events(new Month($today->format('Y-m')))[$today->format('Y-m-d')] ?? [],
         ]));

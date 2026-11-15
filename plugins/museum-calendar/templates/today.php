@@ -3,14 +3,15 @@
  * A theme replaces this file with museum-calendar/today.php. The plugin prints the surrounding section and the notices.
  *
  * @var \DateTimeImmutable $today In Asia/Tokyo
- * @var string $weekday
+ * @var string $date Today in the WordPress date format
+ * @var string $weekday Not printed here. It stays for theme templates.
  * @var list<array{title: string, time: string, all_day: bool, start: string, end: string}> $events
  */
 if (!defined('ABSPATH')) {
     exit;
 }
 ?>
-<p class="museum-calendar-today__date"><time datetime="<?php echo esc_attr($today->format('Y-m-d')); ?>"><?php echo esc_html($today->format('n/j')); ?></time><span class="museum-calendar-today__weekday"><?php echo esc_html($weekday); ?></span></p>
+<p class="museum-calendar-today__date"><time datetime="<?php echo esc_attr($today->format('Y-m-d')); ?>"><?php echo esc_html($date); ?></time></p>
 <?php if ($events !== []) : ?>
 <ul class="museum-calendar-today__events">
     <?php foreach ($events as $event) : ?>

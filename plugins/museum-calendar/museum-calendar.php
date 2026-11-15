@@ -118,8 +118,13 @@ add_action('init', static function (): void {
             return $calendar;
         }
         wp_enqueue_style('museum-calendar');
+        // wp_date() returns an empty string for an empty format, so an unusable option falls back to the Japanese WordPress default.
+        $dateFormat = get_option('date_format');
+        if (!is_string($dateFormat) || $dateFormat === '') {
+            $dateFormat = 'Y年n月j日';
+        }
         try {
-            return $calendar->renderToday(new \DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo')));
+            return $calendar->renderToday(new \DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo')), $dateFormat);
         } catch (\Throwable $error) {
             return '<p class="museum-calendar-notice" role="status">本日の予定を表示できません。</p>';
         }

@@ -91,6 +91,7 @@ try {
     $check(wp_get_theme('override-theme')->exists(), 'The fixture theme is missing from the test environment.');
     $theme = get_stylesheet();
     $startOfWeek = get_option('start_of_week');
+    $dateFormat = get_option('date_format');
     add_filter('museum_calendar_events', $note);
     switch_theme('override-theme');
     try {
@@ -159,22 +160,25 @@ try {
             'cell=2026-07-05 day=5 weekday=7 today=no',
         );
 
+        update_option('date_format', 'Y年n月j日');
         $today = do_shortcode('[museum_calendar_today]');
         $check(preg_match('/^<section class="museum-calendar-today" aria-label="本日の予定">\s*<p class="museum-calendar-today__notice" role="status">[^<]*前回取得した予定[^<]*<\/p>\s*<pre class="override-today">/', $today) === 1
             && str_ends_with(rtrim($today), '</section>'), 'A theme today template must stay inside the plugin section, after the stale notice.');
         $check(!str_contains($today, 'museum-calendar-today__date'), 'The theme today template did not replace the default one.');
         $received(
             $today,
-            'variables=today,weekday,events',
+            'variables=today,date,weekday,events',
             'this=hidden',
             'scope=none',
             'today=' . $now->format('Y-m-d') . ' Asia/Tokyo',
+            'date=' . $now->format('Y年n月j日'),
             'weekday=' . ['月', '火', '水', '木', '金', '土', '日'][(int) $now->format('N') - 1],
         );
-        $tuesday = (new Renderer(new Source($fixture)))->renderToday(new DateTimeImmutable('2026-11-09 15:30', new DateTimeZone('UTC')));
+        $tuesday = (new Renderer(new Source($fixture)))->renderToday(new DateTimeImmutable('2026-11-09 15:30', new DateTimeZone('UTC')), 'n/j H:i');
         $received(
             $tuesday,
             'today=2026-11-10 Asia/Tokyo',
+            'date=11/10 00:30',
             'weekday=火',
             'event=[一日休館] [終日] all-day [] [] [note for 一日休館]',
             'event=[第2火曜講座] [13:00–15:00] timed [13:00] [15:00] [note for 第2火曜講座]',
@@ -194,6 +198,7 @@ try {
         }
     } finally {
         update_option('start_of_week', $startOfWeek);
+        update_option('date_format', $dateFormat);
         switch_theme($theme);
         remove_filter('museum_calendar_events', $note);
     }
