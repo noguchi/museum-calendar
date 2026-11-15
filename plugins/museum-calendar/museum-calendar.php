@@ -58,8 +58,9 @@ add_action('init', static function (): void {
         if ($requested === '' && is_string($queryMonth)) {
             $requested = sanitize_text_field(wp_unslash($queryMonth));
         }
+        $today = new \DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo'));
         try {
-            $month = new \MuseumCalendar\Calendar\Month($requested ?: wp_date('Y-m', null, new \DateTimeZone('Asia/Tokyo')));
+            $month = new \MuseumCalendar\Calendar\Month($requested ?: $today->format('Y-m'));
         } catch (\InvalidArgumentException $exception) {
             return '<p class="museum-calendar-notice">年月の指定が正しくありません。</p>';
         }
@@ -85,7 +86,7 @@ add_action('init', static function (): void {
         wp_enqueue_style('museum-calendar', plugins_url('assets/calendar.css', __FILE__), [], '0.3.0');
         try {
             return (new \MuseumCalendar\Frontend\Renderer($source, $demo, $notice))
-                ->render($month, $attributes['month'] === '');
+                ->render($month, $today, $attributes['month'] === '');
         } catch (\Throwable $error) {
             return '<p class="museum-calendar-notice" role="status">この月の予定を表示できません。</p>';
         }
