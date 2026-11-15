@@ -98,8 +98,15 @@ add_action('init', static function (): void {
             return $calendar;
         }
         wp_enqueue_style('museum-calendar');
+        // WordPress numbers the weekdays 0 (Sunday) to 6. The plugin uses ISO 8601 numbers, where Sunday is 7.
+        $startOfWeek = filter_var(get_option('start_of_week'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 6]]);
+        $firstWeekday = match ($startOfWeek) {
+            false => 1,
+            0 => 7,
+            default => $startOfWeek,
+        };
         try {
-            return $calendar->render($month, $today, $attributes['month'] === '');
+            return $calendar->render($month, $today, $attributes['month'] === '', $firstWeekday);
         } catch (\Throwable $error) {
             return '<p class="museum-calendar-notice" role="status">この月の予定を表示できません。</p>';
         }

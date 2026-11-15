@@ -37,7 +37,7 @@ try {
     $now = new DateTimeImmutable('now', $tokyo);
     $today = $now->format('Y-m-d');
     $html = do_shortcode('[museum_calendar]');
-    $check(preg_match('/<td aria-current="date">\s*<time datetime="' . $today . '">/', $html) === 1, 'The current month must mark today.');
+    $check(preg_match('/<td data-weekday="' . $now->format('N') . '" aria-current="date">\s*<time datetime="' . $today . '">/', $html) === 1, 'The current month must mark today.');
     $html = do_shortcode('[museum_calendar_today]');
     $check(str_contains($html, '<time datetime="' . $today . '">' . $now->format('n/j') . '</time>'), 'Today shortcode must show the date in Asia/Tokyo.');
     $check(str_contains($html, '動作確認用サンプル'), 'Sample today must be labelled as a sample.');
@@ -50,6 +50,62 @@ try {
         $check(str_contains($html, "<strong>{$title}</strong>") === in_array($title, $samples, true), "Today lists the wrong samples for its weekday: {$title}.");
     }
     $check(str_contains(do_shortcode('[museum_calendar month="invalid"]'), '正しくありません'), 'Invalid input was accepted.');
+
+    $grid = static function (string $html): array {
+        preg_match_all('/<th scope="col" data-weekday="(\d)">([^<]*)<\/th>/', $html, $head);
+        $rows = [];
+        foreach (array_slice(explode('<tr>', explode('<tbody>', $html)[1]), 1) as $row) {
+            preg_match_all('/<td(?: data-weekday="(\d)")?[^>]*>\s*(?:<time datetime="([^"]*)">)?/', $row, $cells, PREG_SET_ORDER);
+            $rows[] = array_map(static fn (array $cell): string => isset($cell[2]) ? $cell[1] . ' ' . $cell[2] : '-', $cells);
+        }
+        return ['numbers' => implode('', $head[1]), 'labels' => implode('', $head[2]), 'rows' => $rows];
+    };
+    $todayHtml = do_shortcode('[museum_calendar_today]');
+    $startOfWeek = get_option('start_of_week');
+    try {
+        update_option('start_of_week', 0);
+        $sunday = $grid(do_shortcode('[museum_calendar month="2026-11"]'));
+        $check($sunday['labels'] === '日月火水木金土' && $sunday['numbers'] === '7123456', 'Week start 0 must put Sunday in the first column.');
+        $check($sunday['rows'][0] === ['7 2026-11-01', '1 2026-11-02', '2 2026-11-03', '3 2026-11-04', '4 2026-11-05', '5 2026-11-06', '6 2026-11-07'], 'A month that starts on a Sunday must fill the first Sunday-first week.');
+        $check(count($sunday['rows']) === 5 && $sunday['rows'][4] === ['7 2026-11-29', '1 2026-11-30', '-', '-', '-', '-', '-'], 'The last Sunday-first week of November 2026 is wrong.');
+        $html = do_shortcode('[museum_calendar month="2026-12"]');
+        $sunday = $grid($html);
+        $check($sunday['rows'][0] === ['-', '-', '2 2026-12-01', '3 2026-12-02', '4 2026-12-03', '5 2026-12-04', '6 2026-12-05'], 'Tuesday 1 December 2026 must sit in the third Sunday-first column.');
+        $check($sunday['rows'][1][0] === '7 2026-12-06' && $sunday['rows'][4] === ['7 2026-12-27', '1 2026-12-28', '2 2026-12-29', '3 2026-12-30', '4 2026-12-31', '-', '-'], 'Sunday-first dates must sit under their weekday.');
+        $check(str_contains($html, '2026年12月') && !str_contains($html, 'museum-calendar__nav'), 'A fixed month must still render without navigation when the week starts on Sunday.');
+        $check(preg_match('/<td data-weekday="1"[^>]*>\s*<time datetime="2026-12-07">7<\/time>\s*<ul>\s*<li data-title="休館（サンプル）">/', $html) === 1, 'The Monday sample must stay on Mondays when the week starts on Sunday.');
+        $html = do_shortcode('[museum_calendar]');
+        $check($grid($html)['labels'] === '日月火水木金土', 'The current month must follow the week start.');
+        $check(preg_match('/<td data-weekday="' . $now->format('N') . '" aria-current="date">\s*<time datetime="' . $today . '">/', $html) === 1, 'Today must keep its weekday when the week starts on Sunday.');
+        $check(preg_match_all('/<a href="[^"]*museum_month=\d{4}-\d{2}#museum-calendar"/', $html) === 2, 'Month links are missing when the week starts on Sunday.');
+        $check(do_shortcode('[museum_calendar_today]') === $todayHtml, 'The week start must not change the today shortcode.');
+
+        update_option('start_of_week', 3);
+        $wednesday = $grid(do_shortcode('[museum_calendar month="2026-12"]'));
+        $check($wednesday['labels'] === '水木金土日月火' && $wednesday['numbers'] === '3456712', 'Week start 3 must put Wednesday in the first column.');
+        $check($wednesday['rows'][0] === ['-', '-', '-', '-', '-', '-', '2 2026-12-01'] && $wednesday['rows'][1][0] === '3 2026-12-02', 'Wednesday-first dates must sit under their weekday.');
+
+        update_option('start_of_week', 1);
+        $monday = $grid(do_shortcode('[museum_calendar month="2026-11"]'));
+        $check($monday['labels'] === '月火水木金土日' && $monday['numbers'] === '1234567', 'Week start 1 must put Monday in the first column.');
+        $check($monday['rows'][0] === ['-', '-', '-', '-', '-', '-', '7 2026-11-01'] && count($monday['rows']) === 6, 'Monday-first November 2026 must start in the last column.');
+
+        update_option('start_of_week', 9);
+        $check((int) get_option('start_of_week') === 9, 'The out-of-range week start was not stored.');
+        $check($grid(do_shortcode('[museum_calendar month="2026-11"]')) === $monday, 'An out-of-range week start must render Monday first.');
+        update_option('start_of_week', 0);
+        foreach (['abc', '1.5', '-1', false, []] as $invalid) {
+            $stored = static fn () => $invalid;
+            add_filter('option_start_of_week', $stored);
+            try {
+                $check($grid(do_shortcode('[museum_calendar month="2026-11"]')) === $monday, 'A week start that is not 0 to 6 must render Monday first: ' . var_export($invalid, true));
+            } finally {
+                remove_filter('option_start_of_week', $stored);
+            }
+        }
+    } finally {
+        update_option('start_of_week', $startOfWeek);
+    }
 
     $source = new class implements EventSource {
         public function forMonth(Month $month): array
@@ -64,7 +120,7 @@ try {
             ];
         }
     };
-    $currentCell = '/<td aria-current="date">\s*<time datetime="2026-11-15">/';
+    $currentCell = '/<td data-weekday="7" aria-current="date">\s*<time datetime="2026-11-15">/';
     $html = (new Renderer($source))->render(new Month('2026-11'), new DateTimeImmutable('2026-11-15 12:00', $tokyo));
     $check(!str_contains($html, '<script>'), 'Event title was not escaped.');
     $check(!str_contains($html, '<img'), 'Event time was not escaped.');

@@ -4,8 +4,8 @@
  *
  * @var string $month YYYY-MM
  * @var string $label
- * @var array<int, string> $weekdays ISO 8601 weekday number => label, Monday first
- * @var list<list<array{date: string, day: int, weekday: int, today: bool, events: list<array{title: string, time: string, all_day: bool, start: string, end: string}>}|null>> $weeks null is a cell outside the month
+ * @var array<int, string> $weekdays ISO 8601 weekday number => label, in column order
+ * @var list<list<array{date: string, day: int, weekday: int, today: bool, events: list<array{title: string, time: string, all_day: bool, start: string, end: string}>}|null>> $weeks each week in column order, null is a cell outside the month
  * @var array{month: string, url: string}|null $previous
  * @var array{month: string, url: string}|null $next
  * @var bool $empty
@@ -27,15 +27,15 @@ if (!defined('ABSPATH')) {
     <table>
         <caption><?php echo esc_html($label); ?></caption>
         <thead><tr>
-            <?php foreach ($weekdays as $weekday) : ?>
-                <th scope="col"><?php echo esc_html($weekday); ?></th>
+            <?php foreach ($weekdays as $number => $weekday) : ?>
+                <th scope="col" data-weekday="<?php echo esc_attr((string) $number); ?>"><?php echo esc_html($weekday); ?></th>
             <?php endforeach; ?>
         </tr></thead>
         <tbody>
             <?php foreach ($weeks as $week) : ?>
                 <tr>
                     <?php foreach ($week as $cell) : ?>
-                        <td<?php echo $cell !== null && $cell['today'] ? ' aria-current="date"' : ''; ?>>
+                        <td<?php if ($cell !== null) : ?> data-weekday="<?php echo esc_attr((string) $cell['weekday']); ?>"<?php echo $cell['today'] ? ' aria-current="date"' : ''; ?><?php endif; ?>>
                             <?php if ($cell !== null) : ?>
                                 <time datetime="<?php echo esc_attr($cell['date']); ?>"><?php echo esc_html((string) $cell['day']); ?></time>
                                 <?php if ($cell['events'] !== []) : ?>

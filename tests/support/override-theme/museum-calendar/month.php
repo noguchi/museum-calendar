@@ -28,6 +28,9 @@ $lines = [
     'weeks=' . implode(',', array_map('count', $weeks)),
     'outside=' . count(array_filter(array_merge(...$weeks), 'is_null')),
 ];
+foreach ($weeks as $week) {
+    $lines[] = 'row=' . implode(',', array_map(static fn (?array $cell): string => $cell === null ? '-' : (string) $cell['day'], $week));
+}
 foreach (array_filter(array_merge(...$weeks)) as $cell) {
     $lines[] = sprintf('cell=%s day=%d weekday=%d today=%s', $cell['date'], $cell['day'], $cell['weekday'], $cell['today'] ? 'yes' : 'no');
     foreach ($cell['events'] as $event) {

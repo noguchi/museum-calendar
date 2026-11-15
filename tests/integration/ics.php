@@ -90,9 +90,11 @@ try {
     };
     $check(wp_get_theme('override-theme')->exists(), 'The fixture theme is missing from the test environment.');
     $theme = get_stylesheet();
+    $startOfWeek = get_option('start_of_week');
     add_filter('museum_calendar_events', $note);
     switch_theme('override-theme');
     try {
+        update_option('start_of_week', 1);
         $month = do_shortcode('[museum_calendar month="2026-11"]');
         $check(preg_match('/^<section class="museum-calendar" id="museum-calendar" aria-label="月間カレンダー">\s*<p class="museum-calendar__notice" role="status">[^<]*前回取得した予定[^<]*<\/p>\s*<pre class="override-month">/', $month) === 1
             && str_ends_with(rtrim($month), '</section>'), 'A theme month template must stay inside the plugin section, after the stale notice.');
@@ -110,6 +112,9 @@ try {
             'empty=no',
             'weeks=7,7,7,7,7,7',
             'outside=12',
+            'row=-,-,-,-,-,-,1',
+            'row=30,-,-,-,-,-,-',
+            'cell=2026-11-01 day=1 weekday=7 today=no',
             'event=2026-11-10 [一日休館] [終日] all-day [] [] [note for 一日休館]',
             'event=2026-11-17 [日時変更ガイド] [14:00–15:00] timed [14:00] [15:00] [note for 日時変更ガイド]',
             'event=2026-11-30 [月末夜間] [23:00–24:00] timed [23:00] [24:00] [note for 月末夜間]',
@@ -131,6 +136,28 @@ try {
         }
         $check(substr_count($december, 'today=yes') === 1, 'Exactly one cell must be marked as today.');
         $received((new Renderer(new Source("BEGIN:VCALENDAR\nVERSION:2.0\nEND:VCALENDAR")))->render(new Month('2026-11'), $now), 'empty=yes');
+
+        update_option('start_of_week', 0);
+        $received(
+            do_shortcode('[museum_calendar month="2026-11"]'),
+            'weekdays=7日,1月,2火,3水,4木,5金,6土',
+            'weeks=7,7,7,7,7',
+            'outside=5',
+            'row=1,2,3,4,5,6,7',
+            'row=29,30,-,-,-,-,-',
+            'cell=2026-11-01 day=1 weekday=7 today=no',
+            'cell=2026-11-02 day=2 weekday=1 today=no',
+            'cell=2026-11-07 day=7 weekday=6 today=no',
+            'event=2026-11-10 [一日休館] [終日] all-day [] [] [note for 一日休館]',
+        );
+        $received(
+            do_shortcode('[museum_calendar month="2026-07"]'),
+            'weekdays=7日,1月,2火,3水,4木,5金,6土',
+            'row=-,-,-,1,2,3,4',
+            'row=26,27,28,29,30,31,-',
+            'cell=2026-07-01 day=1 weekday=3 today=no',
+            'cell=2026-07-05 day=5 weekday=7 today=no',
+        );
 
         $today = do_shortcode('[museum_calendar_today]');
         $check(preg_match('/^<section class="museum-calendar-today" aria-label="本日の予定">\s*<p class="museum-calendar-today__notice" role="status">[^<]*前回取得した予定[^<]*<\/p>\s*<pre class="override-today">/', $today) === 1
@@ -166,6 +193,7 @@ try {
             remove_filter('museum_calendar_fixture_throws', '__return_true');
         }
     } finally {
+        update_option('start_of_week', $startOfWeek);
         switch_theme($theme);
         remove_filter('museum_calendar_events', $note);
     }

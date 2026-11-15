@@ -18,13 +18,19 @@ final class Renderer
     {
     }
 
-    public function render(Month $month, DateTimeImmutable $today, bool $showNavigation = true): string
+    /** @param int $firstWeekday ISO 8601 weekday number of the first column */
+    public function render(Month $month, DateTimeImmutable $today, bool $showNavigation = true, int $firstWeekday = 1): string
     {
         $events = $this->events($month);
         $todayDate = $today->setTimezone(new DateTimeZone('Asia/Tokyo'))->format('Y-m-d');
         $empty = true;
+        $order = Month::weekdayOrder($firstWeekday);
+        $weekdays = [];
+        foreach ($order as $weekday) {
+            $weekdays[$weekday] = Month::WEEKDAYS[$weekday];
+        }
         $weeks = [];
-        foreach ($month->weeks() as $days) {
+        foreach ($month->weeks($firstWeekday) as $days) {
             $week = [];
             foreach ($days as $column => $day) {
                 if ($day === null) {
@@ -35,7 +41,7 @@ final class Renderer
                 $week[] = [
                     'date' => $date,
                     'day' => $day,
-                    'weekday' => $column + 1,
+                    'weekday' => $order[$column],
                     'today' => $date === $todayDate,
                     'events' => $events[$date] ?? [],
                 ];
@@ -51,7 +57,7 @@ final class Renderer
         return $this->frame('museum-calendar', ' id="museum-calendar" aria-label="月間カレンダー"', self::template('month', [
             'month' => $month->key(),
             'label' => $month->label(),
-            'weekdays' => Month::WEEKDAYS,
+            'weekdays' => $weekdays,
             'weeks' => $weeks,
             'previous' => $link(-1),
             'next' => $link(1),
