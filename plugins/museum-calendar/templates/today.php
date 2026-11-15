@@ -1,7 +1,7 @@
 <?php
 /** @var \DateTimeImmutable $today */
 /** @var string $weekday */
-/** @var list<array{title: string, time: string}> $events */
+/** @var list<array{title: string, time: string, all_day: bool, start: string, end: string}> $events */
 if (!defined('ABSPATH')) {
     exit;
 }

@@ -6,6 +6,7 @@ namespace MuseumCalendar\Frontend;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use MuseumCalendar\Calendar\EventList;
 use MuseumCalendar\Calendar\EventSource;
 use MuseumCalendar\Calendar\Month;
 
@@ -17,7 +18,7 @@ final class Renderer
 
     public function render(Month $month, DateTimeImmutable $today, bool $showNavigation = true): string
     {
-        $events = $this->source->forMonth($month);
+        $events = $this->events($month);
         $todayDate = $today->setTimezone(new DateTimeZone('Asia/Tokyo'))->format('Y-m-d');
         $demo = $this->demo;
         $notice = $this->notice;
@@ -29,12 +30,17 @@ final class Renderer
     public function renderToday(DateTimeImmutable $today): string
     {
         $today = $today->setTimezone(new DateTimeZone('Asia/Tokyo'));
-        $events = $this->source->forMonth(new Month($today->format('Y-m')))[$today->format('Y-m-d')] ?? [];
+        $events = $this->events(new Month($today->format('Y-m')))[$today->format('Y-m-d')] ?? [];
         $weekday = Month::WEEKDAYS[(int) $today->format('N')];
         $demo = $this->demo;
         $notice = $this->notice;
         ob_start();
         require dirname(__DIR__, 2) . '/templates/today.php';
         return (string) ob_get_clean();
+    }
+
+    private function events(Month $month): array
+    {
+        return EventList::fromFilter(apply_filters('museum_calendar_events', $this->source->forMonth($month), $month->key()));
     }
 }

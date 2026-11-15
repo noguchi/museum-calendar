@@ -1,0 +1,78 @@
+<?php
+declare(strict_types=1);
+
+use MuseumCalendar\Calendar\EventList;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
+
+final class EventListTest extends TestCase
+{
+    private const TOUR = ['title' => 'ツアー', 'time' => '11:00–12:00', 'all_day' => false, 'start' => '11:00', 'end' => '12:00'];
+
+    public function testCompleteEventsPassThroughInOrder(): void
+    {
+        $closed = ['title' => '休館', 'time' => '終日', 'all_day' => true, 'start' => '', 'end' => ''];
+        $events = ['2026-11-16' => [self::TOUR, $closed], '2026-11-02' => [$closed]];
+        self::assertSame($events, EventList::fromFilter($events));
+    }
+
+    public function testMissingOptionalKeysGetDefaults(): void
+    {
+        self::assertSame(
+            ['2026-11-15' => [['title' => '題名のみ', 'time' => '', 'all_day' => false, 'start' => '', 'end' => '']]],
+            EventList::fromFilter(['2026-11-15' => [['title' => '題名のみ']]]),
+        );
+    }
+
+    public function testExtraKeysArePreserved(): void
+    {
+        $event = self::TOUR + ['category' => 'tour', 'url' => ['a' => 1]];
+        self::assertSame(['2026-11-15' => [$event]], EventList::fromFilter(['2026-11-15' => [$event]]));
+    }
+
+    public function testDaysWithoutEventsAreDropped(): void
+    {
+        self::assertSame(
+            ['2026-11-16' => [self::TOUR]],
+            EventList::fromFilter(['2026-11-15' => [], '2026-11-16' => [self::TOUR], '2026-11-17' => []]),
+        );
+        self::assertSame([], EventList::fromFilter(['2026-11-15' => []]));
+        self::assertSame([], EventList::fromFilter([]));
+    }
+
+    #[DataProvider('invalidValues')]
+    public function testRejectsInvalidValue(mixed $value): void
+    {
+        $this->expectException(UnexpectedValueException::class);
+        EventList::fromFilter($value);
+    }
+
+    public static function invalidValues(): array
+    {
+        $day = static fn (array $event): array => [['2026-11-15' => [$event]]];
+        return [
+            'null' => [null],
+            'false' => [false],
+            'string' => ['2026-11-15'],
+            'object' => [new ArrayObject(['2026-11-15' => [self::TOUR]])],
+            'list instead of dates' => [[[self::TOUR]]],
+            'month key' => [['2026-11' => [self::TOUR]]],
+            'unpadded date key' => [['2026-11-5' => [self::TOUR]]],
+            'date key with trailing newline' => [["2026-11-15\n" => [self::TOUR]]],
+            'day is a string' => [['2026-11-15' => 'ツアー']],
+            'day is null' => [['2026-11-15' => null]],
+            'day is a single event' => [['2026-11-15' => self::TOUR]],
+            'day has gaps in its keys' => [['2026-11-15' => [1 => self::TOUR]]],
+            'event is a string' => [['2026-11-15' => ['ツアー']]],
+            'title is missing' => $day(['time' => '終日', 'all_day' => true]),
+            'title is not a string' => $day(['title' => 123]),
+            'title is null' => $day(['title' => null]),
+            'time is not a string' => $day(['title' => 'ツアー', 'time' => 1100]),
+            'time is null' => $day(['title' => 'ツアー', 'time' => null]),
+            'all_day is not a bool' => $day(['title' => 'ツアー', 'all_day' => 1]),
+            'start is not a string' => $day(['title' => 'ツアー', 'start' => 11]),
+            'end is not a string' => $day(['title' => 'ツアー', 'end' => false]),
+            'one invalid event among valid ones' => [['2026-11-15' => [self::TOUR], '2026-11-16' => [self::TOUR, ['time' => '終日']]]],
+        ];
+    }
+}

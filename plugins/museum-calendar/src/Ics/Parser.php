@@ -56,7 +56,7 @@ final class Parser
         return $calendar;
     }
 
-    /** @return array<string, list<array{title: string, time: string}>> */
+    /** @return array<string, list<array{title: string, time: string, all_day: bool, start: string, end: string}>> */
     public function forMonth(string $ics, Month $month): array
     {
         $calendar = $this->read($ics);
@@ -121,16 +121,14 @@ final class Parser
             $day = max($start->setTime(0, 0), $from);
             while ($day < $until && ($day < $end || ($point && $day->format('Y-m-d') === $start->format('Y-m-d')))) {
                 $date = $day->format('Y-m-d');
-                $time = '終日';
-                if (!$allDay) {
-                    $time = $start->format('Y-m-d') === $date ? $start->format('H:i') : '00:00';
-                    if (!$point) {
-                        $time .= '–' . ($end->format('Y-m-d') === $date ? $end->format('H:i') : '24:00');
-                    }
-                }
+                $dayStart = $allDay ? '' : ($start->format('Y-m-d') === $date ? $start->format('H:i') : '00:00');
+                $dayEnd = $allDay || $point ? '' : ($end->format('Y-m-d') === $date ? $end->format('H:i') : '24:00');
                 $result[$date][] = [
                     'title' => (string) $event->SUMMARY ?: '（無題）',
-                    'time' => $time,
+                    'time' => $allDay ? '終日' : $dayStart . ($dayEnd === '' ? '' : '–' . $dayEnd),
+                    'all_day' => $allDay,
+                    'start' => $dayStart,
+                    'end' => $dayEnd,
                     '_sort' => [$allDay ? 0 : 1, $start->getTimestamp(), (string) $event->SUMMARY],
                 ];
                 $day = $day->modify('+1 day');

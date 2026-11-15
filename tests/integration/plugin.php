@@ -56,11 +56,11 @@ try {
         {
             return [
                 $month->key() . '-15' => [
-                    ['title' => 'Zebra', 'time' => '終日'],
-                    ['title' => '<script>alert(1)</script>', 'time' => '<img src=x onerror=alert(1)>'],
-                    ['title' => 'Alpha', 'time' => '13:00'],
+                    ['title' => 'Zebra', 'time' => '終日', 'all_day' => true, 'start' => '', 'end' => ''],
+                    ['title' => '<script>alert(1)</script>', 'time' => '<img src=x onerror=alert(1)>', 'all_day' => false, 'start' => '', 'end' => ''],
+                    ['title' => 'Alpha', 'time' => '13:00', 'all_day' => false, 'start' => '13:00', 'end' => ''],
                 ],
-                $month->key() . '-16' => [['title' => 'Tomorrow', 'time' => '終日']],
+                $month->key() . '-16' => [['title' => 'Tomorrow', 'time' => '終日', 'all_day' => true, 'start' => '', 'end' => '']],
             ];
         }
     };
@@ -102,6 +102,73 @@ try {
     $check(str_contains($html, $dateLine('2026-11-15', '11/15', '日')) && str_contains($html, '<strong>Zebra</strong>'), 'Today must be judged in Asia/Tokyo.');
     $html = (new Renderer($source, false, '<b>前回の予定</b>'))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo));
     $check(str_contains($html, '<p class="museum-calendar-today__notice" role="status">&lt;b&gt;前回の予定&lt;/b&gt;</p>'), 'Stale notice is missing or unescaped in today.');
+
+    $months = [];
+    $edit = static function (array $events, string $month) use (&$months): array {
+        $months[] = $month;
+        [$zebra, , $alpha] = $events['2026-11-15'];
+        $events['2026-11-15'] = [$alpha, ['title' => 'Zulu'] + $zebra];
+        $events['2026-11-16'] = [];
+        return $events;
+    };
+    add_filter('museum_calendar_events', $edit, 10, 2);
+    try {
+        $html = (new Renderer($source))->render(new Month('2026-11'), new DateTimeImmutable('2026-11-15 12:00', $tokyo));
+        $check(str_contains($html, '<li data-title="Zulu"><strong>Zulu</strong><span>終日</span></li>') && !str_contains($html, 'Zebra'), 'A filter must be able to rename an event in the month.');
+        $check(!str_contains($html, 'script') && !str_contains($html, 'Tomorrow'), 'A filter must be able to remove events from the month.');
+        $check(strpos($html, '<strong>Alpha</strong>') < strpos($html, '<strong>Zulu</strong>'), 'A filter must be able to reorder the events of a day in the month.');
+        $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo));
+        $check(str_contains($html, '<strong>Zulu</strong>') && !str_contains($html, 'Zebra') && !str_contains($html, 'script'), 'A filter must be able to rename and remove events in today.');
+        $check(strpos($html, '<strong>Alpha</strong>') < strpos($html, '<strong>Zulu</strong>'), 'A filter must be able to reorder the events of today.');
+        $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-16 12:00', $tokyo));
+        $check(str_contains($html, '本日の予定はありません。') && !str_contains($html, '<ul'), 'A day emptied by a filter must read as a day without events.');
+        $check($months === ['2026-11', '2026-11', '2026-11'], 'A filter must receive the month as YYYY-MM.');
+    } finally {
+        remove_filter('museum_calendar_events', $edit, 10);
+    }
+
+    $months = [];
+    $clear = static function (array $events, string $month) use (&$months): array {
+        $months[] = $month;
+        return array_map(static fn (): array => [], $events);
+    };
+    add_filter('museum_calendar_events', $clear, 10, 2);
+    try {
+        $html = do_shortcode('[museum_calendar]');
+        $check(str_contains($html, 'この月の予定はありません。') && !str_contains($html, '（サンプル）'), 'The month shortcode ignored a filter that removes every event.');
+        $html = do_shortcode('[museum_calendar_today]');
+        $check(str_contains($html, '本日の予定はありません。') && !str_contains($html, '（サンプル）'), 'The today shortcode ignored a filter that removes every event.');
+        $check($months === [$now->format('Y-m'), $now->format('Y-m')], 'The shortcodes must pass the displayed month to the filter.');
+    } finally {
+        remove_filter('museum_calendar_events', $clear, 10);
+    }
+
+    add_filter('museum_calendar_events', '__return_null');
+    try {
+        $html = do_shortcode('[museum_calendar]');
+        $check(str_contains($html, 'この月の予定を表示できません') && !str_contains($html, '予定はありません') && !str_contains($html, '<table'), 'An invalid filter result must not read as an empty month.');
+        $html = do_shortcode('[museum_calendar_today]');
+        $check(str_contains($html, '本日の予定を表示できません') && !str_contains($html, '予定はありません') && !str_contains($html, '<time'), 'An invalid filter result must not read as a day without events.');
+    } finally {
+        remove_filter('museum_calendar_events', '__return_null');
+    }
+    $check(str_contains(do_shortcode('[museum_calendar_today]'), '（サンプル）'), 'A removed filter must no longer change the output.');
+
+    $style = wp_styles()->query('museum-calendar');
+    $problems = [];
+    set_error_handler(static function (int $level, string $message) use (&$problems): bool {
+        $problems[] = $message;
+        return true;
+    });
+    wp_deregister_style('museum-calendar');
+    try {
+        $html = do_shortcode('[museum_calendar]') . do_shortcode('[museum_calendar_today]');
+    } finally {
+        restore_error_handler();
+        wp_register_style($style->handle, $style->src, $style->deps, $style->ver, $style->args);
+    }
+    $check($problems === [], 'Rendering without the default stylesheet raised: ' . implode(' / ', $problems));
+    $check(str_contains($html, '<table') && str_contains($html, 'museum-calendar-today__date'), 'The shortcodes must render after a theme deregisters the default stylesheet.');
 } finally {
     if ($previousUrl === null) {
         delete_option('museum_calendar_ics_url');
