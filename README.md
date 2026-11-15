@@ -10,8 +10,15 @@ GoogleカレンダーなどのICS URLを取得し、月間カレンダーに表�
 
 ## 起動
 
-必要なものはDocker実行環境（起動済み）、Node.js 24 LTS推奨（最低22.13.0）、npmです。
-PHP・Composer・DBはコンテナ内で実行します。初回にはネット接続が必要です。
+開発とテストはLinux上のDockerを前提にしています。WordPress・PHP・Composer・WP-CLI・MariaDBはすべてコンテナ内で動かし、ホストには導入しません。
+
+ホスト側に必要なもの:
+
+- Docker EngineとDocker Composeプラグイン。`docker info` がsudoなしで通ること（実行ユーザーを `docker` グループに追加）。
+- Node.js 24 LTS推奨（最低22.13.0）とnpm。コンテナの起動・停止を行うwp-envと、ブラウザーテストのPlaywrightを動かします。
+- `zip` コマンド（配布ZIPを作る場合）。
+
+初回はコンテナ画像と依存の取得にネット接続が必要です。
 
 ```sh
 npm ci
@@ -20,14 +27,18 @@ npx playwright install chromium
 npm run check
 ```
 
-Linuxでブラウザー用ライブラリが不足する場合は `npx playwright install --with-deps chromium`。
+`npm run setup` は開発用コンテナを起動し、コンテナ内のComposerで依存を導入して確認ページを作ります。
+`npm run check` はテスト用コンテナを別に起動して検証します。
+ブラウザー用ライブラリが不足する場合は `npx playwright install --with-deps chromium`（sudoが必要）。
 
 - 確認ページ: http://localhost:8888/?pagename=calendar-demo
 - ICS設定: http://localhost:8888/wp-admin/options-general.php?page=museum-calendar
 - 開発専用ログイン: `admin` / `password`
 - 独立したテスト環境: http://localhost:8889/
 
-開発環境とその認証情報は外部公開しないでください。setupを再実行しても既存ページや設定済みICS URLは維持します。
+Dockerは8888・8889番とMariaDBのポートをホストの全インターフェースで公開します。同じネットワークの端末から開発専用ログインで入れるため、信頼できるネットワークでのみ起動してください。
+別の端末のブラウザーから確認する場合の設定は[運用手順](docs/operations.md)を参照してください。
+setupを再実行しても既存ページや設定済みICS URLは維持します。
 
 ## ICS URLの登録
 
@@ -49,11 +60,11 @@ URLはDBに保存されるため、DBバックアップも適切に保管して�
 
 | コマンド | 内容 |
 | --- | --- |
-| `npm run dev` | 開発環境を起動 |
-| `npm run stop` | 開発・テスト環境を停止（DB保持） |
+| `npm run dev` | 開発用コンテナを起動 |
+| `npm run stop` | 開発・テスト用コンテナを停止（DBのボリュームは保持） |
 | `npm run seed` | 確認ページを作成。設定済みICS接続は維持 |
-| `npm run wp -- plugin list` | 開発環境でWP-CLIを実行 |
-| `npm run check` | 構文、Composer、単体、WordPress統合、ブラウザーテスト |
+| `npm run wp -- plugin list` | 開発用コンテナ内でWP-CLIを実行 |
+| `npm run check` | テスト用コンテナで構文、Composer、単体、WordPress統合、ブラウザーテスト |
 | `npm run test:unit` | 日付計算・ICS解析テスト |
 | `npm run test:integration` | 設定、取得、キャッシュ、失敗時処理、表示のテスト |
 | `npm run test:e2e` | PC/スマホの表示と管理画面操作 |
@@ -69,12 +80,12 @@ URLはDBに保存されるため、DBバックアップも適切に保管して�
 
 ## 依存関係と配布
 
-- `.wp-env.json`: WordPress 7.1.4 / PHP 8.5系列 / MariaDB 10.11系列。
+- `.wp-env.json`: コンテナの構成。WordPress 7.1.4 / PHP 8.5系列 / MariaDB 10.11系列。
 - ルートのComposer: PHPUnitなど開発用。
 - `plugins/museum-calendar/composer.json`: sabre/vobjectなど実行用。こちらのvendorは配布ZIPに必要。
 - 両方のcomposer.lockとpackage-lock.jsonをGit管理。
 - vendor、node_modules、実行時データ、秘密情報、生成ZIPはGit対象外。
-- `.cache/wp-env` は環境生成物。`.wp-env.test.json` はスクリプトで生成するテスト設定。
+- `.cache/wp-env` はwp-envが生成するDockerfileとdocker-compose.yml、WordPress本体。`.wp-env.test.json` はスクリプトで生成するテスト設定。
 
 GitHub ActionsでPRとmainへの変更を検証し、`v*` タグでは配布ZIPを生成します。本番への自動配備は行いません。
 Renovateは接続後に依存更新のPRを作成します。WordPress本体の更新PRとDB移行テストは未実装です。

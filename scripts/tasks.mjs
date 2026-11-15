@@ -18,7 +18,7 @@ function run(command, args, extra = {}) {
 
 function dockerReady() {
   const result = spawnSync('docker', ['info'], { stdio: 'ignore' });
-  if (result.status !== 0) throw new Error('Docker Desktopを起動してから、もう一度実行してください。');
+  if (result.status !== 0) throw new Error('Dockerに接続できません。Docker Engineが起動していて、sudoなしで `docker info` が通ることを確認してください。');
 }
 
 function prepareTestConfig() {

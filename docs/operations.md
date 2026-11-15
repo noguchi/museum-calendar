@@ -2,10 +2,46 @@
 
 ## 環境
 
-開発は8888、テストは8889ポートです。wp-envの `--config` で別環境を作り、DBを分離します。
-基準は `.wp-env.json`、テスト構成はスクリプトが生成します。生成ファイルを直接編集しないでください。
-`.cache/wp-env` にローカルの生成物を保持します。DB本体はDockerのボリュームに保持されます。
-`npm run stop` では削除しません。テストは本番データやGoogle認証情報に依存しません。
+開発とテストはLinux上のDocker（wp-env）で動かします。PHP・Composer・WP-CLI・MariaDBはホストに導入せず、
+`npm run …`（`scripts/tasks.mjs`）経由でコンテナ内で実行します。ホストで動くのはNode.js（wp-env、Playwright）と `zip` だけです。
+
+| 環境 | ポート | コンテナ名の接頭辞 | 用途 |
+| --- | --- | --- | --- |
+| 開発 | 8888 | `wp-env-museum-calendar-<ハッシュ>-` | 手動確認。`npm run setup` / `npm run dev` |
+| テスト | 8889 | `wp-env-museum-calendar-test-<ハッシュ>-` | 自動テスト。`npm run check` などが起動 |
+
+各環境は `wordpress`（Apache+PHP）、`cli`（WP-CLI・Composer）、`mysql`（MariaDB）の3コンテナで、DBも環境ごとに別です。
+稼働状況は `docker ps --filter name=wp-env-museum-calendar`、Apache/PHPの出力は `docker logs <wordpressコンテナ名>` で確認できます。
+WordPressのデバッグログはコンテナ内の `wp-content/debug.log` に出力されます。
+
+基準は `.wp-env.json`、テスト構成（`.wp-env.test.json`）はスクリプトが生成します。生成ファイルを直接編集しないでください。
+`.cache/wp-env` にはwp-envが生成したDockerfile・docker-compose.yml・WordPress本体を保持します。
+DB本体はDockerのボリューム（`wp-env-museum-calendar-…_mysql`）に保持され、`npm run stop` では削除しません。
+テストは本番データやGoogle認証情報に依存しません。
+
+### 別の端末から開く
+
+Dockerは8888・8889番とMariaDBのポートをホストの全インターフェース（`0.0.0.0`）で公開します。
+開発専用ログインのまま届くため、信頼できるネットワークでのみ起動してください。
+
+WordPressはリンクやCSSのURLをサイトURLから生成するため、`localhost` 以外の名前で開くにはサイトURLの変更が必要です。
+Git対象外の `.wp-env.override.json` に次のように書き、`npm run dev` で反映します（ポートは自動で付きます）。
+
+```json
+{
+  "config": {
+    "WP_SITEURL": "http://<ホスト名>",
+    "WP_HOME": "http://<ホスト名>"
+  },
+  "lifecycleScripts": {
+    "afterStart": "docker exec -u root \"$(docker ps -q --filter 'name=^wp-env-museum-calendar-[0-9a-f]+-wordpress-1$')\" sh -c \"grep -q ' <ホスト名>$' /etc/hosts || echo '127.0.0.1 <ホスト名>' >> /etc/hosts\""
+  }
+}
+```
+
+`afterStart` は、コンテナ内からそのホスト名を解決できるようにするためのものです。これがないとWordPressが自サイトへ接続できず、
+WP-Cron（ICSの定期取得）が動きません。ホスト名はマシン固有なので `.wp-env.json` には書かないでください。
+テスト環境は別の設定ファイルを使うため、この上書きの影響を受けず `localhost:8889` のままです。
 
 ## WordPress・PHPの更新
 
@@ -15,7 +51,7 @@
 4. 必要に応じて `npm run wp -- core update-db` で開発DBの更新を実行。
 5. 実際に動いた `npm run wp -- core version` とPHPバージョンを記録。
 
-上記はローカル環境の更新です。本番の更新・バックアップ・配備は自動化していません。
+上記はローカルのコンテナの更新です。本番の更新・バックアップ・配備は自動化していません。
 **旧版から新版へのDB移行専用テストはまだ未実装**です。初期ひな形の `check` は
 対象バージョンでの起動・プラグイン動作を確認するもので、DB移行を保証しません。
 本番への更新前には、旧版のDBを複製して新版へ移行する専用検証を追加してください。
@@ -23,7 +59,7 @@
 ## 依存関係
 
 `npm ci` と `composer install` はロックファイルに従います。
-PHP依存の更新はコンテナ内で行い、composer.jsonとcomposer.lockを同じ変更に含めます。
+PHP依存の更新はcliコンテナ内のComposerで行い、composer.jsonとcomposer.lockを同じ変更に含めます。
 `package.json` のoverridesは、wp-env 12.1.0の間接依存に対する修正版の指定です。
 対象はisomorphic-git、qs、rimraf。wp-env更新時には不要になった指定を外せるか確認し、
 `npm audit` と環境起動・停止・テストを再確認してください。
@@ -57,7 +93,7 @@ ICS URL・キャッシュ・サンプル表示設定は新しいキーへ一度�
 
 ### 開発環境
 
-通常は `npm run stop`、再開は `npm run dev` を使います。
-環境を破棄する操作はデータを消すため、自動の開発コマンドには含めていません。
+通常は `npm run stop`、再開は `npm run dev` を使います。コンテナを止めてもDBのボリュームは残ります。
+コンテナとボリュームを破棄する操作はデータを消すため、自動の開発コマンドには含めていません。
 本番DBの移行を伴う更新は、コードの差し戻しだけでは復旧できません。
 本番運用を始める段階でDB・ファイルのバックアップと復元試験を別途整備してください。

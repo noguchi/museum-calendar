@@ -6,7 +6,7 @@
 - プラグインの実行用vendorは配布ZIPに含める。ルートの開発用vendorは含めない。
 - ICS URLは秘密情報になりうる。HTML・ログ・エラーメッセージに出力しない。
 - ICS解析はsabre/vobjectを使用。繰り返しやタイムゾーンの処理を独自実装しない。
-- PHP/Composerは `scripts/tasks.mjs` 経由でコンテナ内実行を基本とする。
+- 開発・テストはLinux上のDocker（wp-env）が前提。PHP・Composer・WP-CLI・DBはホストに導入せず、`scripts/tasks.mjs` 経由でコンテナ内で実行する。
 - コード変更後は変更に応じたテスト、完成前には `npm run check` を実行する。
 - 日付判定はAsia/Tokyoを明示し、PHP・ホストOSのデフォルトに依存しない。
 - サンプル予定を本番の開館情報として表示しない。
