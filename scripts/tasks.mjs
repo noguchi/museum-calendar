@@ -90,7 +90,6 @@ try {
       startTest();
       wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/tests/integration/plugin.php'], true);
       wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/tests/integration/ics.php'], true);
-      wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/tests/integration/migration.php'], true);
       break;
     case 'e2e':
       startTest();
@@ -105,7 +104,6 @@ try {
       php(['php', 'vendor/bin/phpunit'], true);
       wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/tests/integration/plugin.php'], true);
       wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/tests/integration/ics.php'], true);
-      wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/tests/integration/migration.php'], true);
       seed(true);
       run(path.join(root, 'node_modules/.bin/playwright'), ['test']);
       break;

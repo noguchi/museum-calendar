@@ -26,7 +26,6 @@ if (!is_readable(__DIR__ . '/vendor/autoload.php')) {
 require_once __DIR__ . '/vendor/autoload.php';
 
 \MuseumCalendar\Admin\Settings::register();
-add_action('plugins_loaded', [\MuseumCalendar\LegacyMigration::class, 'run']);
 
 add_filter('cron_schedules', static function (array $schedules): array {
     $schedules['museum_calendar_quarter_hour'] = ['interval' => 900, 'display' => 'Museum Calendar: 15 minutes'];
@@ -39,8 +38,7 @@ register_deactivation_hook(__FILE__, static function (): void {
 
 add_action('wp_enqueue_scripts', static function (): void {
     $post = get_queried_object();
-    if ($post instanceof \WP_Post && (has_shortcode($post->post_content, 'museum_calendar')
-        || has_shortcode($post->post_content, 'otani_calendar'))) {
+    if ($post instanceof \WP_Post && has_shortcode($post->post_content, 'museum_calendar')) {
         wp_enqueue_style('museum-calendar', plugins_url('assets/calendar.css', __FILE__), [], '0.3.0');
     }
 });
@@ -56,7 +54,7 @@ add_action('init', static function (): void {
     $render = static function ($attributes): string {
         $attributes = shortcode_atts(['month' => ''], (array) $attributes, 'museum_calendar');
         $requested = $attributes['month'];
-        $queryMonth = $_GET['museum_month'] ?? $_GET['otani_month'] ?? '';
+        $queryMonth = $_GET['museum_month'] ?? '';
         if ($requested === '' && is_string($queryMonth)) {
             $requested = sanitize_text_field(wp_unslash($queryMonth));
         }
@@ -93,5 +91,4 @@ add_action('init', static function (): void {
         }
     };
     add_shortcode('museum_calendar', $render);
-    add_shortcode('otani_calendar', $render);
 });

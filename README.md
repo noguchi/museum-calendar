@@ -90,15 +90,6 @@ URLはDBに保存されるため、DBバックアップも適切に保管して�
 GitHub ActionsでPRとmainへの変更を検証し、`v*` タグでは配布ZIPを生成します。本番への自動配備は行いません。
 Renovateは接続後に依存更新のPRを作成します。WordPress本体の更新PRとDB移行テストは未実装です。
 
-## 旧名称からの移行
-
-0.3.0でOtani CalendarからMuseum Calendar for WordPressへ名称を変更しました。
-旧プラグインを無効化してから `museum-calendar` をインストール・有効化してください。同時に有効化しないでください。
-初回読み込み時に旧ICS設定・キャッシュ・サンプル表示設定を引き継ぎます。新しい設定があれば優先します。
-旧 `[otani_calendar]` と `otani_month` の月送りリンクも引き続き使えます。新規ページには `[museum_calendar]` を使用してください。
-CSSクラスは `museum-calendar` / `museum-calendar__…` に変更したため、独自CSSは合わせて更新してください。
-旧設定は復旧用に保持しますが、移行後の変更は旧設定へ反映しません。詳しくは[運用手順](docs/operations.md)を参照してください。
-
 [運用手順](docs/operations.md) · [仕様](docs/specification.md)
 
 ## リポジトリに含めるもの
