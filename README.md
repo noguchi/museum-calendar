@@ -15,7 +15,7 @@ GoogleカレンダーなどのICS URLを取得し、月間カレンダーに表�
 ホスト側に必要なもの:
 
 - Docker EngineとDocker Composeプラグイン。`docker info` がsudoなしで通ること（実行ユーザーを `docker` グループに追加）。
-- Node.js 24 LTS推奨（最低22.13.0）とnpm。コンテナの起動・停止を行うwp-envと、ブラウザーテストのPlaywrightを動かします。
+- Node.js 26推奨（最低22.13.0）とnpm。CIも26を使います。コンテナの起動・停止を行うwp-envと、ブラウザーテストのPlaywrightを動かします。
 - `zip` コマンド（配布ZIPを作る場合）。
 
 初回はコンテナ画像と依存の取得にネット接続が必要です。
