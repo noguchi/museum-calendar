@@ -101,6 +101,7 @@ try {
             $month,
             'variables=month,label,weekdays,weeks,previous,next,empty',
             'this=hidden',
+            'scope=none',
             'month=2026-11',
             'label=2026年11月',
             'weekdays=1月,2火,3水,4木,5金,6土,7日',
@@ -139,6 +140,7 @@ try {
             $today,
             'variables=today,weekday,events',
             'this=hidden',
+            'scope=none',
             'today=' . $now->format('Y-m-d') . ' Asia/Tokyo',
             'weekday=' . ['月', '火', '水', '木', '金', '土', '日'][(int) $now->format('N') - 1],
         );

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MuseumCalendar\Frontend;
 
+use Closure;
 use DateTimeImmutable;
 use DateTimeZone;
 use MuseumCalendar\Calendar\EventList;
@@ -93,11 +94,11 @@ final class Renderer
         $level = ob_get_level();
         ob_start();
         try {
-            // A static closure without parameters, so the template sees only the extracted variables.
-            (static function (): void {
+            // No parameters, no object and no class scope, so the template reaches only the extracted variables.
+            Closure::bind(static function (): void {
                 extract(func_get_arg(1));
                 require func_get_arg(0);
-            })($file, $variables);
+            }, null, null)($file, $variables);
             return (string) ob_get_clean();
         } catch (Throwable $error) {
             while (ob_get_level() > $level) {
