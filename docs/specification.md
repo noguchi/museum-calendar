@@ -1,4 +1,4 @@
-# Museum Calendar for WordPressの仕様（0.5.0）
+# Museum Calendar for WordPressの仕様（0.6.0）
 
 ## 動作環境
 
@@ -43,7 +43,9 @@
 
 ## 表示
 
-- `[museum_calendar]` で当月を表示。月曜始まり、前月・翌月リンク、スマホでの表内横スクロール。
+- `[museum_calendar]` で当月を表示。前月・翌月リンク、スマホでの表内横スクロール。
+- 月間カレンダーの最初の列は、WordPressの「設定 → 一般 → 週の始まり」で選んだ曜日。7つの曜日すべてに対応。保存されている値が0〜6の整数でない場合は月曜始まり。
+- 週の始まりを変えるショートコードの属性やプラグインの設定はない。`[museum_calendar_today]` の表示は週の始まりで変わらない。
 - URLのmuseum_monthで月送り。`[museum_calendar month="2026-11"]` は固定月表示。
 - `[museum_calendar_today]` で本日の日付（月/日）、曜日、当日の予定を表示。属性なし。予定がなければ「本日の予定はありません」。
 - 本日の表示はリクエストごとに生成する。WordPress外のページキャッシュを使うと、日付が変わっても前日の内容が残る場合がある。
@@ -52,6 +54,8 @@
 - 終日を先、時刻付きは開始順に並べる。タイトルと時間をHTMLエスケープ。
 - 空の月は「この月の予定はありません」。開館/休館の意味づけは行わない。
 - テーマ向けの目印として、月間カレンダーのルートに `id="museum-calendar"`、本日のセルに `aria-current="date"`、各予定の `li` にタイトルを入れた `data-title` を出力。
+- 曜日見出しの `th` と日付のあるセルの `td` に、曜日の番号（1＝月〜7＝日）を入れた `data-weekday` を出力。月の外のセルには出力しない。
+- 週の始まりによって曜日の列の位置が変わる。曜日ごとの装飾は `td:nth-child(7)` のような列の番号ではなく、`td[data-weekday="7"]` のように指定する。
 - 前月と翌月のリンクは `#museum-calendar` 付きで、月送りの後もカレンダーの位置に戻る。同じページに置く月間カレンダーは1つを想定。
 - スタイルはハンドル `museum-calendar` で登録する。テンプレートから `do_shortcode()` で呼ぶテーマは `wp_enqueue_style('museum-calendar')` でheadに読み込める。
 - 色・寸法、表示する予定、HTMLはテーマから変更できる。方法は「カスタマイズ」を参照。この節のマークアップと並び順は、テーマが変更していない既定の表示のもの。
@@ -150,8 +154,8 @@ add_filter('museum_calendar_events', function (array $events, string $month): ar
 | --- | --- | --- |
 | `$month` | string | 表示する月（`YYYY-MM`） |
 | `$label` | string | 見出し用の年月。例: `2026年11月` |
-| `$weekdays` | array | 曜日の表示名。キーは1（月）〜7（日）で、月曜から並ぶ |
-| `$weeks` | array | 週のリスト。1週は7つのセルで、月曜から並ぶ。月の外のセルはnull |
+| `$weekdays` | array | 曜日の表示名。キーは1（月）〜7（日）。表の列の順に並ぶ。日曜始まりならキーの順は7、1、2、3、4、5、6 |
+| `$weeks` | array | 週のリスト。1週は7つのセルで、`$weekdays` と同じ列の順に並ぶ。月の外のセルはnull |
 | `$previous` | array または null | 前月。`month`（`YYYY-MM`）と `url` を持つ。固定月表示のときと表示範囲の外はnull |
 | `$next` | array または null | 翌月。形式は `$previous` と同じ |
 | `$empty` | bool | その月に予定が1件もなければtrue |
@@ -162,7 +166,7 @@ add_filter('museum_calendar_events', function (array $events, string $month): ar
 | --- | --- | --- |
 | `date` | string | 日付（`YYYY-MM-DD`） |
 | `day` | int | 日 |
-| `weekday` | int | 曜日。1（月）〜7（日） |
+| `weekday` | int | その日付の曜日。1（月）〜7（日）。列の位置ではない |
 | `today` | bool | 本日ならtrue |
 | `events` | array | その日の予定のリスト。予定がなければ空の配列。1件の形式は「予定の変更」の表と同じ |
 

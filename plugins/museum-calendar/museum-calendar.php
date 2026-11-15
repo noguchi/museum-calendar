@@ -3,7 +3,7 @@
  * Plugin Name: Museum Calendar for WordPress
  * Plugin URI: https://github.com/noguchi/museum-calendar
  * Description: ICS形式のカレンダーを取得し、日本時間の月間カレンダーと本日の予定を表示します。
- * Version: 0.5.0
+ * Version: 0.6.0
  * Requires at least: 7.1.4
  * Requires PHP: 8.5.12
  * License: GPL-2.0-or-later
@@ -55,7 +55,7 @@ add_action('init', static function (): void {
         wp_clear_scheduled_hook('museum_calendar_refresh_feed');
     }
     // A theme that calls do_shortcode() from a template runs too late for the head, so it enqueues this handle itself.
-    wp_register_style('museum-calendar', plugins_url('assets/calendar.css', __FILE__), [], '0.5.0');
+    wp_register_style('museum-calendar', plugins_url('assets/calendar.css', __FILE__), [], '0.6.0');
 
     $renderer = static function (): \MuseumCalendar\Frontend\Renderer|string {
         $demo = false;
