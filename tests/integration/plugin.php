@@ -28,7 +28,7 @@ try {
     $check(str_contains($html, '2024年2月'), 'Requested month was not rendered.');
     $check(str_contains($html, '2024-02-29'), 'Leap day is missing.');
     $check(!str_contains($html, '2024-02-30'), 'Impossible day was rendered.');
-    foreach (['サンプル休館' => 4, 'サンプル開館' => 25, 'サンプルツアー' => 17, 'サンプル茶室' => 8] as $title => $count) {
+    foreach (['休館（サンプル）' => 4, '開館（サンプル）' => 25, 'ツアー（サンプル）' => 17, '茶室（サンプル）' => 8] as $title => $count) {
         $check(substr_count($html, "<strong>{$title}</strong>") === $count, "February 2024 must list {$title} {$count} times.");
     }
     $check(!str_contains($html, 'museum-calendar__nav'), 'Fixed month must not show ineffective navigation.');
@@ -42,11 +42,11 @@ try {
     $check(str_contains($html, '<time datetime="' . $today . '">' . $now->format('n/j') . '</time>'), 'Today shortcode must show the date in Asia/Tokyo.');
     $check(str_contains($html, '動作確認用サンプル'), 'Sample today must be labelled as a sample.');
     $samples = match ((int) $now->format('N')) {
-        1 => ['サンプル休館'],
-        6, 7 => ['サンプル開館', 'サンプル茶室'],
-        default => ['サンプル開館', 'サンプルツアー'],
+        1 => ['休館（サンプル）'],
+        6, 7 => ['開館（サンプル）', '茶室（サンプル）'],
+        default => ['開館（サンプル）', 'ツアー（サンプル）'],
     };
-    foreach (['サンプル休館', 'サンプル開館', 'サンプルツアー', 'サンプル茶室'] as $title) {
+    foreach (['休館（サンプル）', '開館（サンプル）', 'ツアー（サンプル）', '茶室（サンプル）'] as $title) {
         $check(str_contains($html, "<strong>{$title}</strong>") === in_array($title, $samples, true), "Today lists the wrong samples for its weekday: {$title}.");
     }
     $check(str_contains(do_shortcode('[museum_calendar month="invalid"]'), '正しくありません'), 'Invalid input was accepted.');

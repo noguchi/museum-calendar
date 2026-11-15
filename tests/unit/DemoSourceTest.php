@@ -7,10 +7,10 @@ use PHPUnit\Framework\TestCase;
 
 final class DemoSourceTest extends TestCase
 {
-    private const CLOSED = ['title' => 'サンプル休館', 'time' => '終日'];
-    private const OPEN = ['title' => 'サンプル開館', 'time' => '10:30–16:30'];
-    private const TOUR = ['title' => 'サンプルツアー', 'time' => '11:00–12:00'];
-    private const TEA_ROOM = ['title' => 'サンプル茶室', 'time' => '12:00–16:00'];
+    private const CLOSED = ['title' => '休館（サンプル）', 'time' => '終日'];
+    private const OPEN = ['title' => '開館（サンプル）', 'time' => '10:30–16:30'];
+    private const TOUR = ['title' => 'ツアー（サンプル）', 'time' => '11:00–12:00'];
+    private const TEA_ROOM = ['title' => '茶室（サンプル）', 'time' => '12:00–16:00'];
 
     public function testEachWeekdayHasItsSampleEvents(): void
     {
@@ -35,7 +35,7 @@ final class DemoSourceTest extends TestCase
     {
         foreach ((new DemoSource())->forMonth(new Month('2026-11')) as $day) {
             foreach ($day as $event) {
-                self::assertStringStartsWith('サンプル', $event['title']);
+                self::assertStringContainsString('サンプル', $event['title']);
             }
         }
     }
