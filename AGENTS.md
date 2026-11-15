@@ -7,6 +7,7 @@
 - ICS URLは秘密情報になりうる。HTML・ログ・エラーメッセージに出力しない。
 - ICS解析はsabre/vobjectを使用。繰り返しやタイムゾーンの処理を独自実装しない。
 - 開発・テストはLinux上のDocker（wp-env）が前提。PHP・Composer・WP-CLI・DBはホストに導入せず、`scripts/tasks.mjs` 経由でコンテナ内で実行する。
+- 実際のICS URLを読むのは開発環境（8888）だけ。URLはGit対象外の `.env` に置く。テストは常にモックのICSを使い、外部に接続しない。
 - コード変更後は変更に応じたテスト、完成前には `npm run check` を実行する。
 - 日付判定はAsia/Tokyoを明示し、PHP・ホストOSのデフォルトに依存しない。
 - サンプル予定を本番の開館情報として表示しない。

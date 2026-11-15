@@ -14,7 +14,18 @@ if (defined('MUSEUM_CALENDAR_TEST_FIXTURES') && MUSEUM_CALENDAR_TEST_FIXTURES) {
     update_option('museum_calendar_demo', false);
     (new \MuseumCalendar\Ics\FeedRepository())->load(true);
 } elseif (!get_option('museum_calendar_ics_url', '')) {
-    update_option('museum_calendar_demo', true);
+    $env = (string) @file_get_contents(ABSPATH . 'workspace/.env');
+    $url = preg_match('/^MUSEUM_CALENDAR_DEV_ICS_URL=(.+)$/m', $env, $match) ? trim($match[1]) : '';
+    if ($url !== '' && \MuseumCalendar\Admin\Settings::validUrl($url)) {
+        update_option('museum_calendar_ics_url', $url, false);
+        update_option('museum_calendar_demo', false);
+        WP_CLI::log('.envのICS URLを登録しました。');
+    } else {
+        if ($url !== '') {
+            WP_CLI::warning('.envのICS URLは使用できない形式のため登録していません。');
+        }
+        update_option('museum_calendar_demo', true);
+    }
 }
 
 $page = get_page_by_path('calendar-demo', OBJECT, 'page');
