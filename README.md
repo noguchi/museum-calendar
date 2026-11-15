@@ -5,8 +5,9 @@ APIキーやGoogleへのログインは不要です。管理画面での名前�
 
 ## 必要なもの
 
-- WordPress 6.8以上
-- PHP 8.3以上
+- WordPress 7.1.4以上
+- PHP 8.5.12以上
+- MariaDB 10.11.18以上
 - 表示したいカレンダーのICS URL（HTTPS）
 
 ## 導入

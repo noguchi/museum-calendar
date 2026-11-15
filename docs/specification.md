@@ -1,5 +1,11 @@
 # Museum Calendar for WordPressの仕様（0.4.0）
 
+## 動作環境
+
+- WordPress 7.1.4以上、PHP 8.5.12以上、MariaDB 10.11.18以上。
+- 下限は本番環境の現行版（2026-11-15時点）に合わせている。これより古い版は対象外で、動作を確認しない。
+- WordPressとPHPの下限はプラグインヘッダーで宣言する。下限に満たない環境では有効化できない。
+
 ## 入力・接続
 
 - WordPress「設定 → Museum Calendar」で1つのICS URLを登録。

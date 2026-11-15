@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "bf073786e9246609377cdecef1c4ef2e",
+    "content-hash": "044415703bcfb741fa6ace9533c61d3d",
     "packages": [
         {
             "name": "sabre/uri",
@@ -255,11 +255,11 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=8.3"
+        "php": ">=8.5.12"
     },
     "platform-dev": {},
     "platform-overrides": {
-        "php": "8.3.0"
+        "php": "8.5.12"
     },
     "plugin-api-version": "2.11.0"
 }

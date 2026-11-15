@@ -68,6 +68,7 @@ ICS URLが未登録のときだけ `npm run setup` と `npm run seed` が登録�
 ## 依存関係と配布
 
 - `.wp-env.json`: コンテナの構成。WordPress 7.1.4 / PHP 8.5系列 / MariaDB 10.11系列。
+- 対応バージョンの下限は本番環境の現行版に合わせています（WordPress 7.1.4、PHP 8.5.12、MariaDB 10.11.18）。下限を変えるときは、プラグインヘッダー、2つの `composer.json`（`require` と `platform`）、両方のcomposer.lock、README、仕様をそろえて更新します。
 - ルートのComposer: PHPUnitなど開発用。
 - `plugins/museum-calendar/composer.json`: sabre/vobjectなど実行用。こちらのvendorは配布ZIPに必要。
 - 両方のcomposer.lockとpackage-lock.jsonをGit管理。

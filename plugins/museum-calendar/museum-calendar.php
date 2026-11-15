@@ -4,8 +4,8 @@
  * Plugin URI: https://github.com/noguchi/museum-calendar
  * Description: ICS形式のカレンダーを取得し、日本時間の月間カレンダーと本日の予定を表示します。
  * Version: 0.4.0
- * Requires at least: 6.8
- * Requires PHP: 8.3
+ * Requires at least: 7.1.4
+ * Requires PHP: 8.5.12
  * License: GPL-2.0-or-later
  * Text Domain: museum-calendar
  */
