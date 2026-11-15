@@ -1,7 +1,10 @@
 <?php
 use MuseumCalendar\Admin\Settings;
+use MuseumCalendar\Calendar\Month;
+use MuseumCalendar\Frontend\Renderer;
 use MuseumCalendar\Ics\FeedRepository;
 use MuseumCalendar\Ics\Parser;
+use MuseumCalendar\Ics\Source;
 
 if (!defined('WP_CLI') || !WP_CLI || wp_get_environment_type() !== 'development') {
     exit(1);
@@ -69,6 +72,102 @@ try {
     $before = $requests;
     $feed->load();
     $check($requests === $before, 'Failure retry backoff was ignored.');
+
+    $tokyo = new DateTimeZone('Asia/Tokyo');
+    $now = new DateTimeImmutable('now', $tokyo);
+    $received = static function (string $html, string ...$lines) use ($check): void {
+        foreach ($lines as $line) {
+            $check(preg_match('/^' . preg_quote(esc_html($line), '/') . '$/m', $html) === 1, "A theme template did not receive: {$line}");
+        }
+    };
+    $note = static function (array $events): array {
+        foreach ($events as $date => $day) {
+            foreach ($day as $index => $event) {
+                $events[$date][$index]['fixture_note'] = 'note for ' . $event['title'];
+            }
+        }
+        return $events;
+    };
+    $check(wp_get_theme('override-theme')->exists(), 'The fixture theme is missing from the test environment.');
+    $theme = get_stylesheet();
+    add_filter('museum_calendar_events', $note);
+    switch_theme('override-theme');
+    try {
+        $month = do_shortcode('[museum_calendar month="2026-11"]');
+        $check(preg_match('/^<section class="museum-calendar" id="museum-calendar" aria-label="月間カレンダー">\s*<p class="museum-calendar__notice" role="status">[^<]*前回取得した予定[^<]*<\/p>\s*<pre class="override-month">/', $month) === 1
+            && str_ends_with(rtrim($month), '</section>'), 'A theme month template must stay inside the plugin section, after the stale notice.');
+        $check(!str_contains($month, '<table'), 'The theme month template did not replace the default one.');
+        $received(
+            $month,
+            'variables=month,label,weekdays,weeks,previous,next,empty',
+            'this=hidden',
+            'month=2026-11',
+            'label=2026年11月',
+            'weekdays=1月,2火,3水,4木,5金,6土,7日',
+            'previous=none',
+            'next=none',
+            'empty=no',
+            'weeks=7,7,7,7,7,7',
+            'outside=12',
+            'event=2026-11-10 [一日休館] [終日] all-day [] [] [note for 一日休館]',
+            'event=2026-11-17 [日時変更ガイド] [14:00–15:00] timed [14:00] [15:00] [note for 日時変更ガイド]',
+            'event=2026-11-30 [月末夜間] [23:00–24:00] timed [23:00] [24:00] [note for 月末夜間]',
+        );
+        $december = (new Renderer(new Source($fixture)))->render(new Month('2026-12'), new DateTimeImmutable('2026-11-30 15:30', new DateTimeZone('UTC')));
+        $received(
+            $december,
+            'month=2026-12',
+            'label=2026年12月',
+            'empty=no',
+            'weeks=7,7,7,7,7',
+            'outside=4',
+            'cell=2026-12-01 day=1 weekday=2 today=yes',
+            'cell=2026-12-02 day=2 weekday=3 today=no',
+            'cell=2026-12-31 day=31 weekday=4 today=no',
+        );
+        foreach (['previous' => '2026-11', 'next' => '2027-01'] as $name => $target) {
+            $check(preg_match("/^{$name}={$target} \\S*[?;]museum_month={$target}#museum-calendar$/m", $december) === 1, "A theme month template did not receive the {$name} month link.");
+        }
+        $check(substr_count($december, 'today=yes') === 1, 'Exactly one cell must be marked as today.');
+        $received((new Renderer(new Source("BEGIN:VCALENDAR\nVERSION:2.0\nEND:VCALENDAR")))->render(new Month('2026-11'), $now), 'empty=yes');
+
+        $today = do_shortcode('[museum_calendar_today]');
+        $check(preg_match('/^<section class="museum-calendar-today" aria-label="本日の予定">\s*<p class="museum-calendar-today__notice" role="status">[^<]*前回取得した予定[^<]*<\/p>\s*<pre class="override-today">/', $today) === 1
+            && str_ends_with(rtrim($today), '</section>'), 'A theme today template must stay inside the plugin section, after the stale notice.');
+        $check(!str_contains($today, 'museum-calendar-today__date'), 'The theme today template did not replace the default one.');
+        $received(
+            $today,
+            'variables=today,weekday,events',
+            'this=hidden',
+            'today=' . $now->format('Y-m-d') . ' Asia/Tokyo',
+            'weekday=' . ['月', '火', '水', '木', '金', '土', '日'][(int) $now->format('N') - 1],
+        );
+        $tuesday = (new Renderer(new Source($fixture)))->renderToday(new DateTimeImmutable('2026-11-09 15:30', new DateTimeZone('UTC')));
+        $received(
+            $tuesday,
+            'today=2026-11-10 Asia/Tokyo',
+            'weekday=火',
+            'event=[一日休館] [終日] all-day [] [] [note for 一日休館]',
+            'event=[第2火曜講座] [13:00–15:00] timed [13:00] [15:00] [note for 第2火曜講座]',
+        );
+        foreach (['private-secret', 'museum-fixture', 'calendar.google.com'] as $secret) {
+            $check(!str_contains($month . $december . $today . $tuesday, $secret), 'A theme template could read the ICS URL.');
+        }
+
+        add_filter('museum_calendar_fixture_throws', '__return_true');
+        try {
+            $level = ob_get_level();
+            $html = do_shortcode('[museum_calendar month="2026-11"]') . do_shortcode('[museum_calendar_today]');
+            $check(str_contains($html, 'この月の予定を表示できません') && str_contains($html, '本日の予定を表示できません'), 'A failing theme template must show the notice of its shortcode.');
+            $check(!str_contains($html, 'output') && !str_contains($html, '<section') && ob_get_level() === $level, 'A failing theme template leaked partial output.');
+        } finally {
+            remove_filter('museum_calendar_fixture_throws', '__return_true');
+        }
+    } finally {
+        switch_theme($theme);
+        remove_filter('museum_calendar_events', $note);
+    }
+    $check(get_stylesheet() === $theme && str_contains(do_shortcode('[museum_calendar month="2026-11"]'), '<table'), 'The default template must be back after the theme is restored.');
 
     $state = get_option(FeedRepository::CACHE);
     $state['fetched_at'] = time() - FeedRepository::MAX_AGE - 1;

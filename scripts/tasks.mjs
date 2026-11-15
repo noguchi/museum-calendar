@@ -26,6 +26,7 @@ function prepareTestConfig() {
   config.port = 8889;
   config.config.MUSEUM_CALENDAR_TEST_FIXTURES = true;
   config.plugins.push('./tests/support/ics-fixture');
+  config.themes = ['./tests/support/override-theme'];
   writeFileSync(testConfig, `${JSON.stringify(config, null, 2)}\n`);
 }
 

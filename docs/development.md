@@ -63,6 +63,7 @@ ICS URLが未登録のときだけ `npm run setup` と `npm run seed` が登録�
 テスト用WordPressは8889ポートの別DBで動作し、開発用DBや実カレンダーを使いません。
 `tests/fixtures/museum.ics` とテスト専用プラグインでHTTP応答を置き換えるため、Google認証や外部の予定変更に依存しません。
 テスト専用プラグインは開発用サイトと配布ZIPには入りません。
+テンプレートの差し替えは、テスト専用テーマ `tests/support/override-theme` で検証します。統合テストの間だけ有効にし、終了時に元のテーマへ戻します。このテーマも開発用サイトと配布ZIPには入りません。
 ブラウザーテストの画像は `test-results` に保存されます。
 
 ## 依存関係と配布
