@@ -69,7 +69,7 @@ URLはDBに保存されるため、DBバックアップも適切に保管して�
 
 ## 依存関係と配布
 
-- `.wp-env.json`: WordPress 7.1.4 / PHP 8.3系列 / MariaDB 10.11系列。
+- `.wp-env.json`: WordPress 7.1.4 / PHP 8.5系列 / MariaDB 10.11系列。
 - ルートのComposer: PHPUnitなど開発用。
 - `plugins/museum-calendar/composer.json`: sabre/vobjectなど実行用。こちらのvendorは配布ZIPに必要。
 - 両方のcomposer.lockとpackage-lock.jsonをGit管理。

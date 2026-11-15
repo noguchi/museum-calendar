@@ -1,7 +1,7 @@
 {
   "$schema": "https://schemas.wp.org/trunk/wp-env.json",
   "core": "https://downloads.wordpress.org/release/wordpress-7.1.4.zip",
-  "phpVersion": "8.3",
+  "phpVersion": "8.5",
   "mariadbVersion": "10.11",
   "port": 8888,
   "testsEnvironment": false,
