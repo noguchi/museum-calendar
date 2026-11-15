@@ -27,7 +27,7 @@ final class Renderer
         $order = Month::weekdayOrder($firstWeekday);
         $weekdays = [];
         foreach ($order as $weekday) {
-            $weekdays[$weekday] = Month::WEEKDAYS[$weekday];
+            $weekdays[$weekday] = self::weekdayName($weekday);
         }
         $weeks = [];
         foreach ($month->weeks($firstWeekday) as $days) {
@@ -51,12 +51,15 @@ final class Renderer
         }
         $link = static function (int $direction) use ($month, $showNavigation): ?array {
             $adjacent = $showNavigation ? $month->adjacent($direction) : null;
-            return $adjacent === null ? null
-                : ['month' => $adjacent, 'url' => add_query_arg('museum_month', $adjacent) . '#museum-calendar'];
+            return $adjacent === null ? null : [
+                'month' => $adjacent,
+                'url' => add_query_arg('museum_month', $adjacent) . '#museum-calendar',
+                'label' => self::monthText('F', $adjacent),
+            ];
         };
         return $this->frame('museum-calendar', ' id="museum-calendar" aria-label="月間カレンダー"', self::template('month', [
             'month' => $month->key(),
-            'label' => $month->label(),
+            'label' => self::monthText(_x('F Y', 'monthly archives date format'), $month->key()),
             'weekdays' => $weekdays,
             'weeks' => $weeks,
             'previous' => $link(-1),
@@ -73,9 +76,23 @@ final class Renderer
         return $this->frame('museum-calendar-today', ' aria-label="本日の予定"', self::template('today', [
             'today' => $today,
             'date' => wp_date($dateFormat, $today->getTimestamp(), $tokyo),
-            'weekday' => Month::WEEKDAYS[(int) $today->format('N')],
+            'weekday' => self::weekdayName((int) $today->format('N')),
             'events' => $this->events(new Month($today->format('Y-m')))[$today->format('Y-m-d')] ?? [],
         ]));
+    }
+
+    /** @param string $month YYYY-MM */
+    private static function monthText(string $format, string $month): string
+    {
+        $tokyo = new DateTimeZone('Asia/Tokyo');
+        return wp_date($format, (new DateTimeImmutable($month . '-01', $tokyo))->getTimestamp(), $tokyo);
+    }
+
+    /** @param int $weekday ISO 8601 weekday number. WordPress numbers the weekdays 0 (Sunday) to 6. */
+    private static function weekdayName(int $weekday): string
+    {
+        $locale = $GLOBALS['wp_locale'];
+        return $locale->get_weekday_abbrev($locale->get_weekday($weekday % 7));
     }
 
     private function events(Month $month): array

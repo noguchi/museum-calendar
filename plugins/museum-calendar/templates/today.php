@@ -4,7 +4,7 @@
  *
  * @var \DateTimeImmutable $today In Asia/Tokyo
  * @var string $date Today in the WordPress date format
- * @var string $weekday Not printed here. It stays for theme templates.
+ * @var string $weekday Abbreviated name in the site language. Not printed here. It stays for theme templates.
  * @var list<array{title: string, time: string, all_day: bool, start: string, end: string}> $events
  */
 if (!defined('ABSPATH')) {

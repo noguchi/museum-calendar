@@ -3,11 +3,11 @@
  * A theme replaces this file with museum-calendar/month.php. The plugin prints the surrounding section and the notices.
  *
  * @var string $month YYYY-MM
- * @var string $label
- * @var array<int, string> $weekdays ISO 8601 weekday number => label, in column order
+ * @var string $label The month in the WordPress format for monthly archives, in the site language
+ * @var array<int, string> $weekdays ISO 8601 weekday number => abbreviated name in the site language, in column order
  * @var list<list<array{date: string, day: int, weekday: int, today: bool, events: list<array{title: string, time: string, all_day: bool, start: string, end: string}>}|null>> $weeks each week in column order, null is a cell outside the month
- * @var array{month: string, url: string}|null $previous
- * @var array{month: string, url: string}|null $next
+ * @var array{month: string, url: string, label: string}|null $previous label is the month name in the site language
+ * @var array{month: string, url: string, label: string}|null $next
  * @var bool $empty
  */
 if (!defined('ABSPATH')) {
@@ -15,12 +15,13 @@ if (!defined('ABSPATH')) {
 }
 ?>
 <?php if ($previous !== null || $next !== null) : ?>
-<nav class="museum-calendar__nav" aria-label="表示月の切り替え">
-    <?php foreach (['前月' => $previous, '翌月' => $next] as $text => $link) : ?>
-        <?php if ($link !== null) : ?>
-            <a href="<?php echo esc_url($link['url']); ?>"><?php echo esc_html($text); ?></a>
-        <?php endif; ?>
-    <?php endforeach; ?>
+<nav class="museum-calendar__nav" aria-label="<?php esc_attr_e('Previous and next months'); ?>">
+    <?php if ($previous !== null) : ?>
+        <a href="<?php echo esc_url($previous['url']); ?>">&laquo; <?php echo esc_html($previous['label']); ?></a>
+    <?php endif; ?>
+    <?php if ($next !== null) : ?>
+        <a href="<?php echo esc_url($next['url']); ?>"><?php echo esc_html($next['label']); ?> &raquo;</a>
+    <?php endif; ?>
 </nav>
 <?php endif; ?>
 <div class="museum-calendar__scroll" tabindex="0" role="region" aria-label="月間予定表（横にスクロールできます）">

@@ -25,7 +25,7 @@ try {
     $check(str_contains(do_shortcode('[museum_calendar_today]'), '接続が設定されていません'), 'Disabled mode must not show a sample today.');
     update_option('museum_calendar_demo', true);
     $html = do_shortcode('[museum_calendar month="2024-02"]');
-    $check(str_contains($html, '2024年2月'), 'Requested month was not rendered.');
+    $check(str_contains($html, '<caption>February 2024</caption>'), 'Requested month was not rendered.');
     $check(str_contains($html, '2024-02-29'), 'Leap day is missing.');
     $check(!str_contains($html, '2024-02-30'), 'Impossible day was rendered.');
     foreach (['休館（サンプル）' => 4, '開館（サンプル）' => 25, 'ツアー（サンプル）' => 17, '茶室（サンプル）' => 8] as $title => $count) {
@@ -41,19 +41,7 @@ try {
     $dateLine = static fn (string $date, string $label): string
         => '<p class="museum-calendar-today__date"><time datetime="' . $date . '">' . $label . '</time></p>';
     $weekdayNames = ['日', '月', '火', '水', '木', '金', '土'];
-    // The ja locale is not installed on the test site, so Japanese weekday names stand in for it.
-    $inJapanese = static function (callable $render) use ($weekdayNames): string {
-        $locale = $GLOBALS['wp_locale'];
-        $GLOBALS['wp_locale'] = clone $locale;
-        foreach ($weekdayNames as $number => $name) {
-            $GLOBALS['wp_locale']->weekday_abbrev[$locale->get_weekday($number)] = $name;
-        }
-        try {
-            return $render();
-        } finally {
-            $GLOBALS['wp_locale'] = $locale;
-        }
-    };
+    $inJapanese = require dirname(__DIR__) . '/support/japanese-locale.php';
     $dateFormat = get_option('date_format');
     try {
         update_option('date_format', 'Y.m.d');
@@ -97,36 +85,39 @@ try {
             preg_match_all('/<td(?: data-weekday="(\d)")?[^>]*>\s*(?:<time datetime="([^"]*)">)?/', $row, $cells, PREG_SET_ORDER);
             $rows[] = array_map(static fn (array $cell): string => isset($cell[2]) ? $cell[1] . ' ' . $cell[2] : '-', $cells);
         }
-        return ['numbers' => implode('', $head[1]), 'labels' => implode('', $head[2]), 'rows' => $rows];
+        return ['numbers' => implode('', $head[1]), 'labels' => implode(' ', $head[2]), 'rows' => $rows];
     };
     $todayHtml = do_shortcode('[museum_calendar_today]');
     $startOfWeek = get_option('start_of_week');
     try {
         update_option('start_of_week', 0);
         $sunday = $grid(do_shortcode('[museum_calendar month="2026-11"]'));
-        $check($sunday['labels'] === '日月火水木金土' && $sunday['numbers'] === '7123456', 'Week start 0 must put Sunday in the first column.');
+        $check($sunday['labels'] === 'Sun Mon Tue Wed Thu Fri Sat' && $sunday['numbers'] === '7123456', 'Week start 0 must put Sunday in the first column.');
         $check($sunday['rows'][0] === ['7 2026-11-01', '1 2026-11-02', '2 2026-11-03', '3 2026-11-04', '4 2026-11-05', '5 2026-11-06', '6 2026-11-07'], 'A month that starts on a Sunday must fill the first Sunday-first week.');
         $check(count($sunday['rows']) === 5 && $sunday['rows'][4] === ['7 2026-11-29', '1 2026-11-30', '-', '-', '-', '-', '-'], 'The last Sunday-first week of November 2026 is wrong.');
         $html = do_shortcode('[museum_calendar month="2026-12"]');
         $sunday = $grid($html);
         $check($sunday['rows'][0] === ['-', '-', '2 2026-12-01', '3 2026-12-02', '4 2026-12-03', '5 2026-12-04', '6 2026-12-05'], 'Tuesday 1 December 2026 must sit in the third Sunday-first column.');
         $check($sunday['rows'][1][0] === '7 2026-12-06' && $sunday['rows'][4] === ['7 2026-12-27', '1 2026-12-28', '2 2026-12-29', '3 2026-12-30', '4 2026-12-31', '-', '-'], 'Sunday-first dates must sit under their weekday.');
-        $check(str_contains($html, '2026年12月') && !str_contains($html, 'museum-calendar__nav'), 'A fixed month must still render without navigation when the week starts on Sunday.');
+        $check(str_contains($html, '<caption>December 2026</caption>') && !str_contains($html, 'museum-calendar__nav'), 'A fixed month must still render without navigation when the week starts on Sunday.');
         $check(preg_match('/<td data-weekday="1"[^>]*>\s*<time datetime="2026-12-07">7<\/time>\s*<ul>\s*<li data-title="休館（サンプル）">/', $html) === 1, 'The Monday sample must stay on Mondays when the week starts on Sunday.');
         $html = do_shortcode('[museum_calendar]');
-        $check($grid($html)['labels'] === '日月火水木金土', 'The current month must follow the week start.');
+        $check($grid($html)['labels'] === 'Sun Mon Tue Wed Thu Fri Sat', 'The current month must follow the week start.');
         $check(preg_match('/<td data-weekday="' . $now->format('N') . '" aria-current="date">\s*<time datetime="' . $today . '">/', $html) === 1, 'Today must keep its weekday when the week starts on Sunday.');
         $check(preg_match_all('/<a href="[^"]*museum_month=\d{4}-\d{2}#museum-calendar"/', $html) === 2, 'Month links are missing when the week starts on Sunday.');
         $check(do_shortcode('[museum_calendar_today]') === $todayHtml, 'The week start must not change the today shortcode.');
 
         update_option('start_of_week', 3);
         $wednesday = $grid(do_shortcode('[museum_calendar month="2026-12"]'));
-        $check($wednesday['labels'] === '水木金土日月火' && $wednesday['numbers'] === '3456712', 'Week start 3 must put Wednesday in the first column.');
+        $check($wednesday['labels'] === 'Wed Thu Fri Sat Sun Mon Tue' && $wednesday['numbers'] === '3456712', 'Week start 3 must put Wednesday in the first column.');
+        $japanese = $grid($inJapanese(static fn (): string => do_shortcode('[museum_calendar month="2026-12"]')));
+        $check($japanese['labels'] === '水 木 金 土 日 月 火' && $japanese['numbers'] === '3456712', 'Weekday headings must use the site language and keep their ISO 8601 numbers.');
+        $check($japanese['rows'] === $wednesday['rows'], 'The site language must not move the dates.');
         $check($wednesday['rows'][0] === ['-', '-', '-', '-', '-', '-', '2 2026-12-01'] && $wednesday['rows'][1][0] === '3 2026-12-02', 'Wednesday-first dates must sit under their weekday.');
 
         update_option('start_of_week', 1);
         $monday = $grid(do_shortcode('[museum_calendar month="2026-11"]'));
-        $check($monday['labels'] === '月火水木金土日' && $monday['numbers'] === '1234567', 'Week start 1 must put Monday in the first column.');
+        $check($monday['labels'] === 'Mon Tue Wed Thu Fri Sat Sun' && $monday['numbers'] === '1234567', 'Week start 1 must put Monday in the first column.');
         $check($monday['rows'][0] === ['-', '-', '-', '-', '-', '-', '7 2026-11-01'] && count($monday['rows']) === 6, 'Monday-first November 2026 must start in the last column.');
 
         update_option('start_of_week', 9);
@@ -175,6 +166,56 @@ try {
     $check(!str_contains($html, 'aria-current'), 'A month without today must have no current cell.');
     $html = (new Renderer($source))->render(new Month('2026-11'), new DateTimeImmutable('2026-11-14 15:30', new DateTimeZone('UTC')));
     $check(preg_match($currentCell, $html) === 1, 'Today must be judged in Asia/Tokyo.');
+
+    $header = static function (string $html): array {
+        preg_match('/<nav class="museum-calendar__nav" aria-label="([^"]*)">(.*?)<\/nav>/s', $html, $nav);
+        preg_match_all('/<a href="[^"]*[?;]museum_month=(\d{4}-\d{2})#museum-calendar">([^<]*)<\/a>/', $nav[2] ?? '', $links, PREG_SET_ORDER);
+        preg_match('/<caption>([^<]*)<\/caption>/', $html, $caption);
+        return [
+            'nav' => $nav[1] ?? null,
+            'links' => array_map(static fn (array $link): string => $link[1] . ' ' . $link[2], $links),
+            'caption' => $caption[1] ?? null,
+        ];
+    };
+    $monthHtml = static fn (string $month, bool $showNavigation = true): string
+        => (new Renderer($source))->render(new Month($month), new DateTimeImmutable('2026-11-15 12:00', $tokyo), $showNavigation);
+    $november = ['nav' => 'Previous and next months', 'links' => ['2026-10 &laquo; October', '2026-12 December &raquo;'], 'caption' => 'November 2026'];
+    $check($header($monthHtml('2026-11')) === $november, 'The month header is wrong in the language of the test site.');
+    $check($header($monthHtml('2026-11', false)) === ['nav' => null, 'links' => [], 'caption' => 'November 2026'], 'A month without navigation must keep its heading and print no links.');
+    $check($header($inJapanese(static fn (): string => $monthHtml('2026-11'))) === ['nav' => 'Previous and next months', 'links' => ['2026-10 &laquo; 10月', '2026-12 12月 &raquo;'], 'caption' => '11月 2026'], 'Month names in the header must use the site language.');
+    foreach ([
+        '2026-01' => [['2025-12 &laquo; December', '2026-02 February &raquo;'], 'January 2026', ['2025-12 &laquo; 12月', '2026-02 2月 &raquo;']],
+        '2026-12' => [['2026-11 &laquo; November', '2027-01 January &raquo;'], 'December 2026', ['2026-11 &laquo; 11月', '2027-01 1月 &raquo;']],
+        '1900-01' => [['1900-02 February &raquo;'], 'January 1900', ['1900-02 2月 &raquo;']],
+        '2100-12' => [['2100-11 &laquo; November'], 'December 2100', ['2100-11 &laquo; 11月']],
+    ] as $month => [$links, $caption, $japaneseLinks]) {
+        $shown = $header($monthHtml($month));
+        $check($shown['links'] === $links && $shown['caption'] === $caption, "The month links or the heading are wrong for {$month}.");
+        $check($header($inJapanese(static fn (): string => $monthHtml($month)))['links'] === $japaneseLinks, "The month links are wrong in Japanese for {$month}.");
+    }
+    add_filter('pre_option_timezone_string', $losAngeles = static fn (): string => 'America/Los_Angeles');
+    try {
+        $check(wp_timezone_string() === 'America/Los_Angeles', 'The site timezone was not replaced.');
+        $check($header($monthHtml('2026-11')) === $november, 'The month header must name months in Asia/Tokyo, whatever the site timezone is.');
+    } finally {
+        remove_filter('pre_option_timezone_string', $losAngeles);
+    }
+    $monthly = 'Y年n月';
+    $monthlyFormat = static function (string $translation, string $text, string $context, string $domain) use (&$monthly): string {
+        return $text === 'F Y' && $context === 'monthly archives date format' && $domain === 'default' ? $monthly : $translation;
+    };
+    $navLabel = static fn (string $translation, string $text, string $domain): string
+        => $text === 'Previous and next months' && $domain === 'default' ? '前と次の月' : $translation;
+    add_filter('gettext_with_context', $monthlyFormat, 10, 4);
+    add_filter('gettext', $navLabel, 10, 3);
+    try {
+        $check($header($inJapanese(static fn (): string => $monthHtml('2026-11'))) === ['nav' => '前と次の月', 'links' => ['2026-10 &laquo; 10月', '2026-12 12月 &raquo;'], 'caption' => '2026年11月'], 'The month header must use the WordPress translations of the monthly format and of the navigation label.');
+        $monthly = '<b>Y</b>';
+        $check(str_contains($monthHtml('2026-11'), '<caption>&lt;b&gt;2026&lt;/b&gt;</caption>'), 'The month heading was not escaped.');
+    } finally {
+        remove_filter('gettext_with_context', $monthlyFormat, 10);
+        remove_filter('gettext', $navLabel, 10);
+    }
 
     $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo), 'n/j');
     $check(str_contains($html, $dateLine('2026-11-15', '11/15')), 'Today date is wrong on a Sunday.');

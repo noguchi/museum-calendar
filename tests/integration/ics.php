@@ -80,6 +80,12 @@ try {
             $check(preg_match('/^' . preg_quote(esc_html($line), '/') . '$/m', $html) === 1, "A theme template did not receive: {$line}");
         }
     };
+    $inJapanese = require dirname(__DIR__) . '/support/japanese-locale.php';
+    $linked = static function (string $html, array $links) use ($check): void {
+        foreach ($links as $name => [$target, $label]) {
+            $check(preg_match("/^{$name}={$target} \\[{$label}\\] \\S*[?;]museum_month={$target}#museum-calendar$/m", $html) === 1, "A theme month template did not receive the {$name} month link with the label {$label}.");
+        }
+    };
     $note = static function (array $events): array {
         foreach ($events as $date => $day) {
             foreach ($day as $index => $event) {
@@ -106,8 +112,8 @@ try {
             'this=hidden',
             'scope=none',
             'month=2026-11',
-            'label=2026年11月',
-            'weekdays=1月,2火,3水,4木,5金,6土,7日',
+            'label=November 2026',
+            'weekdays=1Mon,2Tue,3Wed,4Thu,5Fri,6Sat,7Sun',
             'previous=none',
             'next=none',
             'empty=no',
@@ -124,7 +130,7 @@ try {
         $received(
             $december,
             'month=2026-12',
-            'label=2026年12月',
+            'label=December 2026',
             'empty=no',
             'weeks=7,7,7,7,7',
             'outside=4',
@@ -132,16 +138,17 @@ try {
             'cell=2026-12-02 day=2 weekday=3 today=no',
             'cell=2026-12-31 day=31 weekday=4 today=no',
         );
-        foreach (['previous' => '2026-11', 'next' => '2027-01'] as $name => $target) {
-            $check(preg_match("/^{$name}={$target} \\S*[?;]museum_month={$target}#museum-calendar$/m", $december) === 1, "A theme month template did not receive the {$name} month link.");
-        }
+        $linked($december, ['previous' => ['2026-11', 'November'], 'next' => ['2027-01', 'January']]);
+        $japanese = $inJapanese(static fn (): string => (new Renderer(new Source($fixture)))->render(new Month('2026-12'), $now));
+        $received($japanese, 'label=12月 2026', 'weekdays=1月,2火,3水,4木,5金,6土,7日');
+        $linked($japanese, ['previous' => ['2026-11', '11月'], 'next' => ['2027-01', '1月']]);
         $check(substr_count($december, 'today=yes') === 1, 'Exactly one cell must be marked as today.');
         $received((new Renderer(new Source("BEGIN:VCALENDAR\nVERSION:2.0\nEND:VCALENDAR")))->render(new Month('2026-11'), $now), 'empty=yes');
 
         update_option('start_of_week', 0);
         $received(
             do_shortcode('[museum_calendar month="2026-11"]'),
-            'weekdays=7日,1月,2火,3水,4木,5金,6土',
+            'weekdays=7Sun,1Mon,2Tue,3Wed,4Thu,5Fri,6Sat',
             'weeks=7,7,7,7,7',
             'outside=5',
             'row=1,2,3,4,5,6,7',
@@ -152,7 +159,7 @@ try {
             'event=2026-11-10 [一日休館] [終日] all-day [] [] [note for 一日休館]',
         );
         $received(
-            do_shortcode('[museum_calendar month="2026-07"]'),
+            $inJapanese(static fn (): string => do_shortcode('[museum_calendar month="2026-07"]')),
             'weekdays=7日,1月,2火,3水,4木,5金,6土',
             'row=-,-,-,1,2,3,4',
             'row=26,27,28,29,30,31,-',
@@ -172,14 +179,17 @@ try {
             'scope=none',
             'today=' . $now->format('Y-m-d') . ' Asia/Tokyo',
             'date=' . $now->format('Y年n月j日'),
-            'weekday=' . ['月', '火', '水', '木', '金', '土', '日'][(int) $now->format('N') - 1],
+            'weekday=' . ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][(int) $now->format('N') - 1],
         );
-        $tuesday = (new Renderer(new Source($fixture)))->renderToday(new DateTimeImmutable('2026-11-09 15:30', new DateTimeZone('UTC')), 'n/j H:i');
+        $received($inJapanese(static fn (): string => do_shortcode('[museum_calendar_today]')), 'weekday=' . ['月', '火', '水', '木', '金', '土', '日'][(int) $now->format('N') - 1]);
+        $renderTuesday = static fn (): string => (new Renderer(new Source($fixture)))->renderToday(new DateTimeImmutable('2026-11-09 15:30', new DateTimeZone('UTC')), 'n/j H:i');
+        $received($inJapanese($renderTuesday), 'weekday=火');
+        $tuesday = $renderTuesday();
         $received(
             $tuesday,
             'today=2026-11-10 Asia/Tokyo',
             'date=11/10 00:30',
-            'weekday=火',
+            'weekday=Tue',
             'event=[一日休館] [終日] all-day [] [] [note for 一日休館]',
             'event=[第2火曜講座] [13:00–15:00] timed [13:00] [15:00] [note for 第2火曜講座]',
         );

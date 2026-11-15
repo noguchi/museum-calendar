@@ -10,9 +10,6 @@ use InvalidArgumentException;
 
 final class Month
 {
-    /** Keyed by ISO 8601 weekday number. */
-    public const WEEKDAYS = [1 => '月', 2 => '火', 3 => '水', 4 => '木', 5 => '金', 6 => '土', 7 => '日'];
-
     private DateTimeImmutable $first;
 
     public function __construct(string $value)
@@ -26,11 +23,6 @@ final class Month
     public function key(): string
     {
         return $this->first->format('Y-m');
-    }
-
-    public function label(): string
-    {
-        return $this->first->format('Y年n月');
     }
 
     public function adjacent(int $direction): ?string

@@ -14,7 +14,7 @@ if (apply_filters('museum_calendar_fixture_throws', false)) {
     echo 'nested month output';
     throw new RuntimeException('The fixture template failed.');
 }
-$link = static fn (?array $link): string => $link === null ? 'none' : $link['month'] . ' ' . $link['url'];
+$link = static fn (?array $link): string => $link === null ? 'none' : $link['month'] . ' [' . $link['label'] . '] ' . $link['url'];
 $lines = [
     'variables=' . implode(',', array_keys($variables)),
     'this=' . (isset($this) ? 'visible' : 'hidden'),
