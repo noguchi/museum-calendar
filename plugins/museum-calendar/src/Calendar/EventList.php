@@ -14,6 +14,7 @@ final class EventList
      * Checks what a `museum_calendar_events` callback returned.
      *
      * An invalid value throws. Showing no events instead would tell visitors that the month is empty.
+     * The keys of a day are ignored, because array_filter() leaves gaps when a callback removes an event.
      *
      * @return array<string, non-empty-list<array{title: string, time: string, all_day: bool, start: string, end: string, ...}>>
      */
@@ -27,8 +28,8 @@ final class EventList
             if (!is_string($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $date)) {
                 throw new UnexpectedValueException('Each key must be a YYYY-MM-DD date.');
             }
-            if (!is_array($events) || !array_is_list($events)) {
-                throw new UnexpectedValueException("The events of {$date} must be a list.");
+            if (!is_array($events)) {
+                throw new UnexpectedValueException("The events of {$date} must be an array.");
             }
             foreach ($events as $event) {
                 if (!is_array($event) || !is_string($event['title'] ?? null)) {

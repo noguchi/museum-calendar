@@ -40,6 +40,13 @@ final class EventListTest extends TestCase
         self::assertSame([], EventList::fromFilter([]));
     }
 
+    public function testDayIsReindexedAfterEventsWereRemoved(): void
+    {
+        $closed = ['title' => '休館', 'time' => '終日', 'all_day' => true, 'start' => '', 'end' => ''];
+        $day = array_filter([$closed, self::TOUR, $closed, self::TOUR], static fn (array $event): bool => $event['title'] !== '休館');
+        self::assertSame(['2026-11-15' => [self::TOUR, self::TOUR]], EventList::fromFilter(['2026-11-15' => $day]));
+    }
+
     #[DataProvider('invalidValues')]
     public function testRejectsInvalidValue(mixed $value): void
     {
@@ -62,7 +69,6 @@ final class EventListTest extends TestCase
             'day is a string' => [['2026-11-15' => 'ツアー']],
             'day is null' => [['2026-11-15' => null]],
             'day is a single event' => [['2026-11-15' => self::TOUR]],
-            'day has gaps in its keys' => [['2026-11-15' => [1 => self::TOUR]]],
             'event is a string' => [['2026-11-15' => ['ツアー']]],
             'title is missing' => $day(['time' => '終日', 'all_day' => true]),
             'title is not a string' => $day(['title' => 123]),
