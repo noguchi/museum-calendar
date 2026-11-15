@@ -26,7 +26,9 @@ try {
     $check(str_contains($html, '2024年2月'), 'Requested month was not rendered.');
     $check(str_contains($html, '2024-02-29'), 'Leap day is missing.');
     $check(!str_contains($html, '2024-02-30'), 'Impossible day was rendered.');
-    $check(str_contains($html, 'サンプル展示'), 'Event source was not rendered.');
+    foreach (['サンプル休館' => 4, 'サンプル開館' => 25, 'サンプルツアー' => 17, 'サンプル茶室' => 8] as $title => $count) {
+        $check(substr_count($html, "<strong>{$title}</strong>") === $count, "February 2024 must list {$title} {$count} times.");
+    }
     $check(!str_contains($html, 'museum-calendar__nav'), 'Fixed month must not show ineffective navigation.');
     $check(str_contains(do_shortcode('[museum_calendar month="invalid"]'), '正しくありません'), 'Invalid input was accepted.');
 
