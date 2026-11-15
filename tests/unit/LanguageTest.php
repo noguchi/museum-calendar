@@ -93,6 +93,14 @@ final class LanguageTest extends TestCase
         self::assertSame(' お茶室営業日 ', Language::Japanese->title(' お茶室営業日 '));
     }
 
+    public function testTrimmedDropsOnlyTheSpacesAroundATitle(): void
+    {
+        self::assertSame('臨時休館', Language::trimmed(" \t臨時休館\n"));
+        self::assertSame('臨時休館', Language::trimmed('　臨時休館　'));
+        self::assertSame('臨時 休館　午後', Language::trimmed(' 臨時 休館　午後 '));
+        self::assertSame('', Language::trimmed('   '));
+    }
+
     #[DataProvider('unknownTitles')]
     public function testEnglishHasNoTextForAnyOtherTitle(string $title): void
     {

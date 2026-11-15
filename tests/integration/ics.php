@@ -330,6 +330,81 @@ try {
     $check($result['body'] === $body && !$result['stale'], 'Empty feed must remove deleted events.');
     $check(str_contains(do_shortcode('[museum_calendar month="2026-11"]'), 'この月の予定はありません'), 'Empty calendar message missing.');
 
+    $settingsPage = static function (): string {
+        ob_start();
+        Settings::page();
+        return ob_get_clean();
+    };
+    $untranslated = static function (string $html) use ($check): array {
+        $section = explode('<h2>英訳のない予定名</h2>', $html);
+        $check(count($section) === 2, 'The settings page must have one section for the titles without an English text.');
+        $check(str_contains($section[1], '<code>lang="en"</code>') && str_contains($section[1], '日本語のまま表示'), 'The section must say what happens to its titles on an English page.');
+        preg_match_all('/<li>(.*?)<\/li>/s', $section[1], $items);
+        return ['titles' => $items[1], 'complete' => str_contains($section[1], 'すべての予定名に英訳があります。'), 'unreadable' => str_contains($section[1], '予定を読み込めないため')];
+    };
+    $check($untranslated($settingsPage()) === ['titles' => [], 'complete' => true, 'unreadable' => false], 'A feed without events must read as a feed whose titles all have an English text.');
+    $firstDay = new DateTimeImmutable($now->format('Y-m-01'), $tokyo);
+    $allDayEvent = static fn (string $uid, DateTimeImmutable $day, string $summary = ''): string
+        => "BEGIN:VEVENT\nUID:{$uid}\nDTSTART;VALUE=DATE:" . $day->format('Ymd') . ($summary === '' ? '' : "\nSUMMARY:{$summary}") . "\nEND:VEVENT";
+    $calendar = static fn (array $events): string => implode("\n", ['BEGIN:VCALENDAR', 'VERSION:2.0', ...$events, 'END:VCALENDAR']);
+    $translated = [
+        $allDayEvent('open', $firstDay, 'OPEN'),
+        $allDayEvent('close', $firstDay->modify('+1 day'), 'CLOSE'),
+        $allDayEvent('tea', $firstDay->modify('+2 days'), 'お茶室営業日'),
+        $allDayEvent('tour', $firstDay->modify('+3 months'), 'ガイドツアー開催日'),
+        $allDayEvent('wedding', $firstDay->modify('+6 months'), '結婚式'),
+        $allDayEvent('evening', $firstDay->modify('+11 months'), '夜間特別開館'),
+        $allDayEvent('untitled', $firstDay->modify('+4 days')),
+    ];
+    $body = $calendar([
+        ...$translated,
+        $allDayEvent('before', $firstDay->modify('-1 day'), '先月の催し'),
+        $allDayEvent('extra', $firstDay->modify('+5 days'), '臨時休館'),
+        $allDayEvent('spaced', $firstDay->modify('+6 days'), '  臨時休館 '),
+        $allDayEvent('again', $firstDay->modify('+2 months'), '臨時休館'),
+        $allDayEvent('markup', $firstDay->modify('+11 months +20 days'), '<b>特別展</b>'),
+        $allDayEvent('after', $firstDay->modify('+12 months'), '来年の催し'),
+    ]);
+    $feed->load(true);
+    $adminHtml = $settingsPage();
+    $check($untranslated($adminHtml) === ['titles' => ['臨時休館', '&lt;b&gt;特別展&lt;/b&gt;'], 'complete' => false, 'unreadable' => false], 'The settings page must list, once and escaped, each title of the next 12 months without an English text, and no other title.');
+    $check(!str_contains($adminHtml, 'private-secret') && !str_contains($adminHtml, '<b>特別展'), 'The list of titles leaked the URL or printed markup of a title.');
+    $rename = static function (array $events): array {
+        foreach ($events as $date => $day) {
+            foreach ($day as $index => $event) {
+                $events[$date][$index]['title'] = ['臨時休館' => 'CLOSE', 'OPEN' => '開館日'][trim($event['title'])] ?? $event['title'];
+            }
+        }
+        return $events;
+    };
+    add_filter('museum_calendar_events', $rename);
+    try {
+        $check($untranslated($settingsPage())['titles'] === ['開館日', '&lt;b&gt;特別展&lt;/b&gt;'], 'The list must hold the titles that the site displays, after the museum_calendar_events filter.');
+    } finally {
+        remove_filter('museum_calendar_events', $rename);
+    }
+    add_filter('museum_calendar_events', '__return_null');
+    try {
+        $check($untranslated($settingsPage()) === ['titles' => [], 'complete' => false, 'unreadable' => true], 'Events that cannot be displayed must not read as titles that all have an English text.');
+    } finally {
+        remove_filter('museum_calendar_events', '__return_null');
+    }
+    $body = $calendar($translated);
+    $feed->load(true);
+    $check($untranslated($settingsPage()) === ['titles' => [], 'complete' => true, 'unreadable' => false], 'The settings page must say that every title has an English text.');
+    $mode = 'timeout';
+    $state = get_option(FeedRepository::CACHE);
+    $state['fetched_at'] = time() - FeedRepository::MAX_AGE - 1;
+    $state['attempted_at'] = 0;
+    update_option(FeedRepository::CACHE, $state, false);
+    $before = $requests;
+    $adminHtml = $settingsPage();
+    $check($requests === $before + 1 && $untranslated($adminHtml) === ['titles' => [], 'complete' => false, 'unreadable' => true], 'A feed that cannot be read must be reported in the section.');
+    foreach (['private-secret', 'museum-fixture', 'calendar.google.com', 'Secret URL', 'feed_unavailable'] as $secret) {
+        $check(!str_contains($adminHtml, $secret), 'The settings page printed the URL or the cause of a failed fetch.');
+    }
+    $mode = 'ok';
+
     Settings::save(['url' => 'https://calendar.google.com/museum-fixture/another-secret/basic.ics']);
     $check(get_option(FeedRepository::CACHE, null) === null, 'Changed source retained previous source data.');
     $mode = 'http_error';
@@ -356,6 +431,7 @@ try {
     wp_set_current_user(1);
     Settings::save(['disconnect' => '1']);
     $check(Settings::url() === '' && get_option(FeedRepository::CACHE, null) === null, 'Disconnect did not clear the source and feed.');
+    $check(!str_contains($settingsPage(), '英訳のない予定名'), 'Without an ICS URL the settings page must not list titles.');
 } finally {
     remove_filter('pre_http_request', $mock, 10);
     foreach ($saved as $key => $value) {

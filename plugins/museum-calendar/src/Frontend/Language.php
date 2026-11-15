@@ -62,13 +62,19 @@ enum Language: string
         return sprintf(self::TEXT[$key][$this->value], ...$arguments);
     }
 
+    /** A title as the title table matches it, without the spaces around it. A full-width space counts as a space. */
+    public static function trimmed(string $title): string
+    {
+        return preg_replace('/^\s+|\s+$/u', '', $title) ?? $title;
+    }
+
     /** The text to show for a registered title. Null when this language has no text for it. */
     public function title(string $title): ?string
     {
         if ($this === self::Japanese) {
             return $title;
         }
-        $registered = preg_replace('/^\s+|\s+$/u', '', $title) ?? $title;
+        $registered = self::trimmed($title);
         if ($registered === self::TEXT['untitled'][self::Japanese->value]) {
             return $this->text('untitled');
         }

@@ -3,7 +3,12 @@ declare(strict_types=1);
 
 namespace MuseumCalendar\Admin;
 
+use DateTimeZone;
+use MuseumCalendar\Calendar\EventList;
+use MuseumCalendar\Calendar\Month;
+use MuseumCalendar\Frontend\Language;
 use MuseumCalendar\Ics\FeedRepository;
+use MuseumCalendar\Ics\Source;
 use Throwable;
 use WP_Error;
 
@@ -102,6 +107,9 @@ final class Settings
         if (!current_user_can('manage_options')) {
             return;
         }
+        // Reading the titles can fetch the feed, so it runs before the fetch status is read.
+        $connected = self::url() !== '';
+        $untranslated = $connected ? self::untranslatedTitles() : null;
         $state = get_option(FeedRepository::CACHE, []);
         ?>
         <div class="wrap">
@@ -127,16 +135,57 @@ final class Settings
             <p>最終成功：<?php echo esc_html(self::date((int) ($state['fetched_at'] ?? 0))); ?></p>
             <p>最終試行：<?php echo esc_html(self::date((int) ($state['attempted_at'] ?? 0))); ?></p>
             <?php if (!empty($state['error'])) : ?><p role="alert"><?php echo esc_html($state['error']); ?></p><?php endif; ?>
-            <?php if (self::url() !== '') : ?>
+            <?php if ($connected) : ?>
                 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                     <input type="hidden" name="action" value="museum_calendar_refresh">
                     <?php wp_nonce_field('museum_calendar_refresh'); ?>
                     <?php submit_button('今すぐ更新', 'secondary'); ?>
                 </form>
+                <h2>英訳のない予定名</h2>
+                <p>今月から12か月分の予定のうち、英訳のない予定名は <code>lang="en"</code> を付けたページで日本語のまま表示されます。</p>
+                <?php if ($untranslated === null) : ?>
+                    <p>予定を読み込めないため、英訳のない予定名を確認できません。</p>
+                <?php elseif ($untranslated === []) : ?>
+                    <p>すべての予定名に英訳があります。</p>
+                <?php else : ?>
+                    <ul class="ul-disc">
+                        <?php foreach ($untranslated as $title) : ?>
+                            <li><?php echo esc_html($title); ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
             <?php endif; ?>
             <p>固定ページに <code>[museum_calendar]</code> を置いて表示します。</p>
         </div>
         <?php
+    }
+
+    /**
+     * The titles, from this month through the following 11 months, that an English page prints in Japanese.
+     *
+     * @return list<string>|null Null when the events cannot be read. The cause can hold the ICS URL, so it is dropped.
+     */
+    private static function untranslatedTitles(): ?array
+    {
+        try {
+            $source = new Source((new FeedRepository())->load()['body']);
+            $key = wp_date('Y-m', null, new DateTimeZone('Asia/Tokyo'));
+            $titles = [];
+            for ($count = 0; $count < 12 && $key !== null; $count++) {
+                $month = new Month($key);
+                foreach (EventList::forDisplay($source, $month) as $events) {
+                    foreach ($events as $event) {
+                        if (Language::English->title($event['title']) === null) {
+                            $titles[] = Language::trimmed($event['title']);
+                        }
+                    }
+                }
+                $key = $month->adjacent(1);
+            }
+            return array_values(array_unique($titles));
+        } catch (Throwable $error) {
+            return null;
+        }
     }
 
     private static function date(int $timestamp): string
