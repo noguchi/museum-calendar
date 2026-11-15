@@ -5,7 +5,7 @@
 [![Calendar checks](https://github.com/noguchi/museum-calendar/actions/workflows/ci.yml/badge.svg)](https://github.com/noguchi/museum-calendar/actions/workflows/ci.yml)
 
 WordPress環境、ICSカレンダープラグイン、自動テストをまとめたリポジトリです。
-GoogleカレンダーなどのICS URLを取得し、月間カレンダーに表示します。APIキーは不要です。
+GoogleカレンダーなどのICS URLを取得し、月間カレンダーと本日の予定を表示します。APIキーは不要です。
 英語名は **Museum Calendar for WordPress**、管理画面での略称は **Museum Calendar** です。
 
 ## 起動
@@ -46,6 +46,10 @@ setupを再実行しても既存ページや設定済みICS URLは維持しま�
 2. WordPressの「設定 → Museum Calendar」に貼り付け、「設定を保存」。
 3. 「今すぐ更新」を押し、最終成功日時を確認。
 4. 固定ページに `[museum_calendar]` を置く。確認ページには設定済みです。
+
+`[museum_calendar_today]` は本日の日付、曜日、当日の予定だけを表示します。
+テーマのテンプレートから `do_shortcode()` で呼ぶ場合は、`wp_enqueue_style('museum-calendar')` でスタイルをheadに読み込めます。
+テーマから使えるマークアップは [仕様](docs/specification.md) の「表示」を参照してください。
 
 公開用URLはカレンダーの一般公開設定が必要です。非公開URLは閲覧用の秘密情報なので、Gitや公開ページに書かないでください。
 保存済みURLは設定画面にも再表示しません。空欄で保存すると既存値を維持し、接続解除チェックで消去します。
