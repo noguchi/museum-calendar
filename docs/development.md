@@ -22,25 +22,25 @@ npm run check
 ```
 
 - 確認ページ: http://localhost:8888/?pagename=calendar-demo
-- ICS設定: http://localhost:8888/wp-admin/options-general.php?page=museum-calendar
+- カレンダー設定: http://localhost:8888/wp-admin/options-general.php?page=museum-calendar
 - 開発専用ログイン: `admin` / `password`
 - テスト環境: http://localhost:8889/
 
 Dockerは8888番、8889番、MariaDBのポートをホストの全インターフェースで公開します。信頼できるネットワークでのみ起動してください。
 別の端末から開く設定は[運用手順](operations.md)にあります。
 
-開発環境で実際のカレンダーを読むには、`.env.example` を `.env` にコピーしてICS URLを書きます。
-ICS URLが未登録のときだけ、`npm run setup` と `npm run seed` が登録します。
+開発環境で実際のカレンダーを読むには、`.env.example` を `.env` にコピーし、`MUSEUM_CALENDAR_DEV_CALENDAR_URL` にGoogleカレンダーの公開URLを書きます。
+カレンダーが未登録のときだけ、`npm run setup` と `npm run seed` が登録します。
 テスト環境は `.env` を読まず、`tests/fixtures/museum.ics` を使います。外部には接続しません。
 
 ## 開発コマンド
 
 | コマンド | 内容 |
 | --- | --- |
-| `npm run setup` | 開発用コンテナを起動し、依存を導入して確認ページを作成。再実行しても既存のページとICS URLを維持 |
+| `npm run setup` | 開発用コンテナを起動し、依存を導入して確認ページを作成。再実行しても既存のページと登録済みのカレンダーを維持 |
 | `npm run dev` | 開発用コンテナを起動 |
 | `npm run stop` | 開発・テスト用コンテナを停止（DBのボリュームは保持） |
-| `npm run seed` | 確認ページを作成。設定済みICS接続は維持 |
+| `npm run seed` | 確認ページを作成。登録済みのカレンダーは維持 |
 | `npm run wp -- plugin list` | 開発用コンテナ内でWP-CLIを実行 |
 | `npm run check` | テスト用コンテナで構文、Composer、単体、WordPress統合、ブラウザーテスト |
 | `npm run test:unit` | 日付計算・ICS解析テスト |

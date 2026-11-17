@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Museum Calendar for WordPress
  * Plugin URI: https://github.com/noguchi/museum-calendar
- * Description: ICS形式のカレンダーを取得し、日本時間の月間カレンダーと本日の予定を表示します。
+ * Description: 一般公開したGoogleカレンダーの予定を取得し、日本時間の月間カレンダーと本日の予定を表示します。
  * Version: 0.7.0
  * Requires at least: 7.1.4
  * Requires PHP: 8.5.12
@@ -26,6 +26,7 @@ if (!is_readable(__DIR__ . '/vendor/autoload.php')) {
 require_once __DIR__ . '/vendor/autoload.php';
 
 \MuseumCalendar\Admin\Settings::register();
+add_action('init', [\MuseumCalendar\Admin\Settings::class, 'migrate'], 0);
 
 add_filter('cron_schedules', static function (array $schedules): array {
     $schedules['museum_calendar_quarter_hour'] = ['interval' => 900, 'display' => 'Museum Calendar: 15 minutes'];
@@ -47,7 +48,7 @@ add_action('wp_enqueue_scripts', static function (): void {
 });
 
 add_action('init', static function (): void {
-    if (\MuseumCalendar\Admin\Settings::url() !== '') {
+    if (\MuseumCalendar\Admin\Settings::calendar() !== null) {
         if (!wp_next_scheduled('museum_calendar_refresh_feed')) {
             wp_schedule_event(time() + 900, 'museum_calendar_quarter_hour', 'museum_calendar_refresh_feed');
         }
@@ -63,7 +64,7 @@ add_action('init', static function (): void {
     $renderer = static function (\MuseumCalendar\Frontend\Language $language) use ($notice): \MuseumCalendar\Frontend\Renderer|string {
         $demo = false;
         $stale = '';
-        if (\MuseumCalendar\Admin\Settings::url() !== '') {
+        if (\MuseumCalendar\Admin\Settings::calendar() !== null) {
             try {
                 $feed = (new \MuseumCalendar\Ics\FeedRepository())->load();
                 $source = new \MuseumCalendar\Ics\Source($feed['body']);

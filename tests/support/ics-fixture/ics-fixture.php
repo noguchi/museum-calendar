@@ -5,7 +5,7 @@ if (!defined('ABSPATH') || !defined('MUSEUM_CALENDAR_TEST_FIXTURES') || !MUSEUM_
     return;
 }
 add_filter('pre_http_request', static function ($pre, $args, $url) {
-    if ($url !== 'https://calendar.google.com/museum-fixture/browser/basic.ics') {
+    if ($url !== 'https://calendar.google.com/calendar/ical/museum-fixture%40group.calendar.google.com/public/basic.ics') {
         return $pre;
     }
     return [
