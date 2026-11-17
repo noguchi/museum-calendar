@@ -21,7 +21,7 @@ test('calendar renders events, styles and navigates between months', async ({ pa
   await page.screenshot({ path: testInfo.outputPath('calendar.png'), fullPage: true });
 });
 
-test('administrator can save the ICS URL without exposing it and CSRF is rejected', async ({ page }) => {
+test('administrator sees and saves the public URL of the calendar, and CSRF is rejected', async ({ page }) => {
   await page.goto('/wp-login.php');
   await page.locator('#user_login').fill('admin');
   await page.locator('#user_pass').fill('password');
@@ -29,19 +29,22 @@ test('administrator can save the ICS URL without exposing it and CSRF is rejecte
   await expect(page).toHaveURL(/\/wp-admin\//);
   await page.goto('/wp-admin/options-general.php?page=museum-calendar');
   await expect(page.getByRole('heading', { name: 'Museum Calendar', exact: true })).toBeVisible();
-  await expect(page.getByLabel('ICS URL', { exact: true })).toHaveValue('');
-  await expect(page.getByText('URLは保存済みです。空欄のまま保存すると変更されません。')).toBeVisible();
-  const secret = 'https://calendar.google.com/museum-fixture/browser/basic.ics';
-  expect(await page.content()).not.toContain(secret);
+  const field = page.getByLabel('Googleカレンダーの公開URL', { exact: true });
+  const publicUrl = 'https://calendar.google.com/calendar/embed?src=museum-fixture%40group.calendar.google.com';
+  await expect(field).toHaveAttribute('type', 'text');
+  await expect(field).toHaveValue(publicUrl);
   const invalidPost = await page.request.post('/wp-admin/admin-post.php', {
-    form: { action: 'museum_calendar_save', disconnect: '1' },
+    form: { action: 'museum_calendar_save', url: '' },
   });
   expect(invalidPost.status()).toBe(403);
-  await page.getByLabel('ICS URL', { exact: true }).fill(secret);
+  await field.fill('https://calendar.google.com/calendar/ical/museum-fixture%40group.calendar.google.com/private-secret/basic.ics');
+  await page.getByRole('button', { name: '設定を保存', exact: true }).click();
+  await expect(page.getByText(/URLを保存できませんでした。/)).toBeVisible();
+  await expect(field).toHaveValue(publicUrl);
+  await field.fill(`${publicUrl}&ctz=Asia%2FTokyo`);
   await page.getByRole('button', { name: '設定を保存', exact: true }).click();
   await expect(page.getByText('設定を保存しました。', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('ICS URL', { exact: true })).toHaveValue('');
-  expect(await page.content()).not.toContain(secret);
+  await expect(field).toHaveValue(publicUrl);
   await page.getByRole('button', { name: '今すぐ更新', exact: true }).click();
   await expect(page.getByText(/^最終成功：/)).not.toContainText('未取得');
   await page.screenshot({ path: 'test-results/settings-' + test.info().project.name + '.png', fullPage: true });

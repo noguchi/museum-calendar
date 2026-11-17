@@ -16,8 +16,8 @@ $check = static function (bool $condition, string $message) use (&$checks): void
     $checks++;
 };
 $previous = get_option('museum_calendar_demo', null);
-$previousUrl = get_option('museum_calendar_ics_url', null);
-delete_option('museum_calendar_ics_url');
+$previousCalendar = get_option(\MuseumCalendar\Admin\Settings::OPTION, null);
+delete_option(\MuseumCalendar\Admin\Settings::OPTION);
 try {
     $check(shortcode_exists('museum_calendar') && shortcode_exists('museum_calendar_today'), 'Shortcode registration failed.');
     $check(wp_style_is('museum-calendar', 'registered'), 'Themes need the registered stylesheet handle.');
@@ -549,10 +549,10 @@ try {
     $check($problems === [], 'Rendering without the default stylesheet raised: ' . implode(' / ', $problems));
     $check(str_contains($html, '<table') && str_contains($html, 'museum-calendar-today__date'), 'The shortcodes must render after a theme deregisters the default stylesheet.');
 } finally {
-    if ($previousUrl === null) {
-        delete_option('museum_calendar_ics_url');
+    if ($previousCalendar === null) {
+        delete_option(\MuseumCalendar\Admin\Settings::OPTION);
     } else {
-        update_option('museum_calendar_ics_url', $previousUrl, false);
+        update_option(\MuseumCalendar\Admin\Settings::OPTION, $previousCalendar, false);
     }
     if ($previous === null) {
         delete_option('museum_calendar_demo');

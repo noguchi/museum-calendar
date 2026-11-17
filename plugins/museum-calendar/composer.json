@@ -1,6 +1,6 @@
 {
   "name": "noguchi/museum-calendar",
-  "description": "Read-only ICS calendar for WordPress",
+  "description": "Public Google Calendar for WordPress",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
   "require": { "php": ">=8.5.12", "sabre/vobject": "^4.5" },

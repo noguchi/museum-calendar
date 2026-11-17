@@ -18,8 +18,8 @@ final class FeedRepository
     /** @return array{body:string, fetched_at:int, attempted_at:int, error:string, hash:string, stale:bool} */
     public function load(bool $force = false): array
     {
-        $url = Settings::url();
-        if ($url === '') {
+        $url = Settings::calendar()?->feedUrl();
+        if ($url === null) {
             throw new RuntimeException('not_configured');
         }
         $hash = hash('sha256', $url);
@@ -40,9 +40,6 @@ final class FeedRepository
         try {
             $state['attempted_at'] = time();
             try {
-                if (!Settings::validUrl($url)) {
-                    throw new RuntimeException('invalid_url');
-                }
                 $response = wp_safe_remote_get($url, [
                     'timeout' => 10,
                     'redirection' => 0,
@@ -60,11 +57,11 @@ final class FeedRepository
                 $state['fetched_at'] = time();
                 $state['error'] = '';
             } catch (Throwable $error) {
-                // Exception messages can contain secret URLs or event data.
-                $state['error'] = '更新に失敗しました。URL、共有設定、ICSの形式を確認してください。';
+                // Exception messages can contain event data.
+                $state['error'] = '更新に失敗しました。カレンダーが一般公開され、予定の詳細を表示する設定になっているか確認してください。';
             }
             // A settings change during a request must not restore the old feed.
-            if (hash('sha256', Settings::url()) !== $hash) {
+            if (hash('sha256', Settings::calendar()?->feedUrl() ?? '') !== $hash) {
                 throw new RuntimeException('configuration_changed');
             }
             update_option(self::CACHE, $state, false);
@@ -93,7 +90,7 @@ final class FeedRepository
         try {
             (new self())->load();
         } catch (Throwable $error) {
-            // Status is saved by load(). Do not log credentials from exceptions.
+            // Status is saved by load(). Exceptions can contain event data.
         }
     }
 }

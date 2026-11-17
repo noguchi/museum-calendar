@@ -4,61 +4,68 @@ declare(strict_types=1);
 namespace MuseumCalendar\Admin;
 
 use DateTimeZone;
+use InvalidArgumentException;
 use MuseumCalendar\Calendar\EventList;
 use MuseumCalendar\Calendar\Month;
 use MuseumCalendar\Frontend\Language;
 use MuseumCalendar\Ics\FeedRepository;
+use MuseumCalendar\Ics\GoogleCalendar;
 use MuseumCalendar\Ics\Source;
 use Throwable;
 use WP_Error;
 
 final class Settings
 {
-    public const OPTION = 'museum_calendar_ics_url';
+    public const OPTION = 'museum_calendar_google_calendar';
+    /** Up to 0.7.0 the plugin stored an iCal URL, often the secret one, under this name. */
+    public const LEGACY_OPTION = 'museum_calendar_ics_url';
 
-    public static function url(): string
+    public static function calendar(): ?GoogleCalendar
     {
-        return (string) get_option(self::OPTION, '');
+        $id = get_option(self::OPTION, '');
+        try {
+            return is_string($id) && $id !== '' ? new GoogleCalendar($id) : null;
+        } catch (InvalidArgumentException $error) {
+            return null;
+        }
     }
 
-    public static function validUrl(string $url): bool
+    /**
+     * Keeps the calendar ID of a Google iCal URL saved by 0.7.0 or earlier and deletes the URL, including any secret token.
+     * The legacy option outlives this update only when the site went back to 0.7.0, so its calendar is the newer choice.
+     */
+    public static function migrate(): void
     {
-        $parts = wp_parse_url($url);
-        if (!is_array($parts) || empty($parts['host'])) {
-            return false;
+        $legacy = get_option(self::LEGACY_OPTION, null);
+        if ($legacy === null) {
+            return;
         }
-        $host = strtolower($parts['host']);
-        if ($host === 'localhost' || str_ends_with($host, '.localhost') || str_ends_with($host, '.local')) {
-            return false;
+        if (is_string($legacy)
+            && preg_match('#^https://(?:calendar|www)\.google\.com/calendar/ical/([^/?\#]+)/(?:public|private-[^/?\#]+)/basic\.ics$#', $legacy, $match)) {
+            try {
+                update_option(self::OPTION, (new GoogleCalendar(rawurldecode($match[1])))->id, false);
+            } catch (InvalidArgumentException $error) {
+                // Not a Google calendar ID. The administrator enters the public URL again.
+            }
         }
-        // wp_http_validate_url permits the site's own host. Explicitly reject
-        // private addresses as well, including when WordPress itself is local.
-        $address = gethostbyname($host);
-        if (!filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-            return false;
-        }
-        return strlen($url) <= 2048 && !preg_match('/[\x00-\x20\x7f]/', $url)
-            && is_array($parts) && ($parts['scheme'] ?? '') === 'https'
-            && !isset($parts['user']) && !isset($parts['pass'])
-            && !isset($parts['fragment']) && (!isset($parts['port']) || $parts['port'] === 443)
-            && wp_http_validate_url($url) !== false;
+        delete_option(self::LEGACY_OPTION);
+        FeedRepository::clear();
     }
 
-    /** Empty input preserves the secret. A separate checkbox disconnects it. */
+    /** An empty URL disconnects the calendar and deletes its saved events. */
     public static function save(array $input): true|WP_Error
     {
         if (!current_user_can('manage_options')) {
             return new WP_Error('forbidden', '設定を変更する権限がありません。');
         }
-        $url = !empty($input['disconnect']) ? '' : (is_string($input['url'] ?? null) ? trim($input['url']) : '');
-        if ($url === '' && empty($input['disconnect'])) {
-            return true;
+        $url = is_string($input['url'] ?? null) ? trim($input['url']) : '';
+        try {
+            $id = $url === '' ? '' : GoogleCalendar::fromUrl($url)->id;
+        } catch (InvalidArgumentException $error) {
+            return new WP_Error('invalid_url', 'Googleカレンダーの公開URLを指定してください。');
         }
-        if ($url !== '' && !self::validUrl($url)) {
-            return new WP_Error('invalid_url', '公開インターネット上のHTTPS形式のICS URLを指定してください。');
-        }
-        if ($url !== self::url()) {
-            update_option(self::OPTION, $url, false);
+        if ($id !== (self::calendar()?->id ?? '')) {
+            update_option(self::OPTION, $id, false);
             FeedRepository::clear();
         }
         update_option('museum_calendar_demo', false);
@@ -108,27 +115,26 @@ final class Settings
             return;
         }
         // Reading the titles can fetch the feed, so it runs before the fetch status is read.
-        $connected = self::url() !== '';
+        $connected = self::calendar() !== null;
         $untranslated = $connected ? self::untranslatedTitles() : null;
         $state = get_option(FeedRepository::CACHE, []);
         ?>
         <div class="wrap">
             <h1>Museum Calendar</h1>
-            <p>GoogleカレンダーなどのICS URLを登録すると、予定のタイトルと時間をサイトに表示します。</p>
+            <p>一般公開したGoogleカレンダーの予定のタイトルと時間をサイトに表示します。</p>
             <p>表示時刻は日本時間。通常15分ごとに更新し、取得失敗時は最長24時間まで前回の予定を表示します。</p>
             <?php if (($_GET['result'] ?? '') === 'saved') : ?>
                 <div class="notice notice-success"><p>設定を保存しました。</p></div>
             <?php elseif (($_GET['result'] ?? '') === 'invalid') : ?>
-                <div class="notice notice-error"><p>URLを保存できませんでした。公開インターネット上のHTTPS URLを指定してください。</p></div>
+                <div class="notice notice-error"><p>URLを保存できませんでした。Googleカレンダーの「このカレンダーの公開URL」を指定してください。</p></div>
             <?php endif; ?>
             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                 <input type="hidden" name="action" value="museum_calendar_save">
                 <?php wp_nonce_field('museum_calendar_save'); ?>
-                <p><label for="museum-ics-url"><strong>ICS URL</strong></label></p>
-                <input type="password" id="museum-ics-url" name="url" value="" class="large-text" autocomplete="new-password" spellcheck="false">
-                <p><?php echo self::url() === '' ? '未設定です。' : 'URLは保存済みです。空欄のまま保存すると変更されません。'; ?></p>
-                <p>非公開URLは閲覧用の秘密情報です。保存済みURLは画面に再表示しません。掲載してよい予定だけを含むカレンダーを指定してください。</p>
-                <p><label><input type="checkbox" name="disconnect" value="1">接続を解除し、保存済みの予定を消去する</label></p>
+                <p><label for="museum-calendar-url"><strong>Googleカレンダーの公開URL</strong></label></p>
+                <input type="text" id="museum-calendar-url" name="url" value="<?php echo esc_attr(self::calendar()?->publicUrl() ?? ''); ?>" class="large-text code" spellcheck="false">
+                <p>Googleカレンダーの「設定と共有 → 予定のアクセス権限」で「一般公開して誰でも利用できるようにする」をオンにし、「すべての予定の詳細を表示」を選びます。「カレンダーの統合」にある「このカレンダーの公開URL」を貼り付けてください。</p>
+                <p>公開URLは誰でも開けます。掲載してよい予定だけを含むカレンダーを指定してください。空欄にして保存すると接続を解除し、保存済みの予定を消去します。</p>
                 <?php submit_button('設定を保存'); ?>
             </form>
             <h2>取得状況</h2>
@@ -163,7 +169,7 @@ final class Settings
     /**
      * The titles, from this month through the following 11 months, that an English page prints in Japanese.
      *
-     * @return list<string>|null Null when the events cannot be read. The cause can hold the ICS URL, so it is dropped.
+     * @return list<string>|null Null when the events cannot be read. The cause can hold event data, so it is dropped.
      */
     private static function untranslatedTitles(): ?array
     {

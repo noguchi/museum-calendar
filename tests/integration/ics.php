@@ -11,7 +11,7 @@ if (!defined('WP_CLI') || !WP_CLI || wp_get_environment_type() !== 'development'
     exit(1);
 }
 $saved = [];
-foreach ([Settings::OPTION, FeedRepository::CACHE, FeedRepository::LOCK, 'museum_calendar_demo'] as $key) {
+foreach ([Settings::OPTION, Settings::LEGACY_OPTION, FeedRepository::CACHE, FeedRepository::LOCK, 'museum_calendar_demo'] as $key) {
     $saved[$key] = get_option($key, null);
     delete_option($key);
 }
@@ -29,7 +29,7 @@ $body = $fixture;
 $mode = 'ok';
 $requests = 0;
 $mock = static function ($pre, $args, $url) use (&$body, &$mode, &$requests, $check) {
-    if (!str_contains($url, '/museum-fixture/')) {
+    if (!str_contains($url, 'museum-fixture')) {
         return $pre;
     }
     $requests++;
@@ -41,33 +41,35 @@ $mock = static function ($pre, $args, $url) use (&$body, &$mode, &$requests, $ch
     return ['response' => ['code' => $mode === 'http_error' ? 403 : 200], 'body' => $body, 'headers' => []];
 };
 add_filter('pre_http_request', $mock, 10, 3);
-$url = 'https://calendar.google.com/museum-fixture/private-secret/basic.ics';
+$url = 'https://calendar.google.com/calendar/embed?src=museum-fixture%40group.calendar.google.com';
 $feed = new FeedRepository();
 try {
-    foreach (['http://calendar.google.com/a.ics', 'https://127.0.0.1/a.ics', 'https://localhost/a.ics', 'https://169.254.169.254/a.ics', 'https://user:password@calendar.google.com/a.ics', 'https://calendar.google.com:8443/a.ics', 'file:///etc/passwd'] as $badUrl) {
-        $check(is_wp_error(Settings::save(['url' => $badUrl])), 'Unsafe URL was accepted.');
+    $check(has_action('init', [Settings::class, 'migrate']) === 0, 'The update from 0.7.0 must run before the calendar is read.');
+    foreach (['https://calendar.google.com/calendar/ical/museum-fixture%40group.calendar.google.com/private-secret/basic.ics', 'http://calendar.google.com/calendar/embed?src=museum-fixture%40group.calendar.google.com', 'https://127.0.0.1/calendar/embed?src=museum-fixture%40group.calendar.google.com'] as $badUrl) {
+        $check(is_wp_error(Settings::save(['url' => $badUrl])), 'A URL other than a public Google Calendar URL was accepted.');
     }
-    $check(Settings::save(['url' => $url]) === true, 'Valid HTTPS URL was rejected.');
-    $check(Settings::save(['url' => '']) === true && Settings::url() === $url, 'Empty field must keep the secret.');
-    $check(!get_option('museum_calendar_demo'), 'ICS settings must disable demo data.');
+    $check(Settings::calendar() === null && $requests === 0, 'A rejected URL was saved or fetched.');
+    $check(Settings::save(['url' => $url]) === true && Settings::calendar()?->publicUrl() === $url, 'The public URL was rejected.');
+    $check(!get_option('museum_calendar_demo'), 'A calendar must disable demo data.');
     $first = $feed->load();
     $check($first['body'] === $fixture && !$first['stale'], 'First fetch failed.');
     $feed->load();
     $check($requests === 1, 'Fresh cache made another HTTP request.');
+    $check(Settings::save(['url' => Settings::calendar()->feedUrl()]) === true && get_option(FeedRepository::CACHE, null) !== null, 'The iCal address of the same calendar discarded its events.');
     $html = do_shortcode('[museum_calendar month="2026-11"]');
     $check(str_contains($html, '日時変更ガイド') && str_contains($html, '終日展示'), 'ICS events were not rendered.');
-    $check(!str_contains($html, '動作確認用サンプル') && !str_contains($html, 'private-secret'), 'Demo label or secret leaked.');
+    $check(!str_contains($html, '動作確認用サンプル') && !str_contains($html, 'museum-fixture'), 'Demo label or the calendar URL reached the page.');
 
     ob_start();
     Settings::page();
     $adminHtml = ob_get_clean();
-    $check(!str_contains($adminHtml, 'private-secret'), 'Stored URL leaked into settings HTML.');
+    $check(str_contains($adminHtml, '<input type="text" id="museum-calendar-url" name="url" value="' . esc_attr($url) . '"'), 'The settings field must show the public URL as text.');
     $check(str_contains($adminHtml, '_wpnonce') && str_contains($adminHtml, '最終成功'), 'Admin form/status missing.');
 
     $mode = 'timeout';
     $stale = $feed->load(true);
     $check($stale['stale'] && $stale['body'] === $fixture, 'Failed fetch discarded last good data.');
-    $check(!str_contains($stale['error'], $url), 'Error exposed a secret URL.');
+    $check(!str_contains($stale['error'], 'museum-fixture'), 'An error exposed the calendar URL.');
     $tokyo = new DateTimeZone('Asia/Tokyo');
     $fetched = (new DateTimeImmutable('@' . $stale['fetched_at']))->setTimezone($tokyo)->format('Y/m/d H:i');
     $staleJapanese = '更新を確認できていないため、前回取得した予定を表示しています。最終取得：' . $fetched . '（日本時間）';
@@ -79,7 +81,7 @@ try {
     $check(str_starts_with($html, '<section class="museum-calendar" id="museum-calendar" aria-label="Monthly calendar" lang="en">' . "\n" . '<p class="museum-calendar__notice" role="status">' . $staleEnglish . '</p>' . "\n"), 'An English month must say in English that the data is stale and when it was fetched.');
     $check(str_contains($html, '<li data-title="一日休館"><strong lang="ja">一日休館</strong><span>All day</span></li>'), 'An English month must print an ICS title without an English text as registered.');
     $check(str_contains($html, '<li data-title="日時変更ガイド"><strong lang="ja">日時変更ガイド</strong><span>14:00–15:00</span></li>'), 'An English month must keep the hours of an ICS event.');
-    $check(!str_contains($html, '終日<') && !str_contains($html, '前回取得') && !str_contains($html, 'private-secret'), 'An English month printed Japanese text of the plugin or the secret.');
+    $check(!str_contains($html, '終日<') && !str_contains($html, '前回取得') && !str_contains($html, 'museum-fixture'), 'An English month printed Japanese text of the plugin or the calendar URL.');
     $html = do_shortcode('[museum_calendar_today lang="en"]');
     $check(str_starts_with($html, '<section class="museum-calendar-today" aria-label="Today&#039;s schedule" lang="en">' . "\n" . '<p class="museum-calendar-today__notice" role="status">' . $staleEnglish . '</p>' . "\n"), 'An English today must say in English that the data is stale.');
     $before = $requests;
@@ -278,8 +280,8 @@ try {
             'label=[一日休館] [一日休館] []',
             'event=[第2火曜講座] [13:00–15:00] timed [13:00] [15:00] [note for 第2火曜講座]',
         );
-        foreach (['private-secret', 'museum-fixture', 'calendar.google.com'] as $secret) {
-            $check(!str_contains($month . $december . $today . $tuesday . $englishMonth . $englishToday, $secret), 'A theme template could read the ICS URL.');
+        foreach (['museum-fixture', 'calendar.google.com'] as $secret) {
+            $check(!str_contains($month . $december . $today . $tuesday . $englishMonth . $englishToday, $secret), 'A theme template could read the calendar URL.');
         }
 
         add_filter('museum_calendar_fixture_throws', '__return_true');
@@ -338,6 +340,9 @@ try {
     $untranslated = static function (string $html) use ($check): array {
         $section = explode('<h2>英訳のない予定名</h2>', $html);
         $check(count($section) === 2, 'The settings page must have one section for the titles without an English text.');
+        foreach (['museum-fixture', 'calendar.google.com', 'Secret URL', 'feed_unavailable'] as $secret) {
+            $check(!str_contains($section[1], $secret), 'The list of titles printed the calendar URL or the cause of a failed fetch.');
+        }
         $check(str_contains($section[1], '<code>lang="en"</code>') && str_contains($section[1], '日本語のまま表示'), 'The section must say what happens to its titles on an English page.');
         preg_match_all('/<li>(.*?)<\/li>/s', $section[1], $items);
         return ['titles' => $items[1], 'complete' => str_contains($section[1], 'すべての予定名に英訳があります。'), 'unreadable' => str_contains($section[1], '予定を読み込めないため')];
@@ -368,7 +373,7 @@ try {
     $feed->load(true);
     $adminHtml = $settingsPage();
     $check($untranslated($adminHtml) === ['titles' => ['臨時休館', '&lt;b&gt;特別展&lt;/b&gt;'], 'complete' => false, 'unreadable' => false], 'The settings page must list, once and escaped, each title of the next 12 months without an English text, and no other title.');
-    $check(!str_contains($adminHtml, 'private-secret') && !str_contains($adminHtml, '<b>特別展'), 'The list of titles leaked the URL or printed markup of a title.');
+    $check(!str_contains($adminHtml, '<b>特別展'), 'The list of titles printed markup of a title.');
     $rename = static function (array $events): array {
         foreach ($events as $date => $day) {
             foreach ($day as $index => $event) {
@@ -400,12 +405,12 @@ try {
     $before = $requests;
     $adminHtml = $settingsPage();
     $check($requests === $before + 1 && $untranslated($adminHtml) === ['titles' => [], 'complete' => false, 'unreadable' => true], 'A feed that cannot be read must be reported in the section.');
-    foreach (['private-secret', 'museum-fixture', 'calendar.google.com', 'Secret URL', 'feed_unavailable'] as $secret) {
-        $check(!str_contains($adminHtml, $secret), 'The settings page printed the URL or the cause of a failed fetch.');
+    foreach (['Secret URL', 'feed_unavailable'] as $secret) {
+        $check(!str_contains($adminHtml, $secret), 'The settings page printed the cause of a failed fetch.');
     }
     $mode = 'ok';
 
-    Settings::save(['url' => 'https://calendar.google.com/museum-fixture/another-secret/basic.ics']);
+    Settings::save(['url' => 'https://calendar.google.com/calendar/embed?src=museum-fixture-another%40group.calendar.google.com']);
     $check(get_option(FeedRepository::CACHE, null) === null, 'Changed source retained previous source data.');
     $mode = 'http_error';
     $check(str_contains(do_shortcode('[museum_calendar]'), '現在、予定を取得できません'), 'Initial HTTP failure was not handled.');
@@ -423,15 +428,35 @@ try {
     $state['body'] = 'not a calendar';
     update_option(FeedRepository::CACHE, $state, false);
     $html = do_shortcode('[museum_calendar_today]');
-    $check(str_contains($html, '本日の予定を表示できません') && !str_contains($html, 'another-secret'), 'Unreadable feed was not handled by the today shortcode.');
+    $check(str_contains($html, '本日の予定を表示できません') && !str_contains($html, 'museum-fixture'), 'Unreadable feed was not handled by the today shortcode.');
 
     wp_set_current_user(0);
-    $check(is_wp_error(Settings::save(['disconnect' => '1'])), 'Unauthorized settings change was allowed.');
-    $check(Settings::url() !== '', 'Unauthorized request changed configuration.');
+    $check(is_wp_error(Settings::save(['url' => ''])), 'Unauthorized settings change was allowed.');
+    $check(Settings::calendar() !== null, 'Unauthorized request changed configuration.');
     wp_set_current_user(1);
-    Settings::save(['disconnect' => '1']);
-    $check(Settings::url() === '' && get_option(FeedRepository::CACHE, null) === null, 'Disconnect did not clear the source and feed.');
-    $check(!str_contains($settingsPage(), '英訳のない予定名'), 'Without an ICS URL the settings page must not list titles.');
+    Settings::save(['url' => '']);
+    $check(Settings::calendar() === null && get_option(FeedRepository::CACHE, null) === null, 'An empty URL did not clear the calendar and feed.');
+    $check(!str_contains($settingsPage(), '英訳のない予定名'), 'Without a calendar the settings page must not list titles.');
+
+    $migrated = static function (string $legacy) use ($check): ?string {
+        update_option(Settings::LEGACY_OPTION, $legacy, false);
+        update_option(FeedRepository::CACHE, ['body' => 'events of the secret feed'], false);
+        Settings::migrate();
+        $check(get_option(Settings::LEGACY_OPTION, null) === null && get_option(FeedRepository::CACHE, null) === null, 'The update kept the 0.7.0 URL or its events.');
+        return Settings::calendar()?->id;
+    };
+    $id = 'museum-fixture@group.calendar.google.com';
+    $check($migrated('https://calendar.google.com/calendar/ical/museum-fixture%40group.calendar.google.com/private-0123abcd/basic.ics') === $id, 'The update lost the calendar of a secret iCal URL.');
+    Settings::migrate();
+    $check(Settings::calendar()?->id === $id, 'Running the update again changed the calendar.');
+    $another = 'museum-fixture-another@group.calendar.google.com';
+    $check($migrated('https://calendar.google.com/calendar/ical/museum-fixture-another%40group.calendar.google.com/public/basic.ics') === $another, 'Updating again after going back to 0.7.0 kept the older calendar.');
+    Settings::save(['url' => '']);
+    $check($migrated('https://www.google.com/calendar/ical/museum-fixture%40group.calendar.google.com/public/basic.ics') === $id, 'The update lost the calendar of an older public iCal URL.');
+    Settings::save(['url' => '']);
+    $check($migrated('https://calendar.google.com/calendar/ical/museum-fixture%40group.calendar.google.com/public/basic.ics') === $id, 'The update lost the calendar of a public iCal URL.');
+    Settings::save(['url' => '']);
+    $check($migrated('https://example.com/museum.ics') === null, 'The update made a calendar from a URL that is not Google Calendar.');
 } finally {
     remove_filter('pre_http_request', $mock, 10);
     foreach ($saved as $key => $value) {
