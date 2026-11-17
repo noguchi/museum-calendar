@@ -42,6 +42,16 @@ Git対象外の `.wp-env.override.json` に次のように書き、`npm run dev`
 これはローカルのコンテナの更新です。本番の更新、バックアップ、配備は自動化していません。
 **旧版から新版へのDB移行テストは未実装**です。本番を更新する前に、旧版のDBを複製して新版へ移行する検証を追加してください。
 
+## ステージングへの配備
+
+mainへのpushで「Calendar checks」が成功すると、「Deploy to staging」（`.github/workflows/deploy-staging.yml`）がそのZIPをステージングのWordPressに配備します。
+
+- 配備先はリポジトリ変数 `STAGING_URL`、ログインはシークレット `STAGING_WP_USER` と `STAGING_WP_PASSWORD`。リポジトリには書きません。
+- `scripts/deploy-staging.mjs` がPlaywrightで管理画面にログインし、「プラグインのアップロード」でZIPを上書きして有効化します。
+- 続けて、プラグインのVersion、設定ページの公開URL欄とカレンダーの登録、「今すぐ更新」の成否、トップページの月間カレンダーと本日の予定を確認します。どれかが満たされないと失敗し、画面の画像を `staging-failure` として残します。
+- 手元から実行するには、`npm run package` の後に `STAGING_URL=… STAGING_WP_USER=… STAGING_WP_PASSWORD=… node scripts/deploy-staging.mjs dist/museum-calendar-<版>.zip`。
+- 配備先を変えるときは、変数とシークレットを `gh variable set` と `gh secret set` で更新します。確認はトップページに両方のショートコードがある前提です。
+
 ## 0.7.0以前からの更新
 
 - 更新後の最初のリクエストで、保存済みのiCal形式のURL（`museum_calendar_ics_url`）からカレンダーIDだけを取り出して登録し、URLと取得済みの予定を削除します。
