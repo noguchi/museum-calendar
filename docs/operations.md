@@ -52,6 +52,15 @@ mainへのpushで「Calendar checks」が成功すると、「Deploy to staging�
 - 手元から実行するには、`npm run package` の後に `STAGING_URL=… STAGING_WP_USER=… STAGING_WP_PASSWORD=… node scripts/deploy-staging.mjs dist/museum-calendar-<版>.zip`。
 - 配備先を変えるときは、変数とシークレットを `gh variable set` と `gh secret set` で更新します。確認はトップページに両方のショートコードがある前提です。
 
+### 実サイトのトップページの写し
+
+ステージングのトップページは、旧古河邸サイトのトップページの写しです（作り方は[開発の手引き](development.md#実サイトのトップページ)）。テーマは `otani-museum2026`、フロントページは固定ページ `top` です。
+
+- `npm run site:package` が `dist/site-theme-otani-museum2026.zip`（テーマ）と `dist/site-seed.zip`（種データのプラグイン）を作ります。
+- テーマを変えたら、管理画面の「テーマのアップロード」でテーマのZIPを上書きします。
+- 記事や画像を作り直すときだけ、`site-seed.zip` を「プラグインのアップロード」で入れて有効化します。有効化のときに不足分だけを作り、既存のページ・投稿・画像は変えません。作成後は無効化します。
+- 元に戻すには、テーマをTwenty Twenty-Fiveに切り替え、「設定 → 表示設定」でフロントページを元のページに戻します。
+
 ## 0.7.0以前からの更新
 
 - 更新後の最初のリクエストで、保存済みのiCal形式のURL（`museum_calendar_ics_url`）からカレンダーIDだけを取り出して登録し、URLと取得済みの予定を削除します。

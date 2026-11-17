@@ -41,6 +41,8 @@ Dockerは8888番、8889番、MariaDBのポートをホストの全インター�
 | `npm run dev` | 開発用コンテナを起動 |
 | `npm run stop` | 開発・テスト用コンテナを停止（DBのボリュームは保持） |
 | `npm run seed` | 確認ページを作成。登録済みのカレンダーは維持 |
+| `npm run site` | 開発環境を実サイトのトップページの写しにする（下記）。再実行しても既存のページ・投稿・画像を維持 |
+| `npm run site:package` | ステージング用に、写しのテーマと種データのZIPをdistに生成 |
 | `npm run wp -- plugin list` | 開発用コンテナ内でWP-CLIを実行 |
 | `npm run check` | テスト用コンテナで構文、Composer、単体、WordPress統合、ブラウザーテスト |
 | `npm run test:unit` | 日付計算・ICS解析テスト |
@@ -48,6 +50,23 @@ Dockerは8888番、8889番、MariaDBのポートをホストの全インター�
 | `npm run test:e2e` | PC/スマホの表示と管理画面操作。画像は `test-results` に保存 |
 | `npm run package` | vendorを含むプラグインZIPをdistに生成 |
 | `npm run check:updates` | WordPress公開最新版を確認（更新はしない） |
+
+## 実サイトのトップページ
+
+カレンダーを実サイトのデザインの中で調整するために、旧古河邸サイトのトップページ（日本語 `/` と英語 `/en/`）の写しを開発環境とステージングに作れます。
+テーマと画像は公開リポジトリに含められないので、Git対象外の `.local/site/` に置きます。
+
+| 場所 | 内容 |
+| --- | --- |
+| `.local/site/theme/otani-museum2026/` | 本番テーマの作業用の写し。`inc/top.php` の `otaniRenderCalendar()` と `otaniRenderToday()` だけを、このプラグインのショートコードを呼ぶように変えてある |
+| `.local/site/seed/posts.json` | NEWSに並べる記事のタイトル・日付・カテゴリ |
+| `.local/site/seed/images/*.jpg` | Photo Galleryの画像 |
+| `.wp-env.override.json` | 上のテーマを開発環境に載せる指定（`"themes": ["./.local/site/theme/otani-museum2026"]`）。Git対象外 |
+
+- `npm run site` は、開発環境を日本語にしてテーマを有効にし、固定ページ（`top`・`news`・`en`・`gallery`）、記事、画像を作って `top` をフロントページにします（`scripts/site-seed.php`）。確認は http://localhost:8888/ と http://localhost:8888/en/ 。
+- テーマはコンテナにそのまま載るので、`.local/site/theme` の編集はすぐ表示に反映されます。カレンダーのマークアップは、テーマの `museum-calendar/month.php` と `today.php` で差し替えます（[仕様](specification.md)の「テンプレートの差し替え」）。
+- テスト環境（8889）はこの写しを使いません。`.wp-env.override.json` も読みません。
+- ステージングへの反映は[運用手順](operations.md#実サイトのトップページの写し)にあります。
 
 ## 依存関係と配布
 

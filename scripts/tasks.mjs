@@ -77,6 +77,13 @@ try {
       break;
     case 'dev': wpEnv(['start']); break;
     case 'seed': seed(); break;
+    case 'site':
+      wpEnv(['start']);
+      // The real site is in Japanese. The development site starts in English.
+      wpEnv(['run', 'cli', 'wp', 'language', 'core', 'install', 'ja', '--activate']);
+      wpEnv(['run', 'cli', 'wp', 'eval-file', '/var/www/html/workspace/scripts/site-seed.php']);
+      console.log('トップページ: http://localhost:8888/');
+      break;
     case 'wp': wpEnv(['run', 'cli', 'wp', ...process.argv.slice(3)]); break;
     case 'stop':
       stopEnvironment();

@@ -10,6 +10,8 @@
     "dev": "node scripts/tasks.mjs dev",
     "stop": "node scripts/tasks.mjs stop",
     "seed": "node scripts/tasks.mjs seed",
+    "site": "node scripts/tasks.mjs site",
+    "site:package": "node scripts/site-package.mjs",
     "wp": "node scripts/tasks.mjs wp",
     "check": "node scripts/tasks.mjs check",
     "test:unit": "node scripts/tasks.mjs unit",
