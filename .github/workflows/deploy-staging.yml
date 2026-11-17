@@ -1,0 +1,47 @@
+name: Deploy to staging
+on:
+  workflow_run:
+    workflows: [Calendar checks]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - uses: actions/download-artifact@v4
+        with:
+          name: museum-calendar-zip
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - run: node scripts/deploy-staging.mjs dist/museum-calendar-*.zip
+        env:
+          STAGING_URL: ${{ vars.STAGING_URL }}
+          STAGING_WP_USER: ${{ secrets.STAGING_WP_USER }}
+          STAGING_WP_PASSWORD: ${{ secrets.STAGING_WP_PASSWORD }}
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: staging-failure
+          path: test-results/
+          if-no-files-found: ignore
