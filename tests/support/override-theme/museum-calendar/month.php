@@ -25,6 +25,8 @@ $lines = [
     'previous=' . $link($previous),
     'next=' . $link($next),
     'empty=' . ($empty ? 'yes' : 'no'),
+    'lang=' . $lang,
+    'text=' . implode(' | ', array_map(static fn (string $key, string $value): string => $key . ': ' . $value, array_keys($text), $text)),
     'weeks=' . implode(',', array_map('count', $weeks)),
     'outside=' . count(array_filter(array_merge(...$weeks), 'is_null')),
 ];
@@ -44,6 +46,7 @@ foreach (array_filter(array_merge(...$weeks)) as $cell) {
             $event['end'],
             $event['fixture_note'] ?? '',
         );
+        $lines[] = sprintf('label=%s [%s] [%s] [%s]', $cell['date'], $event['title'], $event['label'], $event['label_lang']);
     }
 }
 echo "<pre class=\"override-month\">\n" . esc_html(implode("\n", $lines)) . "\n</pre>\n";

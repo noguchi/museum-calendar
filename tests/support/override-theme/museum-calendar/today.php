@@ -19,6 +19,8 @@ $lines = [
     'today=' . $today->format('Y-m-d') . ' ' . $today->getTimezone()->getName(),
     'date=' . $date,
     'weekday=' . $weekday,
+    'lang=' . $lang,
+    'text=' . implode(' | ', array_map(static fn (string $key, string $value): string => $key . ': ' . $value, array_keys($text), $text)),
 ];
 foreach ($events as $event) {
     $lines[] = sprintf(
@@ -30,6 +32,7 @@ foreach ($events as $event) {
         $event['end'],
         $event['fixture_note'] ?? '',
     );
+    $lines[] = sprintf('label=[%s] [%s] [%s]', $event['title'], $event['label'], $event['label_lang']);
 }
 echo "<pre class=\"override-today\">\n" . esc_html(implode("\n", $lines)) . "\n</pre>\n";
 echo '<pre class="override-today-dump">' . esc_html(print_r($variables, true)) . "</pre>\n";

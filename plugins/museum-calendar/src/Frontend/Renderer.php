@@ -14,8 +14,13 @@ use Throwable;
 
 final class Renderer
 {
-    public function __construct(private EventSource $source, private bool $demo = false, private string $notice = '')
-    {
+    /** @param string $notice Text in the language of this renderer. Empty for none. */
+    public function __construct(
+        private EventSource $source,
+        private bool $demo = false,
+        private string $notice = '',
+        private Language $language = Language::Japanese,
+    ) {
     }
 
     /** @param int $firstWeekday ISO 8601 weekday number of the first column */
@@ -57,7 +62,7 @@ final class Renderer
                 'label' => self::monthText('F', $adjacent),
             ];
         };
-        return $this->frame('museum-calendar', ' id="museum-calendar" aria-label="月間カレンダー"', self::template('month', [
+        return $this->frame('museum-calendar', ' id="museum-calendar"', 'month_label', self::template('month', [
             'month' => $month->key(),
             'label' => self::monthText(_x('F Y', 'monthly archives date format'), $month->key()),
             'weekdays' => $weekdays,
@@ -65,6 +70,11 @@ final class Renderer
             'previous' => $link(-1),
             'next' => $link(1),
             'empty' => $empty,
+            'lang' => $this->language->value,
+            'text' => [
+                'scroll_label' => $this->language->text('scroll_label'),
+                'empty' => $this->language->text('empty_month'),
+            ],
         ]));
     }
 
@@ -73,11 +83,13 @@ final class Renderer
     {
         $tokyo = new DateTimeZone('Asia/Tokyo');
         $today = $today->setTimezone($tokyo);
-        return $this->frame('museum-calendar-today', ' aria-label="本日の予定"', self::template('today', [
+        return $this->frame('museum-calendar-today', '', 'today_label', self::template('today', [
             'today' => $today,
             'date' => wp_date($dateFormat, $today->getTimestamp(), $tokyo),
             'weekday' => self::weekdayName((int) $today->format('N')),
             'events' => $this->events(new Month($today->format('Y-m')))[$today->format('Y-m-d')] ?? [],
+            'lang' => $this->language->value,
+            'text' => ['empty' => $this->language->text('empty_today')],
         ]));
     }
 
@@ -95,17 +107,22 @@ final class Renderer
         return $locale->get_weekday_abbrev($locale->get_weekday($weekday % 7));
     }
 
+    /** The display keys are added after the filter, so a value that a filter put in them is replaced. */
     private function events(Month $month): array
     {
-        return EventList::fromFilter(apply_filters('museum_calendar_events', $this->source->forMonth($month), $month->key()));
+        return array_map(
+            fn (array $events): array => array_map($this->language->event(...), $events),
+            EventList::forDisplay($this->source, $month),
+        );
     }
 
     /** The section and both notices stay out of the templates, so a theme template cannot drop them. */
-    private function frame(string $class, string $attributes, string $content): string
+    private function frame(string $class, string $attributes, string $label, string $content): string
     {
-        $html = '<section class="' . $class . '"' . $attributes . ">\n";
+        $html = '<section class="' . $class . '"' . $attributes . ' aria-label="' . esc_attr($this->language->text($label)) . '"'
+            . $this->language->attribute() . ">\n";
         if ($this->demo) {
-            $html .= '<p class="' . $class . '__demo">動作確認用サンプル — 実際の開館情報ではありません</p>' . "\n";
+            $html .= '<p class="' . $class . '__demo">' . esc_html($this->language->text('demo')) . '</p>' . "\n";
         }
         if ($this->notice !== '') {
             $html .= '<p class="' . $class . '__notice" role="status">' . esc_html($this->notice) . '</p>' . "\n";

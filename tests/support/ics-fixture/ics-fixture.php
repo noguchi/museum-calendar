@@ -14,3 +14,9 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
         'body' => file_get_contents(ABSPATH . 'workspace/tests/fixtures/museum.ics'),
     ];
 }, 10, 3);
+
+// The test site installs no language pack. These two filters let switch_to_locale('ja') load the names in ja.l10n.php.
+add_filter('get_available_languages', static fn (array $languages): array => array_values(array_unique([...$languages, 'ja'])));
+add_filter('load_translation_file', static function (string $file, string $domain, string $locale): string {
+    return $domain === 'default' && $locale === 'ja' && basename($file) === 'ja.l10n.php' ? __DIR__ . '/ja.l10n.php' : $file;
+}, 10, 3);

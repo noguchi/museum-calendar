@@ -10,6 +10,12 @@ final class EventList
 {
     private const DEFAULTS = ['time' => '', 'all_day' => false, 'start' => '', 'end' => ''];
 
+    /** The events of a month as the site displays them, after the `museum_calendar_events` filter. */
+    public static function forDisplay(EventSource $source, Month $month): array
+    {
+        return self::fromFilter(apply_filters('museum_calendar_events', $source->forMonth($month), $month->key()));
+    }
+
     /**
      * Checks what a `museum_calendar_events` callback returned.
      *

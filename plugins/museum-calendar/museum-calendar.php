@@ -57,76 +57,86 @@ add_action('init', static function (): void {
     // A theme that calls do_shortcode() from a template runs too late for the head, so it enqueues this handle itself.
     wp_register_style('museum-calendar', plugins_url('assets/calendar.css', __FILE__), [], '0.7.0');
 
-    $renderer = static function (): \MuseumCalendar\Frontend\Renderer|string {
+    $notice = static fn (\MuseumCalendar\Frontend\Language $language, string $key, string $role = ''): string
+        => '<p class="museum-calendar-notice"' . $role . $language->attribute() . '>' . esc_html($language->text($key)) . '</p>';
+
+    $renderer = static function (\MuseumCalendar\Frontend\Language $language) use ($notice): \MuseumCalendar\Frontend\Renderer|string {
         $demo = false;
-        $notice = '';
+        $stale = '';
         if (\MuseumCalendar\Admin\Settings::url() !== '') {
             try {
                 $feed = (new \MuseumCalendar\Ics\FeedRepository())->load();
                 $source = new \MuseumCalendar\Ics\Source($feed['body']);
                 if ($feed['stale']) {
-                    $notice = '更新を確認できていないため、前回取得した予定を表示しています。最終取得：'
-                        . wp_date('Y/m/d H:i', $feed['fetched_at'], new \DateTimeZone('Asia/Tokyo')) . '（日本時間）';
+                    $stale = $language->text('stale', wp_date('Y/m/d H:i', $feed['fetched_at'], new \DateTimeZone('Asia/Tokyo')));
                 }
             } catch (\Throwable $error) {
-                return '<p class="museum-calendar-notice" role="status">現在、予定を取得できません。時間をおいてご確認ください。</p>';
+                return $notice($language, 'unavailable', ' role="status"');
             }
         } elseif (in_array(wp_get_environment_type(), ['local', 'development'], true) && get_option('museum_calendar_demo', false)) {
             $source = new \MuseumCalendar\Calendar\DemoSource();
             $demo = true;
         } else {
-            return '<p class="museum-calendar-notice">カレンダーの接続が設定されていません。</p>';
+            return $notice($language, 'not_connected');
         }
-        return new \MuseumCalendar\Frontend\Renderer($source, $demo, $notice);
+        return new \MuseumCalendar\Frontend\Renderer($source, $demo, $stale, $language);
     };
 
-    add_shortcode('museum_calendar', static function ($attributes) use ($renderer): string {
-        $attributes = shortcode_atts(['month' => ''], (array) $attributes, 'museum_calendar');
-        $requested = $attributes['month'];
-        $queryMonth = $_GET['museum_month'] ?? '';
-        if ($requested === '' && is_string($queryMonth)) {
-            $requested = sanitize_text_field(wp_unslash($queryMonth));
-        }
-        $today = new \DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo'));
-        try {
-            $month = new \MuseumCalendar\Calendar\Month($requested ?: $today->format('Y-m'));
-        } catch (\InvalidArgumentException $exception) {
-            return '<p class="museum-calendar-notice">年月の指定が正しくありません。</p>';
-        }
-        $calendar = $renderer();
-        if (is_string($calendar)) {
-            return $calendar;
-        }
-        wp_enqueue_style('museum-calendar');
-        // WordPress numbers the weekdays 0 (Sunday) to 6. The plugin uses ISO 8601 numbers, where Sunday is 7.
-        $startOfWeek = filter_var(get_option('start_of_week'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 6]]);
-        $firstWeekday = match ($startOfWeek) {
-            false => 1,
-            0 => 7,
-            default => $startOfWeek,
-        };
-        try {
-            return $calendar->render($month, $today, $attributes['month'] === '', $firstWeekday);
-        } catch (\Throwable $error) {
-            return '<p class="museum-calendar-notice" role="status">この月の予定を表示できません。</p>';
-        }
+    // The language is unknown when the attribute is invalid, so that notice is in the plugin's own language.
+    $inLanguage = static function (string $lang, callable $render) use ($notice): string {
+        $language = \MuseumCalendar\Frontend\Language::fromAttribute($lang);
+        return $language === null
+            ? $notice(\MuseumCalendar\Frontend\Language::Japanese, 'invalid_language')
+            : $language->withLocale(static fn (): string => $render($language));
+    };
+
+    add_shortcode('museum_calendar', static function ($attributes) use ($renderer, $notice, $inLanguage): string {
+        $attributes = shortcode_atts(['month' => '', 'lang' => ''], (array) $attributes, 'museum_calendar');
+        return $inLanguage($attributes['lang'], static function (\MuseumCalendar\Frontend\Language $language) use ($attributes, $renderer, $notice): string {
+            $requested = $attributes['month'];
+            $queryMonth = $_GET['museum_month'] ?? '';
+            if ($requested === '' && is_string($queryMonth)) {
+                $requested = sanitize_text_field(wp_unslash($queryMonth));
+            }
+            $today = new \DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo'));
+            try {
+                $month = new \MuseumCalendar\Calendar\Month($requested ?: $today->format('Y-m'));
+            } catch (\InvalidArgumentException $exception) {
+                return $notice($language, 'invalid_month');
+            }
+            $calendar = $renderer($language);
+            if (is_string($calendar)) {
+                return $calendar;
+            }
+            wp_enqueue_style('museum-calendar');
+            // WordPress numbers the weekdays 0 (Sunday) to 6. The plugin uses ISO 8601 numbers, where Sunday is 7.
+            $startOfWeek = filter_var(get_option('start_of_week'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 6]]);
+            $firstWeekday = match ($startOfWeek) {
+                false => 1,
+                0 => 7,
+                default => $startOfWeek,
+            };
+            try {
+                return $calendar->render($month, $today, $attributes['month'] === '', $firstWeekday);
+            } catch (\Throwable $error) {
+                return $notice($language, 'month_failed', ' role="status"');
+            }
+        });
     });
 
-    add_shortcode('museum_calendar_today', static function () use ($renderer): string {
-        $calendar = $renderer();
-        if (is_string($calendar)) {
-            return $calendar;
-        }
-        wp_enqueue_style('museum-calendar');
-        // wp_date() returns an empty string for an empty format, so an unusable option falls back to the Japanese WordPress default.
-        $dateFormat = get_option('date_format');
-        if (!is_string($dateFormat) || $dateFormat === '') {
-            $dateFormat = 'Y年n月j日';
-        }
-        try {
-            return $calendar->renderToday(new \DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo')), $dateFormat);
-        } catch (\Throwable $error) {
-            return '<p class="museum-calendar-notice" role="status">本日の予定を表示できません。</p>';
-        }
+    add_shortcode('museum_calendar_today', static function ($attributes) use ($renderer, $notice, $inLanguage): string {
+        $attributes = shortcode_atts(['lang' => ''], (array) $attributes, 'museum_calendar_today');
+        return $inLanguage($attributes['lang'], static function (\MuseumCalendar\Frontend\Language $language) use ($renderer, $notice): string {
+            $calendar = $renderer($language);
+            if (is_string($calendar)) {
+                return $calendar;
+            }
+            wp_enqueue_style('museum-calendar');
+            try {
+                return $calendar->renderToday(new \DateTimeImmutable('now', new \DateTimeZone('Asia/Tokyo')), $language->dateFormat(get_option('date_format')));
+            } catch (\Throwable $error) {
+                return $notice($language, 'today_failed', ' role="status"');
+            }
+        });
     });
 });
