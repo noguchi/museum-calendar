@@ -53,7 +53,7 @@ ICS URLが未登録のときだけ、`npm run setup` と `npm run seed` が登�
 
 - ルートのComposerはPHPUnitなど開発用。`plugins/museum-calendar/composer.json` はsabre/vobjectなど実行用で、こちらのvendorだけを配布ZIPに含めます。
 - 対応バージョンの下限は本番環境の現行版です。変えるときは、プラグインヘッダー、2つの `composer.json`（`require` と `platform`）、両方のcomposer.lock、README、仕様をそろえます。
-- GitHub ActionsがPRとmainへの変更を検証し、`v*` タグで配布ZIPを生成します。本番への自動配備は行いません。
+- GitHub ActionsがPRとmainへの変更を検証します。プラグインのVersionと同じ番号の `v*` タグ（例: `v0.7.0`）をpushすると、`npm run check` の後に配布ZIPを作り、GitHub Releasesに添付します。タグとVersionが一致しない場合は失敗します。本番への自動配備は行いません。
 
 ## 関連資料
 

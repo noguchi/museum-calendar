@@ -1,15 +1,24 @@
-name: Build plugin ZIP
+name: Release plugin ZIP
 on:
   push:
     tags: ['v*']
 permissions:
   contents: read
 jobs:
-  package:
+  release:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+      - name: Check tag matches plugin version
+        run: |
+          version="$(sed -n 's/^ \* Version:[[:space:]]*\([0-9.]*\).*/\1/p' plugins/museum-calendar/museum-calendar.php)"
+          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match plugin version ${version}."
+            exit 1
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
@@ -18,8 +27,9 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run check
       - run: npm run package
-      - uses: actions/upload-artifact@v4
-        with:
-          name: museum-calendar
-          path: dist/*.zip
-          if-no-files-found: error
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/museum-calendar-*.zip \
+            --verify-tag --title "${GITHUB_REF_NAME}" --generate-notes
