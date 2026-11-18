@@ -59,7 +59,7 @@ Dockerは8888番、8889番、MariaDBのポートをホストの全インター�
 
 | 場所 | 内容 |
 | --- | --- |
-| `.local/site/theme/otani-museum2026/` | 本番テーマから、本日の予定とカレンダーの表示に要るものだけを残した写し。`front-page.php` は本番と同じ入れ物（`p-topMv__today` と `p-topInfo__calendar`）に2つのショートコードだけを出す。`assets/css/` は本番のまま |
+| `.local/site/theme/otani-museum2026/` | 本番テーマから、本日の予定とカレンダーの表示に要るものだけを残した写し。`front-page.php` は本番と同じ入れ物（`p-topMv__today` と `p-topInfo__calendar`）に2つのショートコードだけを出す。`assets/css/` は本番のまま。メインビジュアルが無いので、`inc/enqueue.php` でその枠の高さだけを外し、本日の予定をページの先頭に出す |
 | `.wp-env.override.json` | 上のテーマを開発環境に載せる指定（`"themes": ["./.local/site/theme/otani-museum2026"]`）。Git対象外 |
 
 - `npm run site` は、開発環境を日本語にしてテーマを有効にし、固定ページ `top` と `en` を作って `top` をフロントページにします（`scripts/site-seed.php`）。確認は http://localhost:8888/ と http://localhost:8888/en/ 。
