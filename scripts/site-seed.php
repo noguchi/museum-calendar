@@ -1,6 +1,6 @@
 <?php
 /**
- * Builds the copy of the real site's front page from .local/site/seed. Idempotent: it keeps pages, posts and images it finds.
+ * Builds the copy of the real site's front page from .local/site/seed. It imports no images: the copy shows HTML and CSS only. Idempotent: it keeps pages and posts it finds.
  * Runs through WP-CLI in the development environment, and from the activation of the staging seed plugin.
  */
 if (!defined('ABSPATH')) {
@@ -9,46 +9,15 @@ if (!defined('ABSPATH')) {
 
 function museum_calendar_site_seed(string $seed, string $theme): void
 {
-    require_once ABSPATH . 'wp-admin/includes/file.php';
-    require_once ABSPATH . 'wp-admin/includes/media.php';
-    require_once ABSPATH . 'wp-admin/includes/image.php';
-
     if (!wp_get_theme($theme)->exists()) {
         throw new RuntimeException("テーマ {$theme} がありません。");
     }
-    // The theme registers the image sizes the gallery needs, so it has to be active before the images are imported.
     if (get_stylesheet() !== $theme) {
         switch_theme($theme);
-        do_action('after_setup_theme');
     }
-
-    $images = [];
-    foreach (glob($seed . '/images/*.jpg') ?: [] as $file) {
-        $name = basename($file);
-        $found = get_posts(['post_type' => 'attachment', 'meta_key' => '_museum_calendar_site_seed', 'meta_value' => $name, 'fields' => 'ids', 'numberposts' => 1]);
-        if ($found) {
-            $images[] = $found[0];
-            continue;
-        }
-        $copy = wp_tempnam($name);
-        copy($file, $copy);
-        $id = media_handle_sideload(['name' => $name, 'tmp_name' => $copy], 0);
-        if (is_wp_error($id)) {
-            throw new RuntimeException($id->get_error_message());
-        }
-        update_post_meta($id, '_museum_calendar_site_seed', $name);
-        $images[] = $id;
-    }
-
-    $gallery = '<!-- wp:gallery {"linkTo":"media"} --><figure class="wp-block-gallery has-nested-images columns-default is-cropped">';
-    foreach ($images as $id) {
-        $url = wp_get_attachment_url($id);
-        $gallery .= sprintf('<!-- wp:image {"id":%1$d,"sizeSlug":"large","linkDestination":"media"} --><figure class="wp-block-image size-large"><a href="%2$s"><img src="%2$s" alt="" class="wp-image-%1$d"/></a></figure><!-- /wp:image -->', $id, esc_url($url));
-    }
-    $gallery .= '</figure><!-- /wp:gallery -->';
 
     $pages = [];
-    foreach (['top' => ['トップ', ''], 'news' => ['NEWS', ''], 'en' => ['English', ''], 'gallery' => ['フォトギャラリー', $gallery]] as $slug => [$title, $content]) {
+    foreach (['top' => ['トップ', ''], 'news' => ['NEWS', ''], 'en' => ['English', ''], 'gallery' => ['フォトギャラリー', '']] as $slug => [$title, $content]) {
         $page = get_page_by_path($slug, OBJECT, 'page');
         $pages[$slug] = $page ? $page->ID : wp_insert_post(['post_type' => 'page', 'post_status' => 'publish', 'post_name' => $slug, 'post_title' => $title, 'post_content' => $content], true);
         if (is_wp_error($pages[$slug])) {
@@ -110,5 +79,5 @@ if (defined('WP_CLI') && WP_CLI) {
     } catch (Throwable $error) {
         WP_CLI::error($error->getMessage());
     }
-    WP_CLI::success('実サイトのトップページを準備しました。既存のページ・投稿・画像は維持しています。');
+    WP_CLI::success('実サイトのトップページを準備しました。既存のページ・投稿は維持しています。');
 }
