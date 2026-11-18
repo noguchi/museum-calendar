@@ -46,7 +46,8 @@ Git対象外の `.wp-env.override.json` に次のように書き、`npm run dev`
 
 mainへのpushで「Calendar checks」が成功すると、「Deploy to staging」（`.github/workflows/deploy-staging.yml`）がそのZIPをステージングのWordPressに配備します。
 
-- 配備先はリポジトリ変数 `STAGING_URL`、ログインはシークレット `STAGING_WP_USER` と `STAGING_WP_PASSWORD`。リポジトリには書きません。
+- 配備先はリポジトリ変数 `STAGING_URL`。現在の値は [README](../README.md) の冒頭にあります。
+- ログインはシークレット `STAGING_WP_USER` と `STAGING_WP_PASSWORD`。ログイン情報はリポジトリに書きません。
 - `scripts/deploy-staging.mjs` がPlaywrightで管理画面にログインし、「プラグインのアップロード」でZIPを上書きして有効化します。
 - 続けて、プラグインのVersion、設定ページの公開URL欄とカレンダーの登録、「今すぐ更新」の成否、トップページの月間カレンダーと本日の予定を確認します。どれかが満たされないと失敗し、画面の画像を `staging-failure` として残します。
 - 手元から実行するには、`npm run package` の後に `STAGING_URL=… STAGING_WP_USER=… STAGING_WP_PASSWORD=… node scripts/deploy-staging.mjs dist/museum-calendar-<版>.zip`。

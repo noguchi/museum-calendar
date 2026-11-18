@@ -3,6 +3,25 @@
 一般公開したGoogleカレンダーから予定を取得し、月間カレンダーと本日の予定をWordPressのページに表示するプラグインです。
 APIキーやGoogleへのログインは不要です。
 
+## ステージングと開発環境
+
+ステージング: https://collaborative-macaw-b043ed.instawp.site
+
+mainへのpushでチェックが通ると、最新のプラグインがステージングに配備されます。
+
+開発環境はDocker（wp-env）で動きます。Docker、Node.js、npmを用意して、次を実行します。
+
+```sh
+npm ci
+npm run setup
+```
+
+- 確認ページ: http://localhost:8888/?pagename=calendar-demo
+- 管理画面: http://localhost:8888/wp-admin/ （開発専用ログイン: `admin` / `password`）
+- 2回目以降の起動は `npm run dev`、停止は `npm run stop`
+
+必要なバージョンとテストの実行方法は[開発の手引き](docs/development.md)、配備の仕組みは[運用手順](docs/operations.md)にあります。
+
 ## 必要なもの
 
 - WordPress 7.1.4以上、PHP 8.5.12以上、MariaDB 10.11.18以上
