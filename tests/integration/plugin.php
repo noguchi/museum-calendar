@@ -101,7 +101,7 @@ try {
         $check($sunday['rows'][0] === ['-', '-', '2 2026-12-01', '3 2026-12-02', '4 2026-12-03', '5 2026-12-04', '6 2026-12-05'], 'Tuesday 1 December 2026 must sit in the third Sunday-first column.');
         $check($sunday['rows'][1][0] === '7 2026-12-06' && $sunday['rows'][4] === ['7 2026-12-27', '1 2026-12-28', '2 2026-12-29', '3 2026-12-30', '4 2026-12-31', '-', '-'], 'Sunday-first dates must sit under their weekday.');
         $check(str_contains($html, '<caption>December 2026</caption>') && !str_contains($html, 'museum-calendar__nav'), 'A fixed month must still render without navigation when the week starts on Sunday.');
-        $check(preg_match('/<td data-weekday="1"[^>]*>\s*<time datetime="2026-12-07">7<\/time>\s*<ul>\s*<li data-title="休館">/', $html) === 1, 'The Monday sample must stay on Mondays when the week starts on Sunday.');
+        $check(preg_match('/<td data-weekday="1"[^>]*>\s*<time datetime="2026-12-07">7<\/time>\s*<ul>\s*<li data-title="休館" data-kind="other">/', $html) === 1, 'The Monday sample must stay on Mondays when the week starts on Sunday.');
         $html = do_shortcode('[museum_calendar]');
         $check($grid($html)['labels'] === 'Sun Mon Tue Wed Thu Fri Sat', 'The current month must follow the week start.');
         $check(preg_match('/<td data-weekday="' . $now->format('N') . '" aria-current="date">\s*<time datetime="' . $today . '">/', $html) === 1, 'Today must keep its weekday when the week starts on Sunday.');
@@ -156,7 +156,7 @@ try {
     $check(!str_contains($html, '<script>'), 'Event title was not escaped.');
     $check(!str_contains($html, '<img'), 'Event time was not escaped.');
     $check(str_contains($html, '&lt;script&gt;'), 'Escaped text was lost.');
-    $check(str_contains($html, '<li data-title="&lt;script&gt;alert(1)&lt;/script&gt;">'), 'Event title attribute is missing or unescaped.');
+    $check(str_contains($html, '<li data-title="&lt;script&gt;alert(1)&lt;/script&gt;" data-kind="other">'), 'Event title attribute is missing or unescaped.');
     $check(str_contains($html, '<section class="museum-calendar" id="museum-calendar"'), 'Calendar anchor is missing.');
     $check(substr_count($html, 'aria-current="date"') === 1 && preg_match($currentCell, $html) === 1, 'Today must be the only current cell.');
     preg_match_all('/<a href="([^"]*)"/', $html, $links);
@@ -223,7 +223,7 @@ try {
     $order = array_map(static fn (string $item) => strpos($html, $item), ['<strong>Zebra</strong>', '<strong>&lt;script&gt;alert(1)&lt;/script&gt;</strong>', '<strong>Alpha</strong>']);
     $check(!in_array(false, $order, true) && $order[0] < $order[1] && $order[1] < $order[2], 'Today must list its events in source order.');
     $check(!str_contains($html, '<script>') && !str_contains($html, '<img'), 'Today event was not escaped.');
-    $check(str_contains($html, '<li data-title="&lt;script&gt;alert(1)&lt;/script&gt;">'), 'Today event title attribute is missing or unescaped.');
+    $check(str_contains($html, '<li data-title="&lt;script&gt;alert(1)&lt;/script&gt;" data-kind="other">'), 'Today event title attribute is missing or unescaped.');
     $check(!str_contains($html, 'Tomorrow'), 'Today must not list another day.');
     $check(!str_contains($html, '本日の予定はありません') && !str_contains($html, '動作確認用サンプル') && !str_contains($html, 'role="status"'), 'Today showed a message that does not apply.');
     $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'Y年n月j日');
@@ -251,7 +251,7 @@ try {
     add_filter('museum_calendar_events', $edit, 10, 2);
     try {
         $html = (new Renderer($source))->render(new Month('2026-11'), new DateTimeImmutable('2026-11-15 12:00', $tokyo));
-        $check(str_contains($html, '<li data-title="Zulu"><strong>Zulu</strong><span>終日</span></li>') && !str_contains($html, 'Zebra'), 'A filter must be able to rename an event in the month.');
+        $check(str_contains($html, '<li data-title="Zulu" data-kind="other"><strong>Zulu</strong><span>終日</span></li>') && !str_contains($html, 'Zebra'), 'A filter must be able to rename an event in the month.');
         $check(!str_contains($html, 'script') && !str_contains($html, 'Tomorrow'), 'A filter must be able to remove events from the month.');
         $check(strpos($html, '<strong>Alpha</strong>') < strpos($html, '<strong>Zulu</strong>'), 'A filter must be able to reorder the events of a day in the month.');
         $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo), 'n/j');
@@ -304,13 +304,13 @@ try {
     $check(str_starts_with($html, sprintf($monthSection, 'Monthly calendar', ' lang="en"', $sampleNote)), 'An English month must declare its language on the section and label the sample in English.');
     $check(str_contains($html, '<div class="museum-calendar__scroll" tabindex="0" role="region" aria-label="Monthly schedule (scrolls sideways)">'), 'An English month must label its scroll region in English.');
     $check(str_contains($html, '<caption>February 2024</caption>') && substr_count($html, '<time datetime=') === 29, 'An English month must show the requested month.');
-    $check(substr_count($html, '<li data-title="休館"><strong lang="ja">休館</strong><span>All day</span></li>') === 4, 'A title without an English text must stay as registered, marked as Japanese, next to the English all-day time.');
-    $check(substr_count($html, '<li data-title="開館"><strong lang="ja">開館</strong><span>10:30–16:30</span></li>') === 25, 'An English month must leave a time with hours as it is.');
+    $check(substr_count($html, '<li data-title="休館" data-kind="other"><strong lang="ja">休館</strong><span>All day</span></li>') === 4, 'A title without an English text must stay as registered, marked as Japanese, next to the English all-day time.');
+    $check(substr_count($html, '<li data-title="開館" data-kind="other"><strong lang="ja">開館</strong><span>10:30–16:30</span></li>') === 25, 'An English month must leave a time with hours as it is.');
     $allEnglish($html, 'The month');
     $html = do_shortcode('[museum_calendar month="2024-02"]');
     $check(str_starts_with($html, sprintf($monthSection, '月間カレンダー', '', '動作確認用サンプル — 実際の開館情報ではありません')) && !str_contains($html, ' lang='), 'A month without lang must keep its Japanese text and declare no language.');
     $check(str_contains($html, '<div class="museum-calendar__scroll" tabindex="0" role="region" aria-label="月間予定表（横にスクロールできます）">'), 'A month without lang must keep the Japanese label of its scroll region.');
-    $check(substr_count($html, '<li data-title="休館"><strong>休館</strong><span>終日</span></li>') === 4, 'A month without lang must keep the markup of its events.');
+    $check(substr_count($html, '<li data-title="休館" data-kind="other"><strong>休館</strong><span>終日</span></li>') === 4, 'A month without lang must keep the markup of its events.');
     $check(do_shortcode('[museum_calendar month="2024-02" lang=""]') === $html, 'An empty lang must render as no lang.');
 
     $dateFormat = get_option('date_format');
@@ -322,7 +322,7 @@ try {
         $check(str_starts_with($html, sprintf($todaySection, 'Today&#039;s schedule', ' lang="en"', $sampleNote)), 'An English today must declare its language on the section and label the sample in English.');
         $check(str_contains($html, $dateLine($today, $now->format('D, M j'))), 'An English today must print the date as D, M j, whatever the date format is.');
         foreach ($samples as $title) {
-            $check(str_contains($html, '<li data-title="' . $title . '"><strong lang="ja">' . $title . '</strong><span>'), "An English today must keep the registered title of {$title}.");
+            $check(str_contains($html, '<li data-title="' . $title . '" data-kind="other"><strong lang="ja">' . $title . '</strong><span>'), "An English today must keep the registered title of {$title}.");
         }
         $check(str_contains($html, '<span>All day</span>') === ($samples === ['休館']), 'An English today must print the all-day time in English.');
         $allEnglish($html, 'Today');
@@ -452,6 +452,8 @@ try {
                     $timed(' ガイドツアー開催日 '),
                     $allDay('結婚式'),
                     $timed('夜間特別開館'),
+                    $timed('コンサート'),
+                    $timed('　イベント'),
                     $timed('臨時休館'),
                     $timed('<b>特別展</b>'),
                     $timed('（無題）'),
@@ -460,27 +462,31 @@ try {
         }
     };
     $sunday = new DateTimeImmutable('2026-11-15 12:00', $tokyo);
-    $closed = '<li data-title="CLOSE"><strong>CLOSED</strong><span>All day</span></li>';
+    $closed = '<li data-title="CLOSE" data-kind="closed"><strong>CLOSED</strong><span>All day</span></li>';
     $englishItems = [
-        '<li data-title="OPEN"><strong>OPEN</strong><span>10:00–16:00</span></li>',
-        '<li data-title="お茶室営業日"><strong>Tea Room Open</strong><span>10:00–16:00</span></li>',
-        '<li data-title=" ガイドツアー開催日 "><strong>Guided Tour</strong><span>10:00–16:00</span></li>',
-        '<li data-title="結婚式"><strong>Wedding</strong><span>All day</span></li>',
-        '<li data-title="夜間特別開館"><strong>Special Evening Opening</strong><span>10:00–16:00</span></li>',
-        '<li data-title="臨時休館"><strong lang="ja">臨時休館</strong><span>10:00–16:00</span></li>',
-        '<li data-title="&lt;b&gt;特別展&lt;/b&gt;"><strong lang="ja">&lt;b&gt;特別展&lt;/b&gt;</strong><span>10:00–16:00</span></li>',
-        '<li data-title="（無題）"><strong>(Untitled)</strong><span>10:00–16:00</span></li>',
+        '<li data-title="OPEN" data-kind="open"><strong>OPEN</strong><span>10:00–16:00</span></li>',
+        '<li data-title="お茶室営業日" data-kind="tea"><strong>Tea Room Open</strong><span>10:00–16:00</span></li>',
+        '<li data-title=" ガイドツアー開催日 " data-kind="tour"><strong>Guided Tour</strong><span>10:00–16:00</span></li>',
+        '<li data-title="結婚式" data-kind="wedding"><strong>Wedding</strong><span>All day</span></li>',
+        '<li data-title="夜間特別開館" data-kind="evening"><strong>Special Evening Opening</strong><span>10:00–16:00</span></li>',
+        '<li data-title="コンサート" data-kind="concert"><strong>Concert</strong><span>10:00–16:00</span></li>',
+        '<li data-title="　イベント" data-kind="event"><strong>Event</strong><span>10:00–16:00</span></li>',
+        '<li data-title="臨時休館" data-kind="other"><strong lang="ja">臨時休館</strong><span>10:00–16:00</span></li>',
+        '<li data-title="&lt;b&gt;特別展&lt;/b&gt;" data-kind="other"><strong lang="ja">&lt;b&gt;特別展&lt;/b&gt;</strong><span>10:00–16:00</span></li>',
+        '<li data-title="（無題）" data-kind="other"><strong>(Untitled)</strong><span>10:00–16:00</span></li>',
     ];
     $japaneseItems = [
-        '<li data-title="CLOSE"><strong>CLOSE</strong><span>終日</span></li>',
-        '<li data-title="OPEN"><strong>OPEN</strong><span>10:00–16:00</span></li>',
-        '<li data-title="お茶室営業日"><strong>お茶室営業日</strong><span>10:00–16:00</span></li>',
-        '<li data-title=" ガイドツアー開催日 "><strong> ガイドツアー開催日 </strong><span>10:00–16:00</span></li>',
-        '<li data-title="結婚式"><strong>結婚式</strong><span>終日</span></li>',
-        '<li data-title="夜間特別開館"><strong>夜間特別開館</strong><span>10:00–16:00</span></li>',
-        '<li data-title="臨時休館"><strong>臨時休館</strong><span>10:00–16:00</span></li>',
-        '<li data-title="&lt;b&gt;特別展&lt;/b&gt;"><strong>&lt;b&gt;特別展&lt;/b&gt;</strong><span>10:00–16:00</span></li>',
-        '<li data-title="（無題）"><strong>（無題）</strong><span>10:00–16:00</span></li>',
+        '<li data-title="CLOSE" data-kind="closed"><strong>CLOSE</strong><span>終日</span></li>',
+        '<li data-title="OPEN" data-kind="open"><strong>OPEN</strong><span>10:00–16:00</span></li>',
+        '<li data-title="お茶室営業日" data-kind="tea"><strong>お茶室営業日</strong><span>10:00–16:00</span></li>',
+        '<li data-title=" ガイドツアー開催日 " data-kind="tour"><strong> ガイドツアー開催日 </strong><span>10:00–16:00</span></li>',
+        '<li data-title="結婚式" data-kind="wedding"><strong>結婚式</strong><span>終日</span></li>',
+        '<li data-title="夜間特別開館" data-kind="evening"><strong>夜間特別開館</strong><span>10:00–16:00</span></li>',
+        '<li data-title="コンサート" data-kind="concert"><strong>コンサート</strong><span>10:00–16:00</span></li>',
+        '<li data-title="　イベント" data-kind="event"><strong>　イベント</strong><span>10:00–16:00</span></li>',
+        '<li data-title="臨時休館" data-kind="other"><strong>臨時休館</strong><span>10:00–16:00</span></li>',
+        '<li data-title="&lt;b&gt;特別展&lt;/b&gt;" data-kind="other"><strong>&lt;b&gt;特別展&lt;/b&gt;</strong><span>10:00–16:00</span></li>',
+        '<li data-title="（無題）" data-kind="other"><strong>（無題）</strong><span>10:00–16:00</span></li>',
     ];
     $listed = static function (string $html, array $items, string $where) use ($check): void {
         $check(substr_count($html, '<li') === count($items), "{$where} lists the wrong number of events.");
@@ -510,7 +516,7 @@ try {
         foreach ($events as $date => $day) {
             foreach ($day as $index => $event) {
                 $title = ['OPEN' => 'CLOSE', '臨時休館' => '休館日'][$event['title']] ?? $event['title'];
-                $events[$date][$index] = ['title' => $title, 'label' => 'Label of a filter', 'label_lang' => 'fr'] + $event;
+                $events[$date][$index] = ['title' => $title, 'label' => 'Label of a filter', 'label_lang' => 'fr', 'kind' => 'wedding'] + $event;
             }
         }
         return $events;
@@ -521,13 +527,15 @@ try {
             (new Renderer($facility, false, '', Language::English))->render(new Month('2026-11'), $sunday),
             (new Renderer($facility, false, '', Language::English))->renderToday($sunday, 'D, M j'),
         ] as $html) {
-            $check(str_contains($html, '<li data-title="CLOSE"><strong>CLOSED</strong><span>10:00–16:00</span></li>') && !str_contains($html, 'data-title="OPEN"'), 'An English label must follow the title that a filter set.');
-            $check(str_contains($html, '<li data-title="休館日"><strong lang="ja">休館日</strong><span>10:00–16:00</span></li>') && !str_contains($html, '臨時休館'), 'A title that a filter set and that has no English text must be marked as Japanese.');
+            $check(str_contains($html, '<li data-title="CLOSE" data-kind="closed"><strong>CLOSED</strong><span>10:00–16:00</span></li>') && !str_contains($html, 'data-title="OPEN"'), 'An English label must follow the title that a filter set.');
+            $check(str_contains($html, '<li data-title="休館日" data-kind="other"><strong lang="ja">休館日</strong><span>10:00–16:00</span></li>') && !str_contains($html, '臨時休館'), 'A title that a filter set and that has no English text must be marked as Japanese.');
             $check(str_contains($html, '<strong>Tea Room Open</strong>') && !str_contains($html, 'Label of a filter') && !str_contains($html, 'lang="fr"'), 'The label and its language must not come from a filter.');
+            $check(substr_count($html, 'data-kind="wedding"') === 1, 'The kind must come from the title, not from a filter.');
         }
         foreach ([(new Renderer($facility))->render(new Month('2026-11'), $sunday), (new Renderer($facility))->renderToday($sunday, 'n/j')] as $html) {
-            $check(str_contains($html, '<li data-title="CLOSE"><strong>CLOSE</strong><span>10:00–16:00</span></li>') && str_contains($html, '<li data-title="休館日"><strong>休館日</strong>'), 'Without lang the label must be the title that a filter set.');
+            $check(str_contains($html, '<li data-title="CLOSE" data-kind="closed"><strong>CLOSE</strong><span>10:00–16:00</span></li>') && str_contains($html, '<li data-title="休館日" data-kind="other"><strong>休館日</strong>'), 'Without lang the label must be the title that a filter set.');
             $check(!str_contains($html, 'Label of a filter') && !str_contains($html, ' lang='), 'Without lang the label and its language must not come from a filter.');
+            $check(substr_count($html, 'data-kind="wedding"') === 1, 'Without lang the kind must come from the title, not from a filter.');
         }
     } finally {
         remove_filter('museum_calendar_events', $rename);

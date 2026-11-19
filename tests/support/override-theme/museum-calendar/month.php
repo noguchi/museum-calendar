@@ -47,6 +47,7 @@ foreach (array_filter(array_merge(...$weeks)) as $cell) {
             $event['fixture_note'] ?? '',
         );
         $lines[] = sprintf('label=%s [%s] [%s] [%s]', $cell['date'], $event['title'], $event['label'], $event['label_lang']);
+        $lines[] = sprintf('kind=%s [%s] [%s]', $cell['date'], $event['title'], $event['kind']);
     }
 }
 echo "<pre class=\"override-month\">\n" . esc_html(implode("\n", $lines)) . "\n</pre>\n";

@@ -76,11 +76,11 @@ try {
     $staleEnglish = 'Updates could not be confirmed, so the previously fetched schedule is shown. Last fetched: ' . $fetched . ' (Japan time)';
     $html = do_shortcode('[museum_calendar month="2026-11"]');
     $check(str_starts_with($html, '<section class="museum-calendar" id="museum-calendar" aria-label="月間カレンダー">' . "\n" . '<p class="museum-calendar__notice" role="status">' . $staleJapanese . '</p>' . "\n"), 'Stale data was shown without its notice and the time of the last fetch.');
-    $check(str_contains($html, '<li data-title="一日休館"><strong>一日休館</strong><span>終日</span></li>') && !str_contains($html, ' lang='), 'A month without lang must print the ICS events as before.');
+    $check(str_contains($html, '<li data-title="一日休館" data-kind="other"><strong>一日休館</strong><span>終日</span></li>') && !str_contains($html, ' lang='), 'A month without lang must print the ICS events as before.');
     $html = do_shortcode('[museum_calendar month="2026-11" lang="en"]');
     $check(str_starts_with($html, '<section class="museum-calendar" id="museum-calendar" aria-label="Monthly calendar" lang="en">' . "\n" . '<p class="museum-calendar__notice" role="status">' . $staleEnglish . '</p>' . "\n"), 'An English month must say in English that the data is stale and when it was fetched.');
-    $check(str_contains($html, '<li data-title="一日休館"><strong lang="ja">一日休館</strong><span>All day</span></li>'), 'An English month must print an ICS title without an English text as registered.');
-    $check(str_contains($html, '<li data-title="日時変更ガイド"><strong lang="ja">日時変更ガイド</strong><span>14:00–15:00</span></li>'), 'An English month must keep the hours of an ICS event.');
+    $check(str_contains($html, '<li data-title="一日休館" data-kind="other"><strong lang="ja">一日休館</strong><span>All day</span></li>'), 'An English month must print an ICS title without an English text as registered.');
+    $check(str_contains($html, '<li data-title="日時変更ガイド" data-kind="other"><strong lang="ja">日時変更ガイド</strong><span>14:00–15:00</span></li>'), 'An English month must keep the hours of an ICS event.');
     $check(!str_contains($html, '終日<') && !str_contains($html, '前回取得') && !str_contains($html, 'museum-fixture'), 'An English month printed Japanese text of the plugin or the calendar URL.');
     $html = do_shortcode('[museum_calendar_today lang="en"]');
     $check(str_starts_with($html, '<section class="museum-calendar-today" aria-label="Today&#039;s schedule" lang="en">' . "\n" . '<p class="museum-calendar-today__notice" role="status">' . $staleEnglish . '</p>' . "\n"), 'An English today must say in English that the data is stale.');
@@ -104,6 +104,7 @@ try {
         foreach ($events as $date => $day) {
             foreach ($day as $index => $event) {
                 $events[$date][$index]['fixture_note'] = 'note for ' . $event['title'];
+                $events[$date][$index]['kind'] = 'kind of a filter';
             }
         }
         return $events;
@@ -140,6 +141,7 @@ try {
             'cell=2026-11-01 day=1 weekday=7 today=no',
             'event=2026-11-10 [一日休館] [終日] all-day [] [] [note for 一日休館]',
             'label=2026-11-10 [一日休館] [一日休館] []',
+            'kind=2026-11-10 [一日休館] [other]',
             'event=2026-11-17 [日時変更ガイド] [14:00–15:00] timed [14:00] [15:00] [note for 日時変更ガイド]',
             'event=2026-11-30 [月末夜間] [23:00–24:00] timed [23:00] [24:00] [note for 月末夜間]',
         );
@@ -172,17 +174,23 @@ try {
             'lang=en',
             'event=2026-11-10 [CLOSE] [All day] all-day [] [] [note for CLOSE]',
             'label=2026-11-10 [CLOSE] [CLOSED] []',
+            'kind=2026-11-10 [CLOSE] [closed]',
             'event=2026-11-11 [お茶室営業日] [12:00–16:00] timed [12:00] [16:00] [note for お茶室営業日]',
             'label=2026-11-11 [お茶室営業日] [Tea Room Open] []',
+            'kind=2026-11-11 [お茶室営業日] [tea]',
             'label=2026-11-12 [（無題）] [(Untitled)] []',
+            'kind=2026-11-12 [（無題）] [other]',
         );
         $received(
             (new Renderer($facility))->render(new Month('2026-11'), $tuesdayNoon),
             'lang=ja',
             'event=2026-11-10 [CLOSE] [終日] all-day [] [] [note for CLOSE]',
             'label=2026-11-10 [CLOSE] [CLOSE] []',
+            'kind=2026-11-10 [CLOSE] [closed]',
             'label=2026-11-11 [お茶室営業日] [お茶室営業日] []',
+            'kind=2026-11-11 [お茶室営業日] [tea]',
             'label=2026-11-12 [（無題）] [（無題）] []',
+            'kind=2026-11-12 [（無題）] [other]',
         );
         $received(
             (new Renderer($facility, false, '', Language::English))->renderToday($tuesdayNoon, 'D, M j'),
@@ -191,6 +199,7 @@ try {
             'date=Tue, Nov 10',
             'event=[CLOSE] [All day] all-day [] [] [note for CLOSE]',
             'label=[CLOSE] [CLOSED] []',
+            'kind=[CLOSE] [closed]',
         );
         $inJapanese(static function () use ($received, $check): string {
             $received(do_shortcode('[museum_calendar month="2026-11" lang="en"]'), 'lang=en', 'label=November 2026', 'weekdays=1Mon,2Tue,3Wed,4Thu,5Fri,6Sat,7Sun');
@@ -278,11 +287,13 @@ try {
             'weekday=Tue',
             'event=[一日休館] [終日] all-day [] [] [note for 一日休館]',
             'label=[一日休館] [一日休館] []',
+            'kind=[一日休館] [other]',
             'event=[第2火曜講座] [13:00–15:00] timed [13:00] [15:00] [note for 第2火曜講座]',
         );
         foreach (['museum-fixture', 'calendar.google.com'] as $secret) {
             $check(!str_contains($month . $december . $today . $tuesday . $englishMonth . $englishToday, $secret), 'A theme template could read the calendar URL.');
         }
+        $check(!str_contains($month . $december . $tuesday . $englishMonth, 'kind of a filter'), 'A theme template received the kind that a filter set.');
 
         add_filter('museum_calendar_fixture_throws', '__return_true');
         try {

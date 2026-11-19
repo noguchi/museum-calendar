@@ -8,6 +8,8 @@ test('calendar renders events, styles and navigates between months', async ({ pa
   await expect(calendar.locator('caption')).toHaveText('November 2026');
   await expect(calendar.getByText('日時変更ガイド', { exact: true })).toBeVisible();
   await expect(calendar.getByText('終日展示', { exact: true })).toHaveCount(3);
+  await expect(calendar.locator('li[data-title="ガイドツアー開催日"]')).toHaveAttribute('data-kind', 'tour');
+  await expect(calendar.locator('li[data-title="日時変更ガイド"]')).toHaveAttribute('data-kind', 'other');
   await expect(calendar.getByText(/実際の開館情報ではありません/)).toHaveCount(0);
   await expect(calendar.locator('table')).toHaveCSS('table-layout', 'fixed');
   await calendar.getByRole('link', { name: 'December »', exact: true }).click();

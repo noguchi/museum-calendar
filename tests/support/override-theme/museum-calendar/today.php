@@ -33,6 +33,7 @@ foreach ($events as $event) {
         $event['fixture_note'] ?? '',
     );
     $lines[] = sprintf('label=[%s] [%s] [%s]', $event['title'], $event['label'], $event['label_lang']);
+    $lines[] = sprintf('kind=[%s] [%s]', $event['title'], $event['kind']);
 }
 echo "<pre class=\"override-today\">\n" . esc_html(implode("\n", $lines)) . "\n</pre>\n";
 echo '<pre class="override-today-dump">' . esc_html(print_r($variables, true)) . "</pre>\n";

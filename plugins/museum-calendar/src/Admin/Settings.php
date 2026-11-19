@@ -6,6 +6,7 @@ namespace MuseumCalendar\Admin;
 use DateTimeZone;
 use InvalidArgumentException;
 use MuseumCalendar\Calendar\EventList;
+use MuseumCalendar\Calendar\Kind;
 use MuseumCalendar\Calendar\Month;
 use MuseumCalendar\Frontend\Language;
 use MuseumCalendar\Ics\FeedRepository;
@@ -182,7 +183,7 @@ final class Settings
                 foreach (EventList::forDisplay($source, $month) as $events) {
                     foreach ($events as $event) {
                         if (Language::English->title($event['title']) === null) {
-                            $titles[] = Language::trimmed($event['title']);
+                            $titles[] = Kind::trimmed($event['title']);
                         }
                     }
                 }

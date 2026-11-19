@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MuseumCalendar\Frontend;
 
+use MuseumCalendar\Calendar\Kind;
+
 /**
  * The language of one shortcode, and every text and rule that depends on it.
  *
@@ -37,16 +39,6 @@ enum Language: string
         'untitled' => ['ja' => '（無題）', 'en' => '(Untitled)'],
     ];
 
-    /** The titles the facility registers in its calendar, in Japanese, and the English text of each. */
-    private const TITLES = [
-        'OPEN' => 'OPEN',
-        'CLOSE' => 'CLOSED',
-        'お茶室営業日' => 'Tea Room Open',
-        'ガイドツアー開催日' => 'Guided Tour',
-        '結婚式' => 'Wedding',
-        '夜間特別開館' => 'Special Evening Opening',
-    ];
-
     /** @param string $value The `lang` attribute of a shortcode. An omitted attribute is ''. */
     public static function fromAttribute(string $value): ?self
     {
@@ -62,27 +54,20 @@ enum Language: string
         return sprintf(self::TEXT[$key][$this->value], ...$arguments);
     }
 
-    /** A title as the title table matches it, without the spaces around it. A full-width space counts as a space. */
-    public static function trimmed(string $title): string
-    {
-        return preg_replace('/^\s+|\s+$/u', '', $title) ?? $title;
-    }
-
     /** The text to show for a registered title. Null when this language has no text for it. */
     public function title(string $title): ?string
     {
         if ($this === self::Japanese) {
             return $title;
         }
-        $registered = self::trimmed($title);
-        if ($registered === self::TEXT['untitled'][self::Japanese->value]) {
+        if (Kind::trimmed($title) === self::TEXT['untitled'][self::Japanese->value]) {
             return $this->text('untitled');
         }
-        return self::TITLES[$registered] ?? null;
+        return Kind::fromTitle($title)->english();
     }
 
     /**
-     * Adds `label` and `label_lang` to an event and puts its all-day time into this language.
+     * Adds `label`, `label_lang` and `kind` to an event and puts its all-day time into this language.
      *
      * `title` stays as registered. Filters and theme selectors match on it.
      */
@@ -91,6 +76,7 @@ enum Language: string
         $label = $this->title($event['title']);
         $event['label'] = $label ?? $event['title'];
         $event['label_lang'] = $label === null ? self::Japanese->value : '';
+        $event['kind'] = Kind::fromTitle($event['title'])->value;
         if ($event['time'] === self::Japanese->text('all_day')) {
             $event['time'] = $this->text('all_day');
         }

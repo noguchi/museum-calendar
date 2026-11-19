@@ -6,7 +6,7 @@
  * @var string $month YYYY-MM
  * @var string $label The month in the WordPress format for monthly archives, in the site language
  * @var array<int, string> $weekdays ISO 8601 weekday number => abbreviated name in the site language, in column order
- * @var list<list<array{date: string, day: int, weekday: int, today: bool, events: list<array{title: string, label: string, label_lang: string, time: string, all_day: bool, start: string, end: string}>}|null>> $weeks each week in column order, null is a cell outside the month. title is the registered title and label is the text to print for it. label_lang is 'ja' when label is Japanese text in an English calendar, otherwise ''
+ * @var list<list<array{date: string, day: int, weekday: int, today: bool, events: list<array{title: string, label: string, label_lang: string, kind: string, time: string, all_day: bool, start: string, end: string}>}|null>> $weeks each week in column order, null is a cell outside the month. title is the registered title and label is the text to print for it. label_lang is 'ja' when label is Japanese text in an English calendar, otherwise ''. kind is the kind of the title, 'other' outside the table
  * @var array{month: string, url: string, label: string}|null $previous label is the month name in the site language
  * @var array{month: string, url: string, label: string}|null $next
  * @var bool $empty
@@ -45,7 +45,7 @@ if (!defined('ABSPATH')) {
                                 <?php if ($cell['events'] !== []) : ?>
                                     <ul>
                                         <?php foreach ($cell['events'] as $event) : ?>
-                                            <li data-title="<?php echo esc_attr($event['title']); ?>"><strong<?php if ($event['label_lang'] !== '') : ?> lang="<?php echo esc_attr($event['label_lang']); ?>"<?php endif; ?>><?php echo esc_html($event['label']); ?></strong><span><?php echo esc_html($event['time']); ?></span></li>
+                                            <li data-title="<?php echo esc_attr($event['title']); ?>" data-kind="<?php echo esc_attr($event['kind']); ?>"><strong<?php if ($event['label_lang'] !== '') : ?> lang="<?php echo esc_attr($event['label_lang']); ?>"<?php endif; ?>><?php echo esc_html($event['label']); ?></strong><span><?php echo esc_html($event['time']); ?></span></li>
                                         <?php endforeach; ?>
                                     </ul>
                                 <?php endif; ?>
