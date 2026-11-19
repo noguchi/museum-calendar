@@ -19,6 +19,7 @@ $lines = [
     'today=' . $today->format('Y-m-d') . ' ' . $today->getTimezone()->getName(),
     'date=' . $date,
     'weekday=' . $weekday,
+    'status=' . ($status === null ? 'none' : sprintf('%s [%s] [%s]', $status['kind'], $status['label'], $status['hours'])),
     'lang=' . $lang,
     'text=' . implode(' | ', array_map(static fn (string $key, string $value): string => $key . ': ' . $value, array_keys($text), $text)),
 ];

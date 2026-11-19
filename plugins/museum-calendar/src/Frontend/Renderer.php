@@ -83,11 +83,13 @@ final class Renderer
     {
         $tokyo = new DateTimeZone('Asia/Tokyo');
         $today = $today->setTimezone($tokyo);
+        $events = $this->events(new Month($today->format('Y-m')))[$today->format('Y-m-d')] ?? [];
         return $this->frame('museum-calendar-today', '', 'today_label', self::template('today', [
             'today' => $today,
             'date' => wp_date($dateFormat, $today->getTimestamp(), $tokyo),
             'weekday' => self::weekdayName((int) $today->format('N')),
-            'events' => $this->events(new Month($today->format('Y-m')))[$today->format('Y-m-d')] ?? [],
+            'status' => EventList::status($events),
+            'events' => $events,
             'lang' => $this->language->value,
             'text' => ['empty' => $this->language->text('empty_today')],
         ]));

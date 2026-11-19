@@ -78,6 +78,10 @@ try {
     foreach (['CLOSE', 'OPEN', 'ガイドツアー開催日', 'お茶室営業日'] as $title) {
         $check(str_contains($html, "<strong>{$title}</strong>") === in_array($title, $samples, true), "Today lists the wrong samples for its weekday: {$title}.");
     }
+    $sampleStatus = $samples === ['CLOSE']
+        ? '<p class="museum-calendar-today__status" data-kind="closed"><strong>CLOSE</strong></p>'
+        : '<p class="museum-calendar-today__status" data-kind="open"><strong>OPEN</strong><span>10:30–16:30</span></p>';
+    $check(str_contains($html, $sampleStatus) && !str_contains($html, '<li data-title="OPEN"') && !str_contains($html, '<li data-title="CLOSE"'), 'The sample today must show its OPEN or CLOSE as the status, not in the list.');
     $check(str_contains(do_shortcode('[museum_calendar month="invalid"]'), '正しくありません'), 'Invalid input was accepted.');
 
     $grid = static function (string $html): array {
@@ -229,7 +233,7 @@ try {
     $check(!str_contains($html, '本日の予定はありません') && !str_contains($html, '動作確認用サンプル') && !str_contains($html, 'role="status"'), 'Today showed a message that does not apply.');
     $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'Y年n月j日');
     $check(str_contains($html, $dateLine('2026-11-14', '2026年11月14日')), 'Today date is wrong on a Saturday.');
-    $check(str_contains($html, '本日の予定はありません。') && !str_contains($html, '<ul'), 'A day without events must say so.');
+    $check(str_contains($html, '本日の予定はありません。') && !str_contains($html, '<ul') && !str_contains($html, '__status'), 'A day without events must say so and show no status.');
     $html = $inJapanese(static fn (): string => (new Renderer($source))->renderToday(new DateTimeImmutable('2026-11-16 12:00', $tokyo), 'n月j日(D)'));
     $check(str_contains($html, $dateLine('2026-11-16', '11月16日(月)')) && str_contains($html, '<strong>Tomorrow</strong>'), 'Today is wrong on a Monday.');
     $html = (new Renderer($source))->renderToday(new DateTimeImmutable('2027-01-05 12:00', $tokyo), 'Y/m/d n/j');
@@ -322,11 +326,11 @@ try {
         $html = do_shortcode('[museum_calendar_today lang="en"]');
         $check(str_starts_with($html, sprintf($todaySection, 'Today&#039;s schedule', ' lang="en"', $sampleNote)), 'An English today must declare its language on the section and label the sample in English.');
         $check(str_contains($html, $dateLine($today, $now->format('D, M j'))), 'An English today must print the date as D, M j, whatever the date format is.');
-        $english = ['CLOSE' => 'CLOSED', 'OPEN' => 'OPEN', 'ガイドツアー開催日' => 'Guided Tour', 'お茶室営業日' => 'Tea Room Open'];
-        foreach ($samples as $title) {
+        $english = ['ガイドツアー開催日' => 'Guided Tour', 'お茶室営業日' => 'Tea Room Open'];
+        foreach (array_diff($samples, ['OPEN', 'CLOSE']) as $title) {
             $check(str_contains($html, '<li data-title="' . $title . '" data-kind="' . Kind::fromTitle($title)->value . '"><strong>' . $english[$title] . '</strong><span>'), "An English today must print the English text of {$title}.");
         }
-        $check(str_contains($html, '<span>All day</span>') === ($samples === ['CLOSE']), 'An English today must print the all-day time in English.');
+        $check(str_contains($html, str_replace('<strong>CLOSE</strong>', '<strong>CLOSED</strong>', $sampleStatus)), 'An English today must print the status of the sample in English.');
         $allEnglish($html, 'Today');
         $html = do_shortcode('[museum_calendar_today]');
         $check(str_starts_with($html, sprintf($todaySection, '本日の予定', '', '動作確認用サンプル — 実際の開館情報ではありません')) && !str_contains($html, ' lang='), 'A today without lang must keep its Japanese text and declare no language.');
@@ -503,14 +507,36 @@ try {
     $listed($html, [$closed, ...$englishItems], 'The English month');
     $check(!str_contains($html, '<b>'), 'A title without an English text was not escaped.');
     $html = (new Renderer($facility, false, '', Language::English))->renderToday($sunday, 'D, M j');
-    $listed($html, $englishItems, 'The English today');
-    $check(str_contains($html, $dateLine('2026-11-15', 'Sun, Nov 15')), 'The English date of a Sunday is wrong.');
+    $listed($html, array_slice($englishItems, 1), 'The English today');
+    $check(str_contains($html, $dateLine('2026-11-15', 'Sun, Nov 15') . "\n" . '<p class="museum-calendar-today__status" data-kind="open"><strong>OPEN</strong><span>10:00–16:00</span></p>'), 'The English today must print the status of its OPEN, with its hours, after the date.');
     $html = (new Renderer($facility))->render(new Month('2026-11'), $sunday);
     $listed($html, $japaneseItems, 'The month without lang');
     $check(!str_contains($html, ' lang='), 'A month without lang must mark no event as Japanese.');
     $html = (new Renderer($facility))->renderToday($sunday, 'n/j');
-    $listed($html, array_slice($japaneseItems, 1), 'Today without lang');
+    $listed($html, array_slice($japaneseItems, 2), 'Today without lang');
+    $check(str_contains($html, '<p class="museum-calendar-today__status" data-kind="open"><strong>OPEN</strong><span>10:00–16:00</span></p>'), 'Today without lang must print the status of its OPEN.');
     $check(!str_contains($html, ' lang='), 'A today without lang must mark no event as Japanese.');
+    $status = static function (string $html): ?string {
+        return preg_match('/<p class="museum-calendar-today__status"[^>]*>.*?<\/p>/', $html, $match) === 1 ? $match[0] : null;
+    };
+    $closedStatus = '<p class="museum-calendar-today__status" data-kind="closed"><strong>%s</strong></p>';
+    $html = (new Renderer($facility, false, '', Language::English))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'D, M j');
+    $check($status($html) === sprintf($closedStatus, 'CLOSED'), 'An English today with only CLOSE must show CLOSED.');
+    $check(!str_contains($html, '<ul') && !str_contains($html, '__empty') && !str_contains($html, 'No events'), 'A today with only CLOSE must print the status alone.');
+    $check($status((new Renderer($facility))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'n/j')) === sprintf($closedStatus, 'CLOSE'), 'A today without lang must show the registered title CLOSE.');
+    $html = (new Renderer($facility))->renderToday(new DateTimeImmutable('2026-11-16 12:00', $tokyo), 'n/j');
+    $check($status($html) === null && str_contains($html, '本日の予定はありません。'), 'A day without OPEN and CLOSE must show no status, and must not read as closed.');
+    $openStatus = '<p class="museum-calendar-today__status" data-kind="open"><strong>OPEN</strong><span>10:00–16:00</span></p>';
+    foreach ([
+        ['2026-11-14 23:59:59', $tokyo, sprintf($closedStatus, 'CLOSE')],
+        ['2026-11-15 00:00:00', $tokyo, $openStatus],
+        ['2026-11-15 23:59:59', $tokyo, $openStatus],
+        ['2026-11-16 00:00:00', $tokyo, null],
+        ['2026-11-14 14:59:59', new DateTimeZone('UTC'), sprintf($closedStatus, 'CLOSE')],
+        ['2026-11-14 15:00:00', new DateTimeZone('UTC'), $openStatus],
+    ] as [$time, $zone, $expected]) {
+        $check($status((new Renderer($facility))->renderToday(new DateTimeImmutable($time, $zone), 'n/j')) === $expected, "The status at {$time} {$zone->getName()} must be that of the day in Asia/Tokyo.");
+    }
     $html = (new Renderer($facility, true, 'Shown <b>earlier</b>', Language::English))->renderToday($sunday, 'D, M j');
     $check(str_starts_with($html, sprintf($todaySection, 'Today&#039;s schedule', ' lang="en"', $sampleNote) . '<p class="museum-calendar-today__notice" role="status">Shown &lt;b&gt;earlier&lt;/b&gt;</p>' . "\n"), 'An English today must print the sample label and the notice inside its section.');
 
@@ -525,17 +551,18 @@ try {
     };
     add_filter('museum_calendar_events', $rename);
     try {
-        foreach ([
-            (new Renderer($facility, false, '', Language::English))->render(new Month('2026-11'), $sunday),
-            (new Renderer($facility, false, '', Language::English))->renderToday($sunday, 'D, M j'),
-        ] as $html) {
-            $check(str_contains($html, '<li data-title="CLOSE" data-kind="closed"><strong>CLOSED</strong><span>10:00–16:00</span></li>') && !str_contains($html, 'data-title="OPEN"'), 'An English label must follow the title that a filter set.');
+        $html = (new Renderer($facility, false, '', Language::English))->render(new Month('2026-11'), $sunday);
+        $check(str_contains($html, '<li data-title="CLOSE" data-kind="closed"><strong>CLOSED</strong><span>10:00–16:00</span></li>') && !str_contains($html, 'data-title="OPEN"'), 'An English label must follow the title that a filter set.');
+        $englishToday = (new Renderer($facility, false, '', Language::English))->renderToday($sunday, 'D, M j');
+        $check($status($englishToday) === sprintf($closedStatus, 'CLOSED') && !str_contains($englishToday, 'data-title="OPEN"'), 'An English status must follow the title that a filter set.');
+        foreach ([$html, $englishToday] as $html) {
             $check(str_contains($html, '<li data-title="休館日" data-kind="other"><strong lang="ja">休館日</strong><span>10:00–16:00</span></li>') && !str_contains($html, '臨時休館'), 'A title that a filter set and that has no English text must be marked as Japanese.');
             $check(str_contains($html, '<strong>Tea Room Open</strong>') && !str_contains($html, 'Label of a filter') && !str_contains($html, 'lang="fr"'), 'The label and its language must not come from a filter.');
             $check(substr_count($html, 'data-kind="wedding"') === 1, 'The kind must come from the title, not from a filter.');
         }
+        $check($status((new Renderer($facility))->renderToday($sunday, 'n/j')) === sprintf($closedStatus, 'CLOSE'), 'Without lang the status must follow the title that a filter set.');
         foreach ([(new Renderer($facility))->render(new Month('2026-11'), $sunday), (new Renderer($facility))->renderToday($sunday, 'n/j')] as $html) {
-            $check(str_contains($html, '<li data-title="CLOSE" data-kind="closed"><strong>CLOSE</strong><span>10:00–16:00</span></li>') && str_contains($html, '<li data-title="休館日" data-kind="other"><strong>休館日</strong>'), 'Without lang the label must be the title that a filter set.');
+            $check(str_contains($html, 'data-kind="closed"><strong>CLOSE</strong>') && str_contains($html, '<li data-title="休館日" data-kind="other"><strong>休館日</strong>'), 'Without lang the label must be the title that a filter set.');
             $check(!str_contains($html, 'Label of a filter') && !str_contains($html, ' lang='), 'Without lang the label and its language must not come from a filter.');
             $check(substr_count($html, 'data-kind="wedding"') === 1, 'Without lang the kind must come from the title, not from a filter.');
         }

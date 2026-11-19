@@ -6,6 +6,7 @@
  * @var \DateTimeImmutable $today In Asia/Tokyo
  * @var string $date Today in the WordPress date format. With lang="en", in the format D, M j
  * @var string $weekday Abbreviated name in the site language. Not printed here. It stays for theme templates.
+ * @var array{kind: string, label: string, hours: string}|null $status Today's opening status, from the first closed event, else the first open event. Null when today has neither. kind is 'open' or 'closed', label is the text to print for it, hours is the time of a timed open event, otherwise ''
  * @var list<array{title: string, label: string, label_lang: string, kind: string, time: string, all_day: bool, start: string, end: string}> $events title is the registered title and label is the text to print for it. label_lang is 'ja' when label is Japanese text in an English list, otherwise ''. kind is the kind of the title, 'other' outside the table
  * @var string $lang 'ja' or 'en', the language of the shortcode
  * @var array{empty: string} $text The plugin's own text in that language, not escaped
@@ -15,12 +16,16 @@ if (!defined('ABSPATH')) {
 }
 ?>
 <p class="museum-calendar-today__date"><time datetime="<?php echo esc_attr($today->format('Y-m-d')); ?>"><?php echo esc_html($date); ?></time></p>
-<?php if ($events !== []) : ?>
+<?php if ($status !== null) : ?>
+<p class="museum-calendar-today__status" data-kind="<?php echo esc_attr($status['kind']); ?>"><strong><?php echo esc_html($status['label']); ?></strong><?php if ($status['hours'] !== '') : ?><span><?php echo esc_html($status['hours']); ?></span><?php endif; ?></p>
+<?php endif; ?>
+<?php $listed = array_filter($events, static fn (array $event): bool => !in_array($event['kind'], ['open', 'closed'], true)); ?>
+<?php if ($listed !== []) : ?>
 <ul class="museum-calendar-today__events">
-    <?php foreach ($events as $event) : ?>
+    <?php foreach ($listed as $event) : ?>
         <li data-title="<?php echo esc_attr($event['title']); ?>" data-kind="<?php echo esc_attr($event['kind']); ?>"><strong<?php if ($event['label_lang'] !== '') : ?> lang="<?php echo esc_attr($event['label_lang']); ?>"<?php endif; ?>><?php echo esc_html($event['label']); ?></strong><span><?php echo esc_html($event['time']); ?></span></li>
     <?php endforeach; ?>
 </ul>
-<?php else : ?>
+<?php elseif ($status === null) : ?>
 <p class="museum-calendar-today__empty"><?php echo esc_html($text['empty']); ?></p>
 <?php endif; ?>

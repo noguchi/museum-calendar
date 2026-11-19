@@ -43,4 +43,16 @@ if (!$page) {
         WP_CLI::error($id->get_error_message());
     }
 }
+if (defined('MUSEUM_CALENDAR_TEST_FIXTURES') && MUSEUM_CALENDAR_TEST_FIXTURES && !get_page_by_path('calendar-today', OBJECT, 'page')) {
+    $id = wp_insert_post([
+        'post_type' => 'page',
+        'post_status' => 'publish',
+        'post_name' => 'calendar-today',
+        'post_title' => '本日の予定の動作確認',
+        'post_content' => '<!-- wp:shortcode -->[museum_calendar_today]<!-- /wp:shortcode --><!-- wp:shortcode -->[museum_calendar_today lang="en"]<!-- /wp:shortcode -->',
+    ], true);
+    if (is_wp_error($id)) {
+        WP_CLI::error($id->get_error_message());
+    }
+}
 WP_CLI::success('確認ページを準備しました。既存ページの内容と設定済みのカレンダーは維持しています。');

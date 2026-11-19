@@ -197,10 +197,12 @@ try {
             'lang=en',
             'text=empty: No events today.',
             'date=Tue, Nov 10',
+            'status=closed [CLOSED] []',
             'event=[CLOSE] [All day] all-day [] [] [note for CLOSE]',
             'label=[CLOSE] [CLOSED] []',
             'kind=[CLOSE] [closed]',
         );
+        $received((new Renderer($facility))->renderToday($tuesdayNoon, 'n/j'), 'lang=ja', 'status=closed [CLOSE] []', 'event=[CLOSE] [終日] all-day [] [] [note for CLOSE]');
         $inJapanese(static function () use ($received, $check): string {
             $received(do_shortcode('[museum_calendar month="2026-11" lang="en"]'), 'lang=en', 'label=November 2026', 'weekdays=1Mon,2Tue,3Wed,4Thu,5Fri,6Sat,7Sun');
             $check(determine_locale() === 'ja', 'An English month must restore the locale of the site.');
@@ -255,7 +257,7 @@ try {
         $check(!str_contains($today, 'museum-calendar-today__date'), 'The theme today template did not replace the default one.');
         $received(
             $today,
-            'variables=today,date,weekday,events,lang,text',
+            'variables=today,date,weekday,status,events,lang,text',
             'this=hidden',
             'scope=none',
             'lang=ja',
@@ -270,7 +272,7 @@ try {
             && str_ends_with(rtrim($englishToday), '</section>'), 'A theme today template must stay inside the English section, after the stale notice.');
         $received(
             $englishToday,
-            'variables=today,date,weekday,events,lang,text',
+            'variables=today,date,weekday,status,events,lang,text',
             'lang=en',
             'text=empty: No events today.',
             'today=' . $now->format('Y-m-d') . ' Asia/Tokyo',
@@ -285,6 +287,7 @@ try {
             'today=2026-11-10 Asia/Tokyo',
             'date=11/10 00:30',
             'weekday=Tue',
+            'status=none',
             'event=[一日休館] [終日] all-day [] [] [note for 一日休館]',
             'label=[一日休館] [一日休館] []',
             'kind=[一日休館] [other]',
@@ -333,6 +336,11 @@ try {
         preg_match_all('/<li data-title="([^"]*)"/', $match[1] ?? '', $titles);
         return $titles[1];
     };
+    $statusOf = static function (string $html): ?string {
+        return preg_match('/<p class="museum-calendar-today__status" data-kind="([^"]*)"><strong>([^<]*)<\/strong>(?:<span>([^<]*)<\/span>)?<\/p>/', $html, $match) === 1
+            ? $match[1] . ' ' . $match[2] . ' ' . ($match[3] ?? '')
+            : null;
+    };
     $todayItems = static function (string $html): array {
         preg_match_all('/<li data-title="([^"]*)"/', $html, $titles);
         return $titles[1];
@@ -341,7 +349,9 @@ try {
     $html = (new Renderer($regular))->render(new Month('2026-11'), $closedDay);
     $check($cell($html, '2026-11-16') === ['OPEN'] && $cell($html, '2026-11-18') === ['OPEN'], 'A recurring OPEN must show on the days without CLOSE.');
     $check($cell($html, '2026-11-17') === ['CLOSE', 'ガイドツアー開催日'], 'A one-day CLOSE on top of a recurring OPEN must hide that OPEN in the month.');
-    $check($todayItems((new Renderer($regular))->renderToday($closedDay, 'n/j')) === ['CLOSE', 'ガイドツアー開催日'], 'A one-day CLOSE on top of a recurring OPEN must hide that OPEN today.');
+    $html = (new Renderer($regular))->renderToday($closedDay, 'n/j');
+    $check($statusOf($html) === 'closed CLOSE ' && $todayItems($html) === ['ガイドツアー開催日'], 'A one-day CLOSE on top of a recurring OPEN must make today closed and list neither of them.');
+    $check($statusOf((new Renderer($regular))->renderToday($closedDay->modify('+1 day'), 'n/j')) === 'open OPEN 10:30–16:30', 'A recurring OPEN must make the other days open.');
     $closeEvent = ['title' => 'CLOSE', 'time' => '終日', 'all_day' => true];
     $moveClose = static function (array $events) use ($closeEvent): array {
         $events['2026-11-17'] = array_values(array_filter($events['2026-11-17'], static fn (array $event): bool => $event['title'] !== 'CLOSE'));
@@ -353,8 +363,8 @@ try {
         $html = (new Renderer($regular))->render(new Month('2026-11'), $closedDay);
         $check($cell($html, '2026-11-17') === ['OPEN', 'ガイドツアー開催日'], 'A CLOSE that a filter removed must no longer hide OPEN in the month.');
         $check($cell($html, '2026-11-18') === ['CLOSE'], 'A CLOSE that a filter added must hide OPEN in the month.');
-        $check($todayItems((new Renderer($regular))->renderToday($closedDay, 'n/j')) === ['OPEN', 'ガイドツアー開催日'], 'A CLOSE that a filter removed must no longer hide OPEN today.');
-        $check($todayItems((new Renderer($regular))->renderToday($closedDay->modify('+1 day'), 'n/j')) === ['CLOSE'], 'A CLOSE that a filter added must hide OPEN today.');
+        $check($statusOf((new Renderer($regular))->renderToday($closedDay, 'n/j')) === 'open OPEN 10:30–16:30', 'A CLOSE that a filter removed must no longer make today closed.');
+        $check($statusOf((new Renderer($regular))->renderToday($closedDay->modify('+1 day'), 'n/j')) === 'closed CLOSE ', 'A CLOSE that a filter added must make today closed.');
     } finally {
         remove_filter('museum_calendar_events', $moveClose);
     }
@@ -381,6 +391,24 @@ try {
     $result = $feed->load(true);
     $check($result['body'] === $body && !$result['stale'], 'Empty feed must remove deleted events.');
     $check(str_contains(do_shortcode('[museum_calendar month="2026-11"]'), 'この月の予定はありません'), 'Empty calendar message missing.');
+
+    $body = implode("\n", [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'BEGIN:VEVENT',
+        'UID:open-today',
+        'DTSTART;TZID=Asia/Tokyo:' . $now->format('Ymd') . 'T103000',
+        'DTEND;TZID=Asia/Tokyo:' . $now->format('Ymd') . 'T163000',
+        'SUMMARY:OPEN',
+        'END:VEVENT',
+        'END:VCALENDAR',
+    ]);
+    $feed->load(true);
+    $mode = 'timeout';
+    $check($feed->load(true)['stale'], 'The feed with OPEN today did not become stale.');
+    $html = do_shortcode('[museum_calendar_today lang="en"]');
+    $check(str_contains($html, 'previously fetched schedule') && str_contains($html, '<p class="museum-calendar-today__status" data-kind="open"><strong>OPEN</strong><span>10:30–16:30</span></p>'), 'A stale feed must show the status of the previously fetched events.');
+    $mode = 'ok';
 
     $settingsPage = static function (): string {
         ob_start();
@@ -467,6 +495,10 @@ try {
     $mode = 'http_error';
     $check(str_contains(do_shortcode('[museum_calendar]'), '現在、予定を取得できません'), 'Initial HTTP failure was not handled.');
     $check(str_contains(do_shortcode('[museum_calendar_today]'), '現在、予定を取得できません'), 'Today shortcode did not handle the HTTP failure.');
+    foreach (['', ' lang="en"'] as $lang) {
+        $html = do_shortcode("[museum_calendar_today{$lang}]");
+        $check(preg_match('/^<p class="museum-calendar-notice" role="status"[^>]*>[^<]*<\/p>$/', $html) === 1 && preg_match('/休館|CLOSE|OPEN|__status/', $html) === 0, 'Today without a usable feed must show only its notice, with no status and no word for closed.');
+    }
     $mode = 'ok';
     $body = $fixture;
     $feed->load(true);

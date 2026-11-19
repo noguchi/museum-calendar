@@ -43,6 +43,28 @@ final class EventList
     }
 
     /**
+     * The opening status of a day: its first closed event, else its first open event, else null.
+     *
+     * @param list<array{kind: string, label: string, time: string, all_day: bool, ...}> $events One day after classify(), with labels
+     * @return array{kind: string, label: string, hours: string}|null hours is the time of a timed open event, otherwise ''
+     */
+    public static function status(array $events): ?array
+    {
+        foreach ([Kind::Closed, Kind::Open] as $kind) {
+            foreach ($events as $event) {
+                if ($event['kind'] === $kind->value) {
+                    return [
+                        'kind' => $kind->value,
+                        'label' => $event['label'],
+                        'hours' => $kind === Kind::Open && !$event['all_day'] ? $event['time'] : '',
+                    ];
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * Checks what a `museum_calendar_events` callback returned.
      *
      * An invalid value throws. Showing no events instead would tell visitors that the month is empty.

@@ -84,6 +84,43 @@ final class EventListTest extends TestCase
         self::assertSame([['OPEN'], ['CLOSE']], array_map(static fn (array $day): array => array_column($day, 'title'), array_values($days)));
     }
 
+    #[DataProvider('statuses')]
+    public function testStatusOfADay(array $titles, ?array $status): void
+    {
+        $events = [
+            'OPEN' => ['title' => 'OPEN', 'time' => '10:30–16:30', 'all_day' => false, 'start' => '10:30', 'end' => '16:30'],
+            'late OPEN' => ['title' => 'OPEN', 'time' => '13:00–20:00', 'all_day' => false, 'start' => '13:00', 'end' => '20:00'],
+            'all-day OPEN' => ['title' => 'OPEN', 'time' => 'All day', 'all_day' => true, 'start' => '', 'end' => ''],
+            'CLOSE' => ['title' => 'CLOSE', 'time' => 'All day', 'all_day' => true, 'start' => '', 'end' => ''],
+            'timed CLOSE' => ['title' => 'CLOSE', 'time' => '10:30–16:30', 'all_day' => false, 'start' => '10:30', 'end' => '16:30'],
+            'tour' => ['title' => 'ガイドツアー開催日'] + self::TOUR,
+        ];
+        $day = EventList::classify(['2026-11-15' => array_map(static fn (string $title): array => $events[$title], $titles)])['2026-11-15'];
+        $labelled = array_map(static fn (array $event): array => $event + ['label' => 'label of ' . $event['title']], $day);
+        self::assertSame($status, EventList::status($labelled));
+    }
+
+    public static function statuses(): array
+    {
+        return [
+            'only OPEN' => [['tour', 'OPEN'], ['kind' => 'open', 'label' => 'label of OPEN', 'hours' => '10:30–16:30']],
+            'all-day OPEN' => [['all-day OPEN', 'tour'], ['kind' => 'open', 'label' => 'label of OPEN', 'hours' => '']],
+            'two OPEN' => [['late OPEN', 'OPEN'], ['kind' => 'open', 'label' => 'label of OPEN', 'hours' => '13:00–20:00']],
+            'only CLOSE' => [['CLOSE'], ['kind' => 'closed', 'label' => 'label of CLOSE', 'hours' => '']],
+            'timed CLOSE' => [['timed CLOSE'], ['kind' => 'closed', 'label' => 'label of CLOSE', 'hours' => '']],
+            'OPEN and CLOSE' => [['OPEN', 'tour', 'CLOSE'], ['kind' => 'closed', 'label' => 'label of CLOSE', 'hours' => '']],
+            'neither' => [['tour'], null],
+            'no events' => [[], null],
+        ];
+    }
+
+    public function testStatusPrefersCloseOverAnEarlierOpen(): void
+    {
+        $open = ['title' => 'OPEN', 'label' => 'OPEN', 'kind' => 'open'] + self::TOUR;
+        $closed = ['title' => 'CLOSE', 'label' => 'CLOSED', 'kind' => 'closed', 'time' => 'All day', 'all_day' => true] + self::TOUR;
+        self::assertSame(['kind' => 'closed', 'label' => 'CLOSED', 'hours' => ''], EventList::status([$open, $closed]));
+    }
+
     #[DataProvider('invalidValues')]
     public function testRejectsInvalidValue(mixed $value): void
     {
