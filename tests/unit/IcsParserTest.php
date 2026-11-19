@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use MuseumCalendar\Calendar\Month;
 use MuseumCalendar\Ics\Parser;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class IcsParserTest extends TestCase
@@ -19,12 +20,12 @@ final class IcsParserTest extends TestCase
 
     private function allDay(string $title): array
     {
-        return ['title' => $title, 'time' => '終日', 'all_day' => true, 'start' => '', 'end' => ''];
+        return ['title' => $title, 'time' => '終日', 'all_day' => true, 'start' => '', 'end' => '', 'description' => ''];
     }
 
     private function timed(string $title, string $start, string $end = ''): array
     {
-        return ['title' => $title, 'time' => $end === '' ? $start : "{$start}–{$end}", 'all_day' => false, 'start' => $start, 'end' => $end];
+        return ['title' => $title, 'time' => $end === '' ? $start : "{$start}–{$end}", 'all_day' => false, 'start' => $start, 'end' => $end, 'description' => ''];
     }
 
     private function parse(string $events, string $month = '2026-11', string $zone = 'Asia/Tokyo'): array
@@ -127,18 +128,76 @@ final class IcsParserTest extends TestCase
             "BEGIN:VEVENT\nUID:deadline\nDTSTART:20261125T080000Z\nSUMMARY:締切\nEND:VEVENT",
             "BEGIN:VEVENT\nUID:talk\nDTSTART:20261125T010000Z\nDTEND:20261125T023000Z\nSUMMARY:講演\nEND:VEVENT",
         ]));
-        $exhibition = ['title' => '特別展', 'time' => '終日', 'all_day' => true, 'start' => '', 'end' => ''];
+        $exhibition = $this->allDay('特別展');
         self::assertSame([
-            '2026-11-10' => [['title' => '夜間作業', 'time' => '22:00–24:00', 'all_day' => false, 'start' => '22:00', 'end' => '24:00']],
-            '2026-11-11' => [['title' => '夜間作業', 'time' => '00:00–24:00', 'all_day' => false, 'start' => '00:00', 'end' => '24:00']],
-            '2026-11-12' => [['title' => '夜間作業', 'time' => '00:00–02:00', 'all_day' => false, 'start' => '00:00', 'end' => '02:00']],
+            '2026-11-10' => [$this->timed('夜間作業', '22:00', '24:00')],
+            '2026-11-11' => [$this->timed('夜間作業', '00:00', '24:00')],
+            '2026-11-12' => [$this->timed('夜間作業', '00:00', '02:00')],
             '2026-11-20' => [$exhibition],
             '2026-11-21' => [$exhibition],
-            '2026-11-25' => [
-                ['title' => '講演', 'time' => '10:00–11:30', 'all_day' => false, 'start' => '10:00', 'end' => '11:30'],
-                ['title' => '締切', 'time' => '17:00', 'all_day' => false, 'start' => '17:00', 'end' => ''],
-            ],
+            '2026-11-25' => [$this->timed('講演', '10:00', '11:30'), $this->timed('締切', '17:00')],
         ], $events);
+    }
+
+    public function testDescriptionIsPlainTextWithoutMarkup(): void
+    {
+        $events = $this->fixture();
+        self::assertSame(
+            "午後の演奏会\n曲目：A\nB\nC\nD\nhttps://example.com/concert\n雨天決行 & 予約不要\n定員20名",
+            $events['2026-11-26'][0]['description'],
+        );
+        self::assertSame("受付で名前をお伝えください。\n持ち物：筆記用具, 上履き; 飲み物", $events['2026-11-24'][0]['description']);
+        self::assertSame(str_repeat('あいうえおかきくけこ', 50) . '…', $events['2026-11-28'][0]['description']);
+        self::assertSame('', $events['2026-11-20'][0]['description']);
+    }
+
+    public function testEventCarriesNoLocationAttendeeOrganizerOrAttachment(): void
+    {
+        $event = $this->fixture()['2026-11-24'][0];
+        self::assertSame(['title', 'time', 'all_day', 'start', 'end', 'description'], array_keys($event));
+        self::assertDoesNotMatchRegularExpression('/location-7f3a|attendee-91c2|organizer-5d8e|attachment-3b6f/', implode("\n", array_map('strval', $event)));
+    }
+
+    public function testEachOccurrenceAndDayCarriesTheDescription(): void
+    {
+        $events = $this->parse(implode("\n", [
+            "BEGIN:VEVENT\nUID:series\nDTSTART;VALUE=DATE:20261102\nDTEND;VALUE=DATE:20261104\nRRULE:FREQ=WEEKLY;COUNT=2\nSUMMARY:展示\nDESCRIPTION:本館2階\nEND:VEVENT",
+            "BEGIN:VEVENT\nUID:series\nRECURRENCE-ID;VALUE=DATE:20261109\nDTSTART;VALUE=DATE:20261109\nSUMMARY:展示\nDESCRIPTION:<b>別館</b>\nEND:VEVENT",
+        ]));
+        self::assertSame(
+            ['2026-11-02' => ['本館2階'], '2026-11-03' => ['本館2階'], '2026-11-09' => ['別館']],
+            array_map(static fn (array $day): array => array_column($day, 'description'), $events),
+        );
+    }
+
+    #[DataProvider('descriptions')]
+    public function testDescriptionConversion(string $html, string $text): void
+    {
+        self::assertSame($text, Parser::description($html));
+    }
+
+    public static function descriptions(): array
+    {
+        return [
+            'empty' => ['', ''],
+            'plain text' => ['ガイドツアー', 'ガイドツアー'],
+            'inner newlines stay' => ["1行目\n\n2行目", "1行目\n\n2行目"],
+            'CRLF and CR become LF' => ["a\r\nb\rc", "a\nb\nc"],
+            'spaces around are trimmed, full-width and no-break too' => ["　 \n説明 文\t\u{00A0}\n", '説明 文'],
+            'br in any form' => ['a<br>b<br/>c<br />d<BR>e<br class="x">f', "a\nb\nc\nd\ne\nf"],
+            'end of a paragraph, div and list item' => ['<p>a</p><P>b</P ><div>c</div><ul><li>d</li><li>e</li></ul>', "a\nb\nc\nd\ne"],
+            'other tags are removed and their text kept' => ['<b>太字</b>と<a href="https://example.com/">リンク</a>', '太字とリンク'],
+            'a URL stays as text' => ['詳細 https://example.com/a?b=1&amp;c=2', '詳細 https://example.com/a?b=1&c=2'],
+            'script and style are removed with their content' => ['a<script type="text/javascript">alert(1)</script>b<STYLE>p{}</STYLE>c', 'abc'],
+            'escaped script is decoded and then removed' => ['a&lt;script&gt;alert(1)&lt;/script&gt;b', 'ab'],
+            'escaped tag is decoded and then removed' => ['&lt;b&gt;太字&lt;/b&gt;', '太字'],
+            'character references are decoded once' => ['&amp;amp; &quot;引用&quot; &#39;a&#39; &hellip; &#x3042;', '&amp; "引用" \'a\' … あ'],
+            'text that looks like a tag is lost' => ['a<b', 'a'],
+            'a lone less-than sign stays' => ['1 &lt; 2', '1 < 2'],
+            '500 characters stay whole' => [str_repeat('あ', 500), str_repeat('あ', 500)],
+            '501 characters are cut to 500 and an ellipsis' => [str_repeat('あ', 501), str_repeat('あ', 500) . '…'],
+            'the limit counts characters after conversion' => ['<p>' . str_repeat('a', 500) . '</p>', str_repeat('a', 500)],
+        ];
     }
 
     public function testEventWithoutSummaryIsUntitled(): void

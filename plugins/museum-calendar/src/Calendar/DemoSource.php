@@ -8,13 +8,20 @@ use MuseumCalendar\Frontend\Language;
 
 final class DemoSource implements EventSource
 {
-    private const OPEN = ['title' => 'OPEN', 'time' => '10:30–16:30', 'all_day' => false, 'start' => '10:30', 'end' => '16:30'];
-    private const TOUR = ['title' => 'ガイドツアー開催日', 'time' => '11:00–12:00', 'all_day' => false, 'start' => '11:00', 'end' => '12:00'];
-    private const TEA_ROOM = ['title' => 'お茶室営業日', 'time' => '12:00–16:00', 'all_day' => false, 'start' => '12:00', 'end' => '16:00'];
+    private const OPEN = ['title' => 'OPEN', 'time' => '10:30–16:30', 'all_day' => false, 'start' => '10:30', 'end' => '16:30', 'description' => ''];
+    private const TOUR = [
+        'title' => 'ガイドツアー開催日',
+        'time' => '11:00–12:00',
+        'all_day' => false,
+        'start' => '11:00',
+        'end' => '12:00',
+        'description' => "集合場所：洋館玄関前\n所要時間：約60分",
+    ];
+    private const TEA_ROOM = ['title' => 'お茶室営業日', 'time' => '12:00–16:00', 'all_day' => false, 'start' => '12:00', 'end' => '16:00', 'description' => ''];
 
     public function forMonth(Month $month): array
     {
-        $closed = ['title' => 'CLOSE', 'time' => Language::Japanese->text('all_day'), 'all_day' => true, 'start' => '', 'end' => ''];
+        $closed = ['title' => 'CLOSE', 'time' => Language::Japanese->text('all_day'), 'all_day' => true, 'start' => '', 'end' => '', 'description' => ''];
         // Monday first, the default column order of Month::weeks().
         $samples = [
             [$closed],

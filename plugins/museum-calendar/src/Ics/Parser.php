@@ -17,6 +17,7 @@ use Sabre\VObject\Settings as VObjectSettings;
 final class Parser
 {
     public const MAX_BYTES = 2097152;
+    public const MAX_DESCRIPTION = 500;
 
     public function validate(string $ics): void
     {
@@ -57,7 +58,25 @@ final class Parser
         return $calendar;
     }
 
-    /** @return array<string, list<array{title: string, time: string, all_day: bool, start: string, end: string}>> */
+    /**
+     * The DESCRIPTION of an event as plain text: line breaks kept, other markup removed, at most MAX_DESCRIPTION characters and `…`.
+     *
+     * Character references are decoded before the tags are removed, so that an escaped tag such as `&lt;script&gt;`
+     * is removed too instead of reaching a template as markup. Text that only looks like a tag, such as `a<b`, is lost with it.
+     */
+    public static function description(string $html): string
+    {
+        $text = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('/<(script|style)\b[^>]*>.*?<\/\1\s*>/is', '', $text) ?? '';
+        $text = preg_replace('/<br\b[^>]*>|<\/(?:p|div|li)\s*>/i', "\n", $text) ?? '';
+        $text = str_replace(["\r\n", "\r"], "\n", strip_tags($text));
+        $text = preg_replace('/^\s+|\s+$/u', '', $text) ?? $text;
+        return mb_strlen($text, 'UTF-8') > self::MAX_DESCRIPTION
+            ? mb_substr($text, 0, self::MAX_DESCRIPTION, 'UTF-8') . '…'
+            : $text;
+    }
+
+    /** @return array<string, list<array{title: string, time: string, all_day: bool, start: string, end: string, description: string}>> */
     public function forMonth(string $ics, Month $month): array
     {
         $calendar = $this->read($ics);
@@ -119,6 +138,7 @@ final class Parser
                 throw new RuntimeException('invalid_duration');
             }
             $point = isset($event->{'X-MUSEUM-POINT'}) || $end == $start;
+            $description = self::description((string) $event->DESCRIPTION);
             $day = max($start->setTime(0, 0), $from);
             while ($day < $until && ($day < $end || ($point && $day->format('Y-m-d') === $start->format('Y-m-d')))) {
                 $date = $day->format('Y-m-d');
@@ -130,6 +150,7 @@ final class Parser
                     'all_day' => $allDay,
                     'start' => $dayStart,
                     'end' => $dayEnd,
+                    'description' => $description,
                     '_sort' => [$allDay ? 0 : 1, $start->getTimestamp(), (string) $event->SUMMARY],
                 ];
                 $day = $day->modify('+1 day');

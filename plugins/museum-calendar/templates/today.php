@@ -7,7 +7,7 @@
  * @var string $date Today in the WordPress date format. With lang="en", in the format D, M j
  * @var string $weekday Abbreviated name in the site language. Not printed here. It stays for theme templates.
  * @var array{kind: string, label: string, hours: string}|null $status Today's opening status, from the first closed event, else the first open event. Null when today has neither. kind is 'open' or 'closed', label is the text to print for it, hours is the time of a timed open event, otherwise ''
- * @var list<array{title: string, label: string, label_lang: string, kind: string, time: string, all_day: bool, start: string, end: string}> $events title is the registered title and label is the text to print for it. label_lang is 'ja' when label is Japanese text in an English list, otherwise ''. kind is the kind of the title, 'other' outside the table
+ * @var list<array{title: string, label: string, label_lang: string, kind: string, time: string, all_day: bool, start: string, end: string, description: string}> $events title is the registered title and label is the text to print for it. label_lang is 'ja' when label is Japanese text in an English list, otherwise ''. kind is the kind of the title, 'other' outside the table. description is plain text that may hold line breaks, '' when there is none, not escaped. This template does not print it
  * @var string $lang 'ja' or 'en', the language of the shortcode
  * @var array{empty: string} $text The plugin's own text in that language, not escaped
  */

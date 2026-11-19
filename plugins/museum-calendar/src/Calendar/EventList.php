@@ -8,12 +8,12 @@ use UnexpectedValueException;
 
 final class EventList
 {
-    private const DEFAULTS = ['time' => '', 'all_day' => false, 'start' => '', 'end' => ''];
+    private const DEFAULTS = ['time' => '', 'all_day' => false, 'start' => '', 'end' => '', 'description' => ''];
 
     /**
      * The events of a month as the site displays them, after the `museum_calendar_events` filter.
      *
-     * @return array<string, non-empty-list<array{title: string, kind: string, time: string, all_day: bool, start: string, end: string, ...}>>
+     * @return array<string, non-empty-list<array{title: string, kind: string, time: string, all_day: bool, start: string, end: string, description: string, ...}>>
      */
     public static function forDisplay(EventSource $source, Month $month): array
     {
@@ -70,7 +70,7 @@ final class EventList
      * An invalid value throws. Showing no events instead would tell visitors that the month is empty.
      * The keys of a day are ignored, because array_filter() leaves gaps when a callback removes an event.
      *
-     * @return array<string, non-empty-list<array{title: string, time: string, all_day: bool, start: string, end: string, ...}>>
+     * @return array<string, non-empty-list<array{title: string, time: string, all_day: bool, start: string, end: string, description: string, ...}>>
      */
     public static function fromFilter(mixed $value): array
     {

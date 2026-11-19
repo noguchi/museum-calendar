@@ -6,7 +6,7 @@
  * @var string $month YYYY-MM
  * @var string $label The month in the WordPress format for monthly archives, in the site language
  * @var array<int, string> $weekdays ISO 8601 weekday number => abbreviated name in the site language, in column order
- * @var list<list<array{date: string, day: int, weekday: int, today: bool, events: list<array{title: string, label: string, label_lang: string, kind: string, time: string, all_day: bool, start: string, end: string}>}|null>> $weeks each week in column order, null is a cell outside the month. title is the registered title and label is the text to print for it. label_lang is 'ja' when label is Japanese text in an English calendar, otherwise ''. kind is the kind of the title, 'other' outside the table
+ * @var list<list<array{date: string, day: int, weekday: int, today: bool, events: list<array{title: string, label: string, label_lang: string, kind: string, time: string, all_day: bool, start: string, end: string, description: string}>}|null>> $weeks each week in column order, null is a cell outside the month. title is the registered title and label is the text to print for it. label_lang is 'ja' when label is Japanese text in an English calendar, otherwise ''. kind is the kind of the title, 'other' outside the table. description is plain text that may hold line breaks, '' when there is none, not escaped. This template does not print it
  * @var array{month: string, url: string, label: string}|null $previous label is the month name in the site language
  * @var array{month: string, url: string, label: string}|null $next
  * @var bool $empty

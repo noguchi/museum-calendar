@@ -91,4 +91,58 @@ DTSTART;TZID=Asia/Tokyo:20261120T130000
 DTEND;TZID=Asia/Tokyo:20261120T140000
 SUMMARY:ガイドツアー開催日
 END:VEVENT
+BEGIN:VEVENT
+UID:described-html
+DTSTART;TZID=Asia/Tokyo:20261126T130000
+DTEND;TZID=Asia/Tokyo:20261126T140000
+SUMMARY:説明付きの催し
+DESCRIPTION:<p><b>午後の演奏会</b></p><p>曲目：A<br>B<br/>C<BR />D
+ </p><a href="https://example.com/concert">https://example.com/concert</a><
+ br><script>alert(1)</script>&lt\;script&gt\;alert(2)&lt\;/script&gt\;<styl
+ e>p { color: red\; }</style><ul><li>雨天決行 &amp\; 予約不要</li><
+ li>定員20名</li></ul>
+END:VEVENT
+BEGIN:VEVENT
+UID:described-long
+DTSTART;VALUE=DATE:20261128
+SUMMARY:長い説明の催し
+DESCRIPTION:あいうえおかきくけこあいうえおかきくけこあ
+ いうえおかきくけこあいうえおかきくけこあいうえお
+ かきくけこあいうえおかきくけこあいうえおかきくけ
+ こあいうえおかきくけこあいうえおかきくけこあいう
+ えおかきくけこあいうえおかきくけこあいうえおかき
+ くけこあいうえおかきくけこあいうえおかきくけこあ
+ いうえおかきくけこあいうえおかきくけこあいうえお
+ かきくけこあいうえおかきくけこあいうえおかきくけ
+ こあいうえおかきくけこあいうえおかきくけこあいう
+ えおかきくけこあいうえおかきくけこあいうえおかき
+ くけこあいうえおかきくけこあいうえおかきくけこあ
+ いうえおかきくけこあいうえおかきくけこあいうえお
+ かきくけこあいうえおかきくけこあいうえおかきくけ
+ こあいうえおかきくけこあいうえおかきくけこあいう
+ えおかきくけこあいうえおかきくけこあいうえおかき
+ くけこあいうえおかきくけこあいうえおかきくけこあ
+ いうえおかきくけこあいうえおかきくけこあいうえお
+ かきくけこあいうえおかきくけこあいうえおかきくけ
+ こあいうえおかきくけこあいうえおかきくけこあいう
+ えおかきくけこあいうえおかきくけこあいうえおかき
+ くけこあいうえおかきくけこあいうえおかきくけこあ
+ いうえおかきくけこあいうえおかきくけこあいうえお
+ かきくけこあいうえおかきくけこあいうえおかきくけ
+ こあいうえおかきくけこあいうえおかきくけこあいう
+ えおかきくけこあいうえおかきくけこあいうえおかき
+ くけこ
+END:VEVENT
+BEGIN:VEVENT
+UID:private-details
+DTSTART;TZID=Asia/Tokyo:20261124T100000
+DTEND;TZID=Asia/Tokyo:20261124T110000
+SUMMARY:場所付きの催し
+DESCRIPTION:受付で名前をお伝えください。\n持ち物：筆記
+ 用具\, 上履き\; 飲み物
+LOCATION:非公開の会議室 location-7f3a
+ATTENDEE;CN=attendee-91c2:mailto:attendee-91c2@example.com
+ORGANIZER;CN=organizer-5d8e:mailto:organizer-5d8e@example.com
+ATTACH:https://example.com/attachment-3b6f.pdf
+END:VEVENT
 END:VCALENDAR

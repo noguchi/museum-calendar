@@ -7,11 +7,11 @@ use PHPUnit\Framework\TestCase;
 
 final class EventListTest extends TestCase
 {
-    private const TOUR = ['title' => 'ツアー', 'time' => '11:00–12:00', 'all_day' => false, 'start' => '11:00', 'end' => '12:00'];
+    private const TOUR = ['title' => 'ツアー', 'time' => '11:00–12:00', 'all_day' => false, 'start' => '11:00', 'end' => '12:00', 'description' => '集合：玄関前'];
 
     public function testCompleteEventsPassThroughInOrder(): void
     {
-        $closed = ['title' => '休館', 'time' => '終日', 'all_day' => true, 'start' => '', 'end' => ''];
+        $closed = ['title' => '休館', 'time' => '終日', 'all_day' => true, 'start' => '', 'end' => '', 'description' => ''];
         $events = ['2026-11-16' => [self::TOUR, $closed], '2026-11-02' => [$closed]];
         self::assertSame($events, EventList::fromFilter($events));
     }
@@ -19,7 +19,7 @@ final class EventListTest extends TestCase
     public function testMissingOptionalKeysGetDefaults(): void
     {
         self::assertSame(
-            ['2026-11-15' => [['title' => '題名のみ', 'time' => '', 'all_day' => false, 'start' => '', 'end' => '']]],
+            ['2026-11-15' => [['title' => '題名のみ', 'time' => '', 'all_day' => false, 'start' => '', 'end' => '', 'description' => '']]],
             EventList::fromFilter(['2026-11-15' => [['title' => '題名のみ']]]),
         );
     }
@@ -27,6 +27,12 @@ final class EventListTest extends TestCase
     public function testExtraKeysArePreserved(): void
     {
         $event = self::TOUR + ['category' => 'tour', 'url' => ['a' => 1]];
+        self::assertSame(['2026-11-15' => [$event]], EventList::fromFilter(['2026-11-15' => [$event]]));
+    }
+
+    public function testDescriptionFromAFilterIsKeptAsIs(): void
+    {
+        $event = ['description' => '<b>フィルターが書いた説明</b>'] + self::TOUR;
         self::assertSame(['2026-11-15' => [$event]], EventList::fromFilter(['2026-11-15' => [$event]]));
     }
 
@@ -42,7 +48,7 @@ final class EventListTest extends TestCase
 
     public function testDayIsReindexedAfterEventsWereRemoved(): void
     {
-        $closed = ['title' => '休館', 'time' => '終日', 'all_day' => true, 'start' => '', 'end' => ''];
+        $closed = ['title' => '休館', 'time' => '終日', 'all_day' => true, 'start' => '', 'end' => '', 'description' => ''];
         $day = array_filter([$closed, self::TOUR, $closed, self::TOUR], static fn (array $event): bool => $event['title'] !== '休館');
         self::assertSame(['2026-11-15' => [self::TOUR, self::TOUR]], EventList::fromFilter(['2026-11-15' => $day]));
     }
@@ -152,6 +158,8 @@ final class EventListTest extends TestCase
             'all_day is not a bool' => $day(['title' => 'ツアー', 'all_day' => 1]),
             'start is not a string' => $day(['title' => 'ツアー', 'start' => 11]),
             'end is not a string' => $day(['title' => 'ツアー', 'end' => false]),
+            'description is not a string' => $day(['title' => 'ツアー', 'description' => ['集合：玄関前']]),
+            'description is null' => $day(['title' => 'ツアー', 'description' => null]),
             'one invalid event among valid ones' => [['2026-11-15' => [self::TOUR], '2026-11-16' => [self::TOUR, ['time' => '終日']]]],
         ];
     }
