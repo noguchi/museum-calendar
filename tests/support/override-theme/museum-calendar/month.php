@@ -48,6 +48,7 @@ foreach (array_filter(array_merge(...$weeks)) as $cell) {
         );
         $lines[] = sprintf('label=%s [%s] [%s] [%s]', $cell['date'], $event['title'], $event['label'], $event['label_lang']);
         $lines[] = sprintf('kind=%s [%s] [%s]', $cell['date'], $event['title'], $event['kind']);
+        $lines[] = sprintf('description=%s [%s] %s', $cell['date'], $event['title'], json_encode($event['description'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
 }
 echo "<pre class=\"override-month\">\n" . esc_html(implode("\n", $lines)) . "\n</pre>\n";

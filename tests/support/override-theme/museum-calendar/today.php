@@ -35,6 +35,7 @@ foreach ($events as $event) {
     );
     $lines[] = sprintf('label=[%s] [%s] [%s]', $event['title'], $event['label'], $event['label_lang']);
     $lines[] = sprintf('kind=[%s] [%s]', $event['title'], $event['kind']);
+    $lines[] = sprintf('description=[%s] %s', $event['title'], json_encode($event['description'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 }
 echo "<pre class=\"override-today\">\n" . esc_html(implode("\n", $lines)) . "\n</pre>\n";
 echo '<pre class="override-today-dump">' . esc_html(print_r($variables, true)) . "</pre>\n";

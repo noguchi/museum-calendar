@@ -11,6 +11,8 @@ test('calendar renders events, styles and navigates between months', async ({ pa
   await expect(calendar.locator('li[data-title="ガイドツアー開催日"]')).toHaveAttribute('data-kind', 'tour');
   await expect(calendar.locator('li[data-title="日時変更ガイド"]')).toHaveAttribute('data-kind', 'other');
   await expect(calendar.getByText(/実際の開館情報ではありません/)).toHaveCount(0);
+  await expect(calendar.locator('li[data-title="説明付きの催し"]')).toHaveText('説明付きの催し13:00–14:00');
+  await expect(calendar.getByText(/午後の演奏会|受付で名前|非公開の会議室/)).toHaveCount(0);
   await expect(calendar.locator('table')).toHaveCSS('table-layout', 'fixed');
   await calendar.getByRole('link', { name: 'December »', exact: true }).click();
   await expect(calendar.locator('caption')).toHaveText('December 2026');

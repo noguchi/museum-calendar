@@ -160,6 +160,61 @@ try {
             'event=2026-11-17 [日時変更ガイド] [14:00–15:00] timed [14:00] [15:00] [note for 日時変更ガイド]',
             'label=2026-11-17 [日時変更ガイド] [日時変更ガイド] [ja]',
         );
+        $described = [
+            'description=2026-11-26 [説明付きの催し] "午後の演奏会\n曲目：A\nB\nC\nD\nhttps://example.com/concert\n雨天決行 & 予約不要\n定員20名"',
+            'description=2026-11-24 [場所付きの催し] "受付で名前をお伝えください。\n持ち物：筆記用具, 上履き; 飲み物"',
+            'description=2026-11-28 [長い説明の催し] "' . str_repeat('あいうえおかきくけこ', 50) . '…"',
+            'description=2026-11-10 [一日休館] ""',
+        ];
+        $received($month, ...$described);
+        $received($englishMonth, ...$described);
+        $concertDay = new DateTimeImmutable('2026-11-26 12:00', $tokyo);
+        $meetingDay = new DateTimeImmutable('2026-11-24 12:00', $tokyo);
+        $describedToday = 'description=[説明付きの催し] "午後の演奏会\n曲目：A\nB\nC\nD\nhttps://example.com/concert\n雨天決行 & 予約不要\n定員20名"';
+        $themeToday = [
+            (new Renderer(new Source($fixture)))->renderToday($concertDay, 'n/j'),
+            (new Renderer(new Source($fixture), false, '', Language::English))->renderToday($concertDay, 'D, M j'),
+        ];
+        $received($themeToday[0], 'lang=ja', $describedToday);
+        $received($themeToday[1], 'lang=en', $describedToday);
+        $meetingToday = (new Renderer(new Source($fixture)))->renderToday($meetingDay, 'n/j');
+        $received($meetingToday, 'description=[場所付きの催し] "受付で名前をお伝えください。\n持ち物：筆記用具, 上履き; 飲み物"');
+        $themed = $month . $englishMonth . implode('', $themeToday) . $meetingToday;
+        foreach (['&lt;script', '&lt;style', '&lt;b&gt;', '&lt;p&gt;', '&lt;br', '&lt;a ', '&lt;li', 'alert(', 'color: red'] as $markup) {
+            $check(!str_contains($themed, $markup), "A theme template received markup of a description: {$markup}");
+        }
+        $rewrite = static function (array $events): array {
+            foreach ($events as $date => $day) {
+                foreach ($day as $index => $event) {
+                    if ($event['title'] === '説明付きの催し') {
+                        $events[$date][$index]['description'] = '<i>フィルターの説明</i>';
+                    } elseif ($event['title'] === '場所付きの催し') {
+                        unset($events[$date][$index]['description']);
+                    }
+                }
+            }
+            return $events;
+        };
+        add_filter('museum_calendar_events', $rewrite);
+        try {
+            $received(
+                do_shortcode('[museum_calendar month="2026-11"]'),
+                'description=2026-11-26 [説明付きの催し] "<i>フィルターの説明</i>"',
+                'description=2026-11-24 [場所付きの催し] ""',
+            );
+        } finally {
+            remove_filter('museum_calendar_events', $rewrite);
+        }
+        $numbered = static function (array $events): array {
+            $events['2026-11-26'][0]['description'] = 26;
+            return $events;
+        };
+        add_filter('museum_calendar_events', $numbered);
+        try {
+            $check(str_contains(do_shortcode('[museum_calendar month="2026-11"]'), 'この月の予定を表示できません'), 'A description that is not a string must make the events an invalid value.');
+        } finally {
+            remove_filter('museum_calendar_events', $numbered);
+        }
         $facility = new Source(implode("\n", [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
@@ -322,6 +377,32 @@ try {
         remove_filter('museum_calendar_events', $note);
     }
     $check(get_stylesheet() === $theme && str_contains(do_shortcode('[museum_calendar month="2026-11"]'), '<table'), 'The default template must be back after the theme is restored.');
+    $plain = implode('', [
+        (new Renderer(new Source($fixture)))->render(new Month('2026-11'), $meetingDay),
+        (new Renderer(new Source($fixture), false, '', Language::English))->render(new Month('2026-11'), $meetingDay),
+        (new Renderer(new Source($fixture)))->renderToday($meetingDay, 'n/j'),
+        (new Renderer(new Source($fixture), false, '', Language::English))->renderToday($meetingDay, 'D, M j'),
+        (new Renderer(new Source($fixture)))->renderToday($concertDay, 'n/j'),
+    ]);
+    $check(substr_count($plain, '<li data-title="場所付きの催し"') === 4 && str_contains($plain, '<li data-title="説明付きの催し"'), 'The default templates did not print the events with a description.');
+    foreach (['受付で名前', '午後の演奏会', 'あいうえおかきくけこ', '定員20名'] as $description) {
+        $check(!str_contains($plain, $description), "A default template printed a description: {$description}");
+    }
+    foreach (['非公開の会議室', 'location-7f3a', 'attendee-91c2', 'organizer-5d8e', 'attachment-3b6f'] as $private) {
+        $check(!str_contains($plain . $themed, $private), "The location, an attendee, the organizer or an attachment reached a page: {$private}");
+    }
+
+    $mode = 'timeout';
+    $before = $requests;
+    update_option(FeedRepository::CACHE, ['body' => $fixture, 'fetched_at' => time(), 'attempted_at' => time(), 'error' => '', 'hash' => hash('sha256', Settings::calendar()->feedUrl())], false);
+    switch_theme('override-theme');
+    try {
+        $received(do_shortcode('[museum_calendar month="2026-11"]'), ...$described);
+    } finally {
+        switch_theme($theme);
+    }
+    $check($requests === $before, 'A cache stored before descriptions were shown must be used without fetching again.');
+    $mode = 'ok';
 
     $regular = new Source(implode("\n", [
         'BEGIN:VCALENDAR',
