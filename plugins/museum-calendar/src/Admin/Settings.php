@@ -117,7 +117,7 @@ final class Settings
         }
         // Reading the titles can fetch the feed, so it runs before the fetch status is read.
         $connected = self::calendar() !== null;
-        $untranslated = $connected ? self::untranslatedTitles() : null;
+        $untyped = $connected ? self::untypedTitles() : null;
         $state = get_option(FeedRepository::CACHE, []);
         ?>
         <div class="wrap">
@@ -148,15 +148,15 @@ final class Settings
                     <?php wp_nonce_field('museum_calendar_refresh'); ?>
                     <?php submit_button('今すぐ更新', 'secondary'); ?>
                 </form>
-                <h2>英訳のない予定名</h2>
-                <p>今月から12か月分の予定のうち、英訳のない予定名は <code>lang="en"</code> を付けたページで日本語のまま表示されます。</p>
-                <?php if ($untranslated === null) : ?>
-                    <p>予定を読み込めないため、英訳のない予定名を確認できません。</p>
-                <?php elseif ($untranslated === []) : ?>
-                    <p>すべての予定名に英訳があります。</p>
+                <h2>種類が未定義の予定名</h2>
+                <p>今月から12か月分の予定のうち、種類が未定義の予定名にはテーマの色が付かず、<code>lang="en"</code> を付けたページでは日本語のまま表示されます。</p>
+                <?php if ($untyped === null) : ?>
+                    <p>予定を読み込めないため、種類が未定義の予定名を確認できません。</p>
+                <?php elseif ($untyped === []) : ?>
+                    <p>すべての予定名に種類があります。</p>
                 <?php else : ?>
                     <ul class="ul-disc">
-                        <?php foreach ($untranslated as $title) : ?>
+                        <?php foreach ($untyped as $title) : ?>
                             <li><?php echo esc_html($title); ?></li>
                         <?php endforeach; ?>
                     </ul>
@@ -168,11 +168,12 @@ final class Settings
     }
 
     /**
-     * The titles, from this month through the following 11 months, that an English page prints in Japanese.
+     * The titles, from this month through the following 11 months, whose kind is other.
+     * An event without a title is left out. The facility has no title to register for it.
      *
      * @return list<string>|null Null when the events cannot be read. The cause can hold event data, so it is dropped.
      */
-    private static function untranslatedTitles(): ?array
+    private static function untypedTitles(): ?array
     {
         try {
             $source = new Source((new FeedRepository())->load()['body']);
@@ -182,8 +183,9 @@ final class Settings
                 $month = new Month($key);
                 foreach (EventList::forDisplay($source, $month) as $events) {
                     foreach ($events as $event) {
-                        if (Language::English->title($event['title']) === null) {
-                            $titles[] = Kind::trimmed($event['title']);
+                        $title = Kind::trimmed($event['title']);
+                        if (Kind::fromTitle($title) === Kind::Other && $title !== Language::Japanese->text('untitled')) {
+                            $titles[] = $title;
                         }
                     }
                 }

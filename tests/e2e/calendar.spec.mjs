@@ -49,6 +49,7 @@ test('administrator sees and saves the public URL of the calendar, and CSRF is r
   await expect(field).toHaveValue(publicUrl);
   await page.getByRole('button', { name: '今すぐ更新', exact: true }).click();
   await expect(page.getByText(/^最終成功：/)).not.toContainText('未取得');
+  await expect(page.getByRole('heading', { name: '種類が未定義の予定名', exact: true })).toBeVisible();
   await page.screenshot({ path: 'test-results/settings-' + test.info().project.name + '.png', fullPage: true });
 });
 
