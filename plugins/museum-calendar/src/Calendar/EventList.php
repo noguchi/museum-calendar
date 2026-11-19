@@ -10,10 +10,36 @@ final class EventList
 {
     private const DEFAULTS = ['time' => '', 'all_day' => false, 'start' => '', 'end' => ''];
 
-    /** The events of a month as the site displays them, after the `museum_calendar_events` filter. */
+    /**
+     * The events of a month as the site displays them, after the `museum_calendar_events` filter.
+     *
+     * @return array<string, non-empty-list<array{title: string, kind: string, time: string, all_day: bool, start: string, end: string, ...}>>
+     */
     public static function forDisplay(EventSource $source, Month $month): array
     {
-        return self::fromFilter(apply_filters('museum_calendar_events', $source->forMonth($month), $month->key()));
+        return self::classify(self::fromFilter(apply_filters('museum_calendar_events', $source->forMonth($month), $month->key())));
+    }
+
+    /**
+     * Adds `kind` to every event from its title, replacing a value from a filter, and drops `open` from a day with `closed`.
+     *
+     * A regular opening is a recurring OPEN, so a one-day CLOSE on top of it must win without deleting that day's OPEN.
+     * A day keeps at least its closed event, so no day becomes empty here.
+     *
+     * @param array<string, non-empty-list<array{title: string, ...}>> $days
+     */
+    public static function classify(array $days): array
+    {
+        foreach ($days as $date => $events) {
+            foreach ($events as $index => $event) {
+                $events[$index]['kind'] = Kind::fromTitle($event['title'])->value;
+            }
+            if (in_array(Kind::Closed->value, array_column($events, 'kind'), true)) {
+                $events = array_values(array_filter($events, static fn (array $event): bool => $event['kind'] !== Kind::Open->value));
+            }
+            $days[$date] = $events;
+        }
+        return $days;
     }
 
     /**

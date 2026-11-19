@@ -67,7 +67,7 @@ enum Language: string
     }
 
     /**
-     * Adds `label`, `label_lang` and `kind` to an event and puts its all-day time into this language.
+     * Adds `label` and `label_lang` to an event and puts its all-day time into this language.
      *
      * `title` stays as registered. Filters and theme selectors match on it.
      */
@@ -76,7 +76,6 @@ enum Language: string
         $label = $this->title($event['title']);
         $event['label'] = $label ?? $event['title'];
         $event['label_lang'] = $label === null ? self::Japanese->value : '';
-        $event['kind'] = Kind::fromTitle($event['title'])->value;
         if ($event['time'] === self::Japanese->text('all_day')) {
             $event['time'] = $this->text('all_day');
         }

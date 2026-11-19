@@ -320,6 +320,45 @@ try {
     }
     $check(get_stylesheet() === $theme && str_contains(do_shortcode('[museum_calendar month="2026-11"]'), '<table'), 'The default template must be back after the theme is restored.');
 
+    $regular = new Source(implode("\n", [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        "BEGIN:VEVENT\nUID:open\nDTSTART;TZID=Asia/Tokyo:20261101T103000\nDTEND;TZID=Asia/Tokyo:20261101T163000\nRRULE:FREQ=DAILY\nSUMMARY:OPEN\nEND:VEVENT",
+        "BEGIN:VEVENT\nUID:close\nDTSTART;VALUE=DATE:20261117\nSUMMARY:CLOSE\nEND:VEVENT",
+        "BEGIN:VEVENT\nUID:tour\nDTSTART;TZID=Asia/Tokyo:20261117T110000\nDTEND;TZID=Asia/Tokyo:20261117T120000\nSUMMARY:ガイドツアー開催日\nEND:VEVENT",
+        'END:VCALENDAR',
+    ]));
+    $cell = static function (string $html, string $date): array {
+        preg_match('/<time datetime="' . $date . '">\d+<\/time>(.*?)<\/td>/s', $html, $match);
+        preg_match_all('/<li data-title="([^"]*)"/', $match[1] ?? '', $titles);
+        return $titles[1];
+    };
+    $todayItems = static function (string $html): array {
+        preg_match_all('/<li data-title="([^"]*)"/', $html, $titles);
+        return $titles[1];
+    };
+    $closedDay = new DateTimeImmutable('2026-11-17 12:00', $tokyo);
+    $html = (new Renderer($regular))->render(new Month('2026-11'), $closedDay);
+    $check($cell($html, '2026-11-16') === ['OPEN'] && $cell($html, '2026-11-18') === ['OPEN'], 'A recurring OPEN must show on the days without CLOSE.');
+    $check($cell($html, '2026-11-17') === ['CLOSE', 'ガイドツアー開催日'], 'A one-day CLOSE on top of a recurring OPEN must hide that OPEN in the month.');
+    $check($todayItems((new Renderer($regular))->renderToday($closedDay, 'n/j')) === ['CLOSE', 'ガイドツアー開催日'], 'A one-day CLOSE on top of a recurring OPEN must hide that OPEN today.');
+    $closeEvent = ['title' => 'CLOSE', 'time' => '終日', 'all_day' => true];
+    $moveClose = static function (array $events) use ($closeEvent): array {
+        $events['2026-11-17'] = array_values(array_filter($events['2026-11-17'], static fn (array $event): bool => $event['title'] !== 'CLOSE'));
+        $events['2026-11-18'][] = $closeEvent;
+        return $events;
+    };
+    add_filter('museum_calendar_events', $moveClose);
+    try {
+        $html = (new Renderer($regular))->render(new Month('2026-11'), $closedDay);
+        $check($cell($html, '2026-11-17') === ['OPEN', 'ガイドツアー開催日'], 'A CLOSE that a filter removed must no longer hide OPEN in the month.');
+        $check($cell($html, '2026-11-18') === ['CLOSE'], 'A CLOSE that a filter added must hide OPEN in the month.');
+        $check($todayItems((new Renderer($regular))->renderToday($closedDay, 'n/j')) === ['OPEN', 'ガイドツアー開催日'], 'A CLOSE that a filter removed must no longer hide OPEN today.');
+        $check($todayItems((new Renderer($regular))->renderToday($closedDay->modify('+1 day'), 'n/j')) === ['CLOSE'], 'A CLOSE that a filter added must hide OPEN today.');
+    } finally {
+        remove_filter('museum_calendar_events', $moveClose);
+    }
+
     $state = get_option(FeedRepository::CACHE);
     $state['fetched_at'] = time() - FeedRepository::MAX_AGE - 1;
     update_option(FeedRepository::CACHE, $state, false);

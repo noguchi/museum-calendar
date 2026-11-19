@@ -118,17 +118,17 @@ final class LanguageTest extends TestCase
 
     public function testJapaneseEventShowsItsTitle(): void
     {
-        self::assertSame(self::TOUR + ['label' => 'ガイドツアー開催日', 'label_lang' => '', 'kind' => 'tour'], Language::Japanese->event(self::TOUR));
-        self::assertSame(self::CLOSE + ['label' => 'CLOSE', 'label_lang' => '', 'kind' => 'closed'], Language::Japanese->event(self::CLOSE));
+        self::assertSame(self::TOUR + ['label' => 'ガイドツアー開催日', 'label_lang' => ''], Language::Japanese->event(self::TOUR));
+        self::assertSame(self::CLOSE + ['label' => 'CLOSE', 'label_lang' => ''], Language::Japanese->event(self::CLOSE));
         $unknown = ['title' => '臨時休館'] + self::CLOSE;
-        self::assertSame($unknown + ['label' => '臨時休館', 'label_lang' => '', 'kind' => 'other'], Language::Japanese->event($unknown));
+        self::assertSame($unknown + ['label' => '臨時休館', 'label_lang' => ''], Language::Japanese->event($unknown));
     }
 
     public function testEnglishEventKeepsItsTitleAndShowsTheTranslation(): void
     {
-        self::assertSame(self::TOUR + ['label' => 'Guided Tour', 'label_lang' => '', 'kind' => 'tour'], Language::English->event(self::TOUR));
+        self::assertSame(self::TOUR + ['label' => 'Guided Tour', 'label_lang' => ''], Language::English->event(self::TOUR));
         self::assertSame(
-            ['title' => 'CLOSE', 'time' => 'All day', 'all_day' => true, 'start' => '', 'end' => '', 'label' => 'CLOSED', 'label_lang' => '', 'kind' => 'closed'],
+            ['title' => 'CLOSE', 'time' => 'All day', 'all_day' => true, 'start' => '', 'end' => '', 'label' => 'CLOSED', 'label_lang' => ''],
             Language::English->event(self::CLOSE),
         );
     }
@@ -136,12 +136,12 @@ final class LanguageTest extends TestCase
     public function testEnglishEventWithoutTranslationShowsItsTitleAsJapanese(): void
     {
         $event = ['title' => ' 臨時休館 '] + self::TOUR;
-        self::assertSame($event + ['label' => ' 臨時休館 ', 'label_lang' => 'ja', 'kind' => 'other'], Language::English->event($event));
+        self::assertSame($event + ['label' => ' 臨時休館 ', 'label_lang' => 'ja'], Language::English->event($event));
     }
 
     public function testEventReplacesDisplayKeysAndKeepsOtherKeys(): void
     {
-        $event = self::TOUR + ['label' => 'from a filter', 'label_lang' => 'fr', 'kind' => 'wedding', 'category' => 'tour'];
+        $event = self::TOUR + ['label' => 'from a filter', 'label_lang' => 'fr', 'kind' => 'tour', 'category' => 'tour'];
         self::assertSame(
             self::TOUR + ['label' => 'Guided Tour', 'label_lang' => '', 'kind' => 'tour', 'category' => 'tour'],
             Language::English->event($event),

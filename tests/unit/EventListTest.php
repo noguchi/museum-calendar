@@ -47,6 +47,43 @@ final class EventListTest extends TestCase
         self::assertSame(['2026-11-15' => [self::TOUR, self::TOUR]], EventList::fromFilter(['2026-11-15' => $day]));
     }
 
+    public function testClassifyAddsTheKindOfEachTitleAndReplacesOneFromAFilter(): void
+    {
+        $tea = ['title' => ' お茶室営業日 ', 'kind' => 'wedding'] + self::TOUR;
+        self::assertSame(
+            ['2026-11-15' => [self::TOUR + ['kind' => 'other'], array_replace($tea, ['kind' => 'tea'])]],
+            EventList::classify(['2026-11-15' => [self::TOUR, $tea]]),
+        );
+    }
+
+    #[DataProvider('days')]
+    public function testClassifyHidesOpenOnADayWithClose(array $titles, array $shown): void
+    {
+        $day = array_map(static fn (string $title): array => ['title' => $title] + self::TOUR, $titles);
+        self::assertSame($shown, array_column(EventList::classify(['2026-11-15' => $day])['2026-11-15'], 'title'));
+    }
+
+    public static function days(): array
+    {
+        return [
+            'only OPEN' => [['OPEN', 'ガイドツアー開催日'], ['OPEN', 'ガイドツアー開催日']],
+            'only CLOSE' => [['CLOSE'], ['CLOSE']],
+            'OPEN before CLOSE' => [['OPEN', 'ガイドツアー開催日', 'CLOSE'], ['ガイドツアー開催日', 'CLOSE']],
+            'CLOSE before two OPEN' => [['CLOSE', 'OPEN', '結婚式', ' OPEN '], ['CLOSE', '結婚式']],
+            'neither' => [['ガイドツアー開催日', '臨時休館'], ['ガイドツアー開催日', '臨時休館']],
+            'titles outside the table' => [['open', 'CLOSED', '臨時休館'], ['open', 'CLOSED', '臨時休館']],
+        ];
+    }
+
+    public function testClassifyLeavesOtherDaysAlone(): void
+    {
+        $days = EventList::classify([
+            '2026-11-14' => [['title' => 'OPEN'] + self::TOUR],
+            '2026-11-15' => [['title' => 'CLOSE'] + self::TOUR],
+        ]);
+        self::assertSame([['OPEN'], ['CLOSE']], array_map(static fn (array $day): array => array_column($day, 'title'), array_values($days)));
+    }
+
     #[DataProvider('invalidValues')]
     public function testRejectsInvalidValue(mixed $value): void
     {
