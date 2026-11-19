@@ -1,6 +1,7 @@
 <?php
 /** Integration checks against a real WordPress installation. */
 use MuseumCalendar\Calendar\EventSource;
+use MuseumCalendar\Calendar\Kind;
 use MuseumCalendar\Calendar\Month;
 use MuseumCalendar\Frontend\Language;
 use MuseumCalendar\Frontend\Renderer;
@@ -29,7 +30,7 @@ try {
     $check(str_contains($html, '<caption>February 2024</caption>'), 'Requested month was not rendered.');
     $check(str_contains($html, '2024-02-29'), 'Leap day is missing.');
     $check(!str_contains($html, '2024-02-30'), 'Impossible day was rendered.');
-    foreach (['休館' => 4, '開館' => 25, 'ツアー' => 17, '茶室' => 8] as $title => $count) {
+    foreach (['CLOSE' => 4, 'OPEN' => 25, 'ガイドツアー開催日' => 17, 'お茶室営業日' => 8] as $title => $count) {
         $check(substr_count($html, "<strong>{$title}</strong>") === $count, "February 2024 must list {$title} {$count} times.");
     }
     $check(!str_contains($html, 'museum-calendar__nav'), 'Fixed month must not show ineffective navigation.');
@@ -70,11 +71,11 @@ try {
     }
     $check(str_contains($html, '動作確認用サンプル'), 'Sample today must be labelled as a sample.');
     $samples = match ((int) $now->format('N')) {
-        1 => ['休館'],
-        6, 7 => ['開館', '茶室'],
-        default => ['開館', 'ツアー'],
+        1 => ['CLOSE'],
+        6, 7 => ['OPEN', 'お茶室営業日'],
+        default => ['OPEN', 'ガイドツアー開催日'],
     };
-    foreach (['休館', '開館', 'ツアー', '茶室'] as $title) {
+    foreach (['CLOSE', 'OPEN', 'ガイドツアー開催日', 'お茶室営業日'] as $title) {
         $check(str_contains($html, "<strong>{$title}</strong>") === in_array($title, $samples, true), "Today lists the wrong samples for its weekday: {$title}.");
     }
     $check(str_contains(do_shortcode('[museum_calendar month="invalid"]'), '正しくありません'), 'Invalid input was accepted.');
@@ -101,7 +102,7 @@ try {
         $check($sunday['rows'][0] === ['-', '-', '2 2026-12-01', '3 2026-12-02', '4 2026-12-03', '5 2026-12-04', '6 2026-12-05'], 'Tuesday 1 December 2026 must sit in the third Sunday-first column.');
         $check($sunday['rows'][1][0] === '7 2026-12-06' && $sunday['rows'][4] === ['7 2026-12-27', '1 2026-12-28', '2 2026-12-29', '3 2026-12-30', '4 2026-12-31', '-', '-'], 'Sunday-first dates must sit under their weekday.');
         $check(str_contains($html, '<caption>December 2026</caption>') && !str_contains($html, 'museum-calendar__nav'), 'A fixed month must still render without navigation when the week starts on Sunday.');
-        $check(preg_match('/<td data-weekday="1"[^>]*>\s*<time datetime="2026-12-07">7<\/time>\s*<ul>\s*<li data-title="休館" data-kind="other">/', $html) === 1, 'The Monday sample must stay on Mondays when the week starts on Sunday.');
+        $check(preg_match('/<td data-weekday="1"[^>]*>\s*<time datetime="2026-12-07">7<\/time>\s*<ul>\s*<li data-title="CLOSE" data-kind="closed">/', $html) === 1, 'The Monday sample must stay on Mondays when the week starts on Sunday.');
         $html = do_shortcode('[museum_calendar]');
         $check($grid($html)['labels'] === 'Sun Mon Tue Wed Thu Fri Sat', 'The current month must follow the week start.');
         $check(preg_match('/<td data-weekday="' . $now->format('N') . '" aria-current="date">\s*<time datetime="' . $today . '">/', $html) === 1, 'Today must keep its weekday when the week starts on Sunday.');
@@ -304,13 +305,13 @@ try {
     $check(str_starts_with($html, sprintf($monthSection, 'Monthly calendar', ' lang="en"', $sampleNote)), 'An English month must declare its language on the section and label the sample in English.');
     $check(str_contains($html, '<div class="museum-calendar__scroll" tabindex="0" role="region" aria-label="Monthly schedule (scrolls sideways)">'), 'An English month must label its scroll region in English.');
     $check(str_contains($html, '<caption>February 2024</caption>') && substr_count($html, '<time datetime=') === 29, 'An English month must show the requested month.');
-    $check(substr_count($html, '<li data-title="休館" data-kind="other"><strong lang="ja">休館</strong><span>All day</span></li>') === 4, 'A title without an English text must stay as registered, marked as Japanese, next to the English all-day time.');
-    $check(substr_count($html, '<li data-title="開館" data-kind="other"><strong lang="ja">開館</strong><span>10:30–16:30</span></li>') === 25, 'An English month must leave a time with hours as it is.');
+    $check(substr_count($html, '<li data-title="CLOSE" data-kind="closed"><strong>CLOSED</strong><span>All day</span></li>') === 4, 'An English month must print the English text of a sample title next to the English all-day time.');
+    $check(substr_count($html, '<li data-title="OPEN" data-kind="open"><strong>OPEN</strong><span>10:30–16:30</span></li>') === 25, 'An English month must leave a time with hours as it is.');
     $allEnglish($html, 'The month');
     $html = do_shortcode('[museum_calendar month="2024-02"]');
     $check(str_starts_with($html, sprintf($monthSection, '月間カレンダー', '', '動作確認用サンプル — 実際の開館情報ではありません')) && !str_contains($html, ' lang='), 'A month without lang must keep its Japanese text and declare no language.');
     $check(str_contains($html, '<div class="museum-calendar__scroll" tabindex="0" role="region" aria-label="月間予定表（横にスクロールできます）">'), 'A month without lang must keep the Japanese label of its scroll region.');
-    $check(substr_count($html, '<li data-title="休館" data-kind="other"><strong>休館</strong><span>終日</span></li>') === 4, 'A month without lang must keep the markup of its events.');
+    $check(substr_count($html, '<li data-title="CLOSE" data-kind="closed"><strong>CLOSE</strong><span>終日</span></li>') === 4, 'A month without lang must keep the markup of its events.');
     $check(do_shortcode('[museum_calendar month="2024-02" lang=""]') === $html, 'An empty lang must render as no lang.');
 
     $dateFormat = get_option('date_format');
@@ -321,10 +322,11 @@ try {
         $html = do_shortcode('[museum_calendar_today lang="en"]');
         $check(str_starts_with($html, sprintf($todaySection, 'Today&#039;s schedule', ' lang="en"', $sampleNote)), 'An English today must declare its language on the section and label the sample in English.');
         $check(str_contains($html, $dateLine($today, $now->format('D, M j'))), 'An English today must print the date as D, M j, whatever the date format is.');
+        $english = ['CLOSE' => 'CLOSED', 'OPEN' => 'OPEN', 'ガイドツアー開催日' => 'Guided Tour', 'お茶室営業日' => 'Tea Room Open'];
         foreach ($samples as $title) {
-            $check(str_contains($html, '<li data-title="' . $title . '" data-kind="other"><strong lang="ja">' . $title . '</strong><span>'), "An English today must keep the registered title of {$title}.");
+            $check(str_contains($html, '<li data-title="' . $title . '" data-kind="' . Kind::fromTitle($title)->value . '"><strong>' . $english[$title] . '</strong><span>'), "An English today must print the English text of {$title}.");
         }
-        $check(str_contains($html, '<span>All day</span>') === ($samples === ['休館']), 'An English today must print the all-day time in English.');
+        $check(str_contains($html, '<span>All day</span>') === ($samples === ['CLOSE']), 'An English today must print the all-day time in English.');
         $allEnglish($html, 'Today');
         $html = do_shortcode('[museum_calendar_today]');
         $check(str_starts_with($html, sprintf($todaySection, '本日の予定', '', '動作確認用サンプル — 実際の開館情報ではありません')) && !str_contains($html, ' lang='), 'A today without lang must keep its Japanese text and declare no language.');
