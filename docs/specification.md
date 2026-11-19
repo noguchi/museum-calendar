@@ -82,7 +82,7 @@
 ### テーマ向けのマークアップ
 
 - 月間カレンダーのルートに `id="museum-calendar"`、本日のセルに `aria-current="date"`。
-- 各予定の `li` に、カレンダーに登録したタイトルを入れた `data-title`。表示の言語で変わらない。
+- 各予定の `li` に、カレンダーに登録したタイトルを入れた `data-title` と、[予定の種類](#予定の種類)を入れた `data-kind`。表示の言語で変わらない。
 - 曜日見出しの `th` と日付のある `td` に、曜日の番号（1＝月〜7＝日）を入れた `data-weekday`。月の外のセルにはない。週の始まりで列の位置が変わるため、曜日ごとの装飾は `td[data-weekday="7"]` のように指定する。
 - 前月と翌月のリンクは `#museum-calendar` 付きで、月送りの後もカレンダーの位置に戻る。同じページに置く月間カレンダーは1つを想定。
 - スタイルはハンドル `museum-calendar` で登録する。テンプレートから `do_shortcode()` で呼ぶテーマは `wp_enqueue_style('museum-calendar')` でheadに読み込める。
@@ -106,34 +106,48 @@
 
 - 案内と `aria-label` も英語にする。文言は `plugins/museum-calendar/src/Frontend/Language.php` の `TEXT`。
 - 時刻付きの予定の時間（`10:30–16:30`）は、どちらの言語でも同じ。
-
-### 予定のタイトルの英訳
-
-| 登録したタイトル | 英語での表示 |
-| --- | --- |
-| `OPEN` | `OPEN` |
-| `CLOSE` | `CLOSED` |
-| `お茶室営業日` | `Tea Room Open` |
-| `ガイドツアー開催日` | `Guided Tour` |
-| `結婚式` | `Wedding` |
-| `夜間特別開館` | `Special Evening Opening` |
-
-- 前後の空白（全角を含む）を除いた全体が表の行と一致したときだけ置き換える。部分一致では置き換えない。大文字と小文字を区別する。機械翻訳は行わない。
+- 予定のタイトルは、[予定の種類](#予定の種類)の表の英語に置き換える。機械翻訳は行わない。
 - 表にないタイトルは、登録したタイトルのまま表示する。既定のテンプレートは、そのタイトルの要素に `lang="ja"` を付ける。
-- `data-title` と、`museum_calendar_events` フィルターが受け取る `title` は、`lang="en"` でも登録したタイトルのまま。`li[data-title="お茶室営業日"]` のようなCSSの指定は、両方の言語のページに効く。
+- `data-title`、`data-kind` と、`museum_calendar_events` フィルターが受け取る `title` は、`lang="en"` でも変わらない。`li[data-kind="tea"]` のようなCSSの指定は、両方の言語のページに効く。
 
 ```html
-<li data-title="お茶室営業日"><strong>Tea Room Open</strong><span>12:00–16:00</span></li>
-<li data-title="臨時休館"><strong lang="ja">臨時休館</strong><span>All day</span></li>
+<li data-title="お茶室営業日" data-kind="tea"><strong>Tea Room Open</strong><span>12:00–16:00</span></li>
+<li data-title="臨時休館" data-kind="other"><strong lang="ja">臨時休館</strong><span>All day</span></li>
 ```
 
-### 英訳のない予定名
+## 予定の種類
 
-- カレンダーを登録していると、管理画面の「設定 → Museum Calendar」に、表にないタイトルを重複なしで一覧にする。なければ「すべての予定名に英訳があります。」と表示する。
+プラグインは、予定のタイトルから種類（`kind`）を決める。表は1つで、英語での表示も同じ表に持つ。
+
+| 登録したタイトル | `kind` | 英語での表示 |
+| --- | --- | --- |
+| `OPEN` | `open` | `OPEN` |
+| `CLOSE` | `closed` | `CLOSED` |
+| `お茶室営業日` | `tea` | `Tea Room Open` |
+| `ガイドツアー開催日` | `tour` | `Guided Tour` |
+| `結婚式` | `wedding` | `Wedding` |
+| `夜間特別開館` | `evening` | `Special Evening Opening` |
+| `コンサート` | `concert` | `Concert` |
+| `イベント` | `event` | `Event` |
+
+- 前後の空白（全角を含む）を除いた全体が表の行と一致したときだけ、その行の種類にする。部分一致では決めない。大文字と小文字を区別する。
+- 表にないタイトルの `kind` は `other`。英語での表示はなく、登録したタイトルのまま表示する。タイトルのない予定も `other`。
+- `kind` は `museum_calendar_events` フィルターを適用した後のタイトルから決め、`label`、`label_lang` と同じ段階で各予定に追加する。フィルターが入れた値は上書きする。`lang="en"` でも同じ値。
+- 既定のテンプレートは、各予定の `li` に `data-kind` を出す。`data-title` も残す。
+- プラグインのCSSは種類ごとの色を付けない。テーマが `[data-kind="tour"]` のように指定する。
+
+```css
+.museum-calendar li[data-kind="tour"] { --museum-calendar-event-accent: #2f6f4f; }
+```
+
+- 種類を足すには、`plugins/museum-calendar/src/Calendar/Kind.php` の表に行を足し、新しい版を配布する。管理画面から登録する機能はない。
+
+### 種類が未定義の予定名
+
+- カレンダーを登録していると、管理画面の「設定 → Museum Calendar」に、`kind` が `other` のタイトルを重複なしで一覧にする。タイトルのない予定は含めない。なければ「すべての予定名に種類があります。」と表示する。
 - 対象は当月（Asia/Tokyo）から12か月分で、`museum_calendar_events` フィルターを適用した後のタイトル。
 - 予定を読み込めないときは、その旨だけを表示する。エラーの詳細は表示しない。
 - 設定ページを開いたときにもICSを取得する場合がある。取得の間隔は、ページの表示のときと同じ規則に従う。
-- 英訳を追加するには、`Language.php` の `TITLES` に行を足し、新しい版を配布する。管理画面から登録する機能はない。
 
 ## カスタマイズ
 
@@ -189,14 +203,15 @@ add_filter('museum_calendar_events', function (array $events, string $month): ar
 - 正しくない形式: 全体が配列でない、キーが `YYYY-MM-DD` でない、1日分が配列でない、予定が配列でない、`title` が文字列でない、`time`・`start`・`end` が文字列でない、`all_day` が真偽値でない。
 - フィルターが受け取る `title` と `time` は、`lang="en"` でも日本語の表示のときと同じ値。終日予定の `time` は `終日`。
 
-フィルターを適用した後で、プラグインが各予定に表示用のキーを2つ追加する。フィルターが入れた値は上書きする。
+フィルターを適用した後で、プラグインが各予定にキーを3つ追加する。フィルターが入れた値は上書きする。
 
 | キー | 型 | 内容 |
 | --- | --- | --- |
 | `label` | string | 表示するタイトル。`lang="en"` では英訳。`lang` なしと英訳のないタイトルでは `title` と同じ |
 | `label_lang` | string | `lang="en"` の表示で `label` が英訳のないタイトルのときは `ja`。それ以外は空文字 |
+| `kind` | string | [予定の種類](#予定の種類)。表にないタイトルは `other`。`lang` で変わらない |
 
-- `label` は、フィルターを適用した後の `title` から決まる。
+- `label` と `kind` は、フィルターを適用した後の `title` から決まる。
 - `lang="en"` では、フィルターを適用した後の `time` が `終日` と一致する予定の `time` を `All day` に置き換える。それ以外の `time` は変更しない。
 
 ### テンプレートの差し替え
@@ -263,7 +278,7 @@ add_filter('museum_calendar_events', function (array $events, string $month): ar
 既定のテンプレートは、予定を次のように出力する。
 
 ```php
-<li data-title="<?php echo esc_attr($event['title']); ?>"><strong<?php if ($event['label_lang'] !== '') : ?> lang="<?php echo esc_attr($event['label_lang']); ?>"<?php endif; ?>><?php echo esc_html($event['label']); ?></strong><span><?php echo esc_html($event['time']); ?></span></li>
+<li data-title="<?php echo esc_attr($event['title']); ?>" data-kind="<?php echo esc_attr($event['kind']); ?>"><strong<?php if ($event['label_lang'] !== '') : ?> lang="<?php echo esc_attr($event['label_lang']); ?>"<?php endif; ?>><?php echo esc_html($event['label']); ?></strong><span><?php echo esc_html($event['time']); ?></span></li>
 ```
 
 ### 既定のCSSを使わない
