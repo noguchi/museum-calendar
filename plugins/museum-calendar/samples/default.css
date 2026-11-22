@@ -1,0 +1,31 @@
+/*
+ * Museum Calendar のサンプル: default
+ *
+ * プラグインの既定の見た目を、CSS変数で書き出したもの。このまま追加しても見た目は変わらない。
+ * テーマのCSSか「外観 → カスタマイズ → 追加CSS」に貼り付け、サイトに合わせて値を書き換えて使う。
+ */
+
+:root {
+  --museum-calendar-text: #29251f;
+  --museum-calendar-line: #d6d0c4;
+  --museum-calendar-accent: #635440;
+  --museum-calendar-surface: #f4f1eb;
+  --museum-calendar-notice-background: #f8f1dc;
+  --museum-calendar-today-background: #fbf6e6;
+  --museum-calendar-focus: #3069a1;
+  --museum-calendar-max-width: 960px;
+  --museum-calendar-min-width: 540px;
+  --museum-calendar-cell-height: 6.5rem;
+}
+
+/*
+ * 次の2つの変数は、指定しなければ上の変数の値に従う。
+ *   --museum-calendar-event-background  --museum-calendar-surface に従う
+ *   --museum-calendar-event-accent      --museum-calendar-accent に従う
+ *
+ * 予定の種類の表で色を入れた行は、その予定と本日の開館状況に --museum-calendar-kind-color を設定する。
+ * この色が背景色になる。プラグインはこの色から同じ色相の暗い左の線と、黒か白の文字の色を作り、
+ * --museum-calendar-surface、--museum-calendar-accent、文字の色の代わりに使う。既定の表には色が入っている。
+ * 上の予定の2つの変数を指定すれば、そちらが優先される。種類ごとに変えるなら次のように書く。
+ *   .museum-calendar li[data-kind="tour"] { --museum-calendar-event-accent: #2f6f4f; }
+ */

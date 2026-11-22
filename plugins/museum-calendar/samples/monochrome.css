@@ -1,0 +1,197 @@
+/*
+ * Museum Calendar のサンプル: monochrome
+ *
+ * 黒地に細い罫線。予定の種類は色相ではなく濃淡と枠線で区別する。
+ * プラグインの既定のテンプレート用。テーマのCSSか「外観 → カスタマイズ → 追加CSS」に貼り付けて使う。
+ * セレクターを :root から始めているのは、プラグインのCSSがどこで読み込まれても、こちらを優先させるため。
+ */
+
+/* 文字の色と地の色。今日のマスでは入れ替える。 */
+.museum-calendar,
+.museum-calendar-today {
+  --mono-ink: #f4f4f4;
+  --mono-ground: #0c0c0c;
+  --mono-line: #2e2e2e;
+  --mono-mute: #8d8d8d;
+}
+
+.museum-calendar td[aria-current="date"] {
+  --mono-ink: #0c0c0c;
+  --mono-ground: #fff;
+  --mono-line: #d9d9d9;
+  --mono-mute: #6f6f6f;
+}
+
+.museum-calendar,
+.museum-calendar-today,
+.museum-calendar td[aria-current="date"] {
+  --museum-calendar-text: var(--mono-ink);
+  --museum-calendar-line: var(--mono-line);
+  --museum-calendar-accent: var(--mono-ink);
+  --museum-calendar-surface: var(--mono-ground);
+  --museum-calendar-notice-background: #1d1d1d;
+  --museum-calendar-today-background: #fff;
+  --museum-calendar-focus: #9a9a9a;
+}
+
+/* 月間カレンダー */
+:root .museum-calendar {
+  padding: 1.25rem;
+  font-feature-settings: "tnum";
+  background: var(--mono-ground);
+  border: 1px solid #000;
+  box-shadow: 0 18px 40px rgb(0 0 0 / 22%);
+}
+
+:root .museum-calendar__nav {
+  margin: 0 0 1rem;
+}
+
+:root .museum-calendar__nav a {
+  padding: .25rem 1rem;
+  font-size: .875rem;
+  letter-spacing: .12em;
+  text-decoration: none;
+  border-color: #555;
+  border-radius: 0;
+  transition: color .2s, background .2s;
+}
+
+:root .museum-calendar__nav a:hover {
+  color: #000;
+  background: #fff;
+}
+
+:root .museum-calendar caption {
+  font-size: 1.25rem;
+  font-weight: 500;
+  letter-spacing: .2em;
+}
+
+:root .museum-calendar th {
+  padding: .625rem 0;
+  font-size: .6875rem;
+  font-weight: 500;
+  letter-spacing: .2em;
+  color: var(--mono-mute);
+  border: 0;
+  border-bottom: 1px solid var(--mono-line);
+}
+
+/* その月に含まれないマス */
+:root .museum-calendar td:not([data-weekday]) {
+  background: repeating-linear-gradient(135deg, #0c0c0c 0 6px, #1b1b1b 6px 7px);
+}
+
+:root .museum-calendar td[data-weekday="7"] time {
+  color: var(--mono-mute);
+}
+
+:root .museum-calendar td[aria-current="date"] {
+  color: var(--mono-ink);
+  box-shadow: none;
+}
+
+:root .museum-calendar time {
+  font-weight: 500;
+  letter-spacing: .04em;
+}
+
+/* 予定 */
+:root .museum-calendar li {
+  padding: .3rem .4rem;
+  color: inherit;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--mono-ink) 35%, transparent);
+}
+
+:root .museum-calendar li + li {
+  margin-top: .25rem;
+}
+
+:root .museum-calendar li strong {
+  font-weight: 500;
+}
+
+:root .museum-calendar li a,
+:root .museum-calendar-today__events li a {
+  color: inherit;
+}
+
+:root .museum-calendar li[data-kind="open"] {
+  color: var(--mono-ground);
+  background: var(--mono-ink);
+  border-color: var(--mono-ink);
+}
+
+:root .museum-calendar li[data-kind="closed"] {
+  color: var(--mono-mute);
+  border-style: dashed;
+}
+
+:root .museum-calendar li[data-kind="tea"] {
+  border-color: var(--mono-ink);
+}
+
+:root .museum-calendar li[data-kind="tour"] {
+  background: color-mix(in srgb, var(--mono-ink) 20%, var(--mono-ground));
+  border-color: transparent;
+}
+
+:root .museum-calendar li[data-kind="evening"] {
+  color: var(--mono-ground);
+  background: color-mix(in srgb, var(--mono-ink) 48%, var(--mono-ground));
+  border-color: transparent;
+}
+
+:root .museum-calendar li[data-kind="wedding"] {
+  color: var(--mono-ground);
+  background: color-mix(in srgb, var(--mono-ink) 72%, var(--mono-ground));
+  border-color: transparent;
+}
+
+/* 本日の予定 */
+:root .museum-calendar-today {
+  padding: 1.25rem 1.5rem;
+  font-feature-settings: "tnum";
+  background: var(--mono-ground);
+  border-color: #000;
+  box-shadow: 0 18px 40px rgb(0 0 0 / 22%);
+}
+
+:root .museum-calendar-today__date {
+  font-size: 1.75rem;
+  font-weight: 300;
+  letter-spacing: .04em;
+}
+
+:root .museum-calendar-today__status {
+  align-items: center;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border-left: 0;
+}
+
+:root .museum-calendar-today__status strong {
+  padding: .1rem .9rem;
+  font-size: .875rem;
+  letter-spacing: .12em;
+  color: var(--mono-ground);
+  background: var(--mono-ink);
+  border: 1px solid var(--mono-ink);
+}
+
+:root .museum-calendar-today__status[data-kind="closed"] strong {
+  color: var(--mono-mute);
+  background: transparent;
+  border: 1px dashed var(--mono-mute);
+}
+
+:root .museum-calendar-today__events li {
+  padding: .5rem 0;
+}
+
+:root .museum-calendar-today__events li strong {
+  font-weight: 500;
+}

@@ -1,0 +1,44 @@
+.museum-calendar { color: var(--museum-calendar-text, #29251f); font-family: inherit; max-width: var(--museum-calendar-max-width, 960px); margin: 2rem auto; }
+.museum-calendar__notice { padding: .75rem 1rem; background: var(--museum-calendar-notice-background, #f8f1dc); font-size: .875rem; }
+.museum-calendar__nav { display: flex; justify-content: space-between; margin: 1rem 0; }
+.museum-calendar__nav a { color: var(--museum-calendar-accent, #635440); padding: .5rem 1rem; border: 1px solid var(--museum-calendar-line, #d6d0c4); border-radius: .25rem; }
+.museum-calendar__scroll { overflow-x: auto; }
+.museum-calendar table { border-collapse: collapse; width: 100%; min-width: var(--museum-calendar-min-width, 540px); table-layout: fixed; }
+.museum-calendar caption { font-size: 1.5rem; font-weight: 600; padding: 0 0 1rem; text-align: center; }
+.museum-calendar th, .museum-calendar td { border: 1px solid var(--museum-calendar-line, #d6d0c4); padding: .5rem; }
+.museum-calendar th { background: var(--museum-calendar-surface, #f4f1eb); text-align: center; }
+.museum-calendar td { height: var(--museum-calendar-cell-height, 6.5rem); vertical-align: top; font-size: .875rem; }
+.museum-calendar td[aria-current="date"] { background: var(--museum-calendar-today-background, #fbf6e6); box-shadow: inset 0 0 0 2px var(--museum-calendar-accent, #635440); }
+.museum-calendar td[aria-current="date"] time { font-weight: 700; }
+.museum-calendar ul { margin: .5rem 0 0; padding: 0; list-style: none; }
+/*
+ * --museum-calendar-kind-color は、予定の種類の表から来る予定の背景色。左の線と文字の色はこの色から作る。
+ * この変数がなければ作った値は無効になり、var() は代替値に進み、color: var() は親の値を継承する。
+ * 相対色に対応していないブラウザーでは背景色だけが付く。
+ */
+@supports (color: oklab(from red l a b)) {
+  /*
+   * 同じ色相で、より暗く鮮やかな線。彩度は最大6.5倍、上限 .15 まで上げ、下げることはない。灰色は灰色のまま。
+   * oklab では a と b を拡大する。oklch ではブラウザーが淡い色の色相を捨てるため、淡いオレンジが赤になってしまう。
+   */
+  .museum-calendar li, .museum-calendar-today__status { --museum-calendar-kind-accent: oklab(from var(--museum-calendar-kind-color) calc(l * .76) calc(a * clamp(1, .15 / hypot(a, b), 6.5)) calc(b * clamp(1, .15 / hypot(a, b), 6.5))); }
+  /* 背景色の明るさに応じて、文字を黒か白にする。 */
+  .museum-calendar-today__status { --museum-calendar-kind-text: oklab(from var(--museum-calendar-kind-color) clamp(0, calc((.6 - l) * 1000), 1) 0 0); }
+  /* 予定の背景色はテーマで変えられるので、文字の色もそれに合わせる。種類の色を 0% 混ぜるのは、種類の色がないとき文字の色を無効にしておくため。 */
+  .museum-calendar li { --museum-calendar-kind-text: oklab(from color-mix(in srgb, var(--museum-calendar-event-background, var(--museum-calendar-kind-color)), var(--museum-calendar-kind-color) 0%) clamp(0, calc((.6 - l) * 1000), 1) 0 0); }
+}
+.museum-calendar li { padding: .4rem; color: var(--museum-calendar-kind-text); background: var(--museum-calendar-event-background, var(--museum-calendar-kind-color, var(--museum-calendar-surface, #f4f1eb))); border-left: 2px solid var(--museum-calendar-event-accent, var(--museum-calendar-kind-accent, var(--museum-calendar-accent, #635440))); }
+.museum-calendar li strong, .museum-calendar li span { display: block; overflow-wrap: anywhere; }
+.museum-calendar li span { font-size: .75rem; margin-top: .25rem; }
+.museum-calendar li a { display: block; }
+.museum-calendar li a, .museum-calendar-today__events li a { color: var(--museum-calendar-kind-text, var(--museum-calendar-accent, #635440)); text-decoration: underline; }
+.museum-calendar :focus-visible, .museum-calendar-today :focus-visible { outline: 3px solid var(--museum-calendar-focus, #3069a1); outline-offset: 3px; }
+.museum-calendar-today { color: var(--museum-calendar-text, #29251f); font-family: inherit; max-width: var(--museum-calendar-max-width, 960px); margin: 2rem auto; padding: 1rem; border: 1px solid var(--museum-calendar-line, #d6d0c4); }
+.museum-calendar-today__notice { margin: 0 0 1rem; padding: .75rem 1rem; background: var(--museum-calendar-notice-background, #f8f1dc); font-size: .875rem; }
+.museum-calendar-today__date { margin: 0; font-size: 1.5rem; font-weight: 600; }
+.museum-calendar-today__status { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem 1rem; margin: .75rem 0 0; padding: .5rem .75rem; border-left: 2px solid var(--museum-calendar-kind-accent, var(--museum-calendar-accent, #635440)); color: var(--museum-calendar-kind-text); background: var(--museum-calendar-kind-color, var(--museum-calendar-surface, #f4f1eb)); font-size: 1.125rem; }
+.museum-calendar-today__status strong, .museum-calendar-today__status span { overflow-wrap: anywhere; }
+.museum-calendar-today__events { margin: .75rem 0 0; padding: 0; list-style: none; }
+.museum-calendar-today__events li { display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: .4rem 0; border-top: 1px solid var(--museum-calendar-line, #d6d0c4); }
+.museum-calendar-today__events li strong, .museum-calendar-today__events li span { overflow-wrap: anywhere; }
+.museum-calendar-today__empty { margin: .75rem 0 0; font-size: .875rem; }

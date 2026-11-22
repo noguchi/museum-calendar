@@ -1,0 +1,13 @@
+{
+  "name": "noguchi/museum-calendar",
+  "description": "Googleカレンダーの予定をiCal形式の非公開URL（または公開URL）から取得し、日本時間の月間カレンダーと本日の予定を表示するWordPressプラグイン",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "require": { "php": ">=8.5.12", "sabre/vobject": "^4.5" },
+  "autoload": { "psr-4": { "MuseumCalendar\\": "src/" } },
+  "config": {
+    "platform": { "php": "8.5.12" },
+    "sort-packages": true,
+    "allow-plugins": false
+  }
+}

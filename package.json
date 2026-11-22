@@ -1,0 +1,34 @@
+{
+  "name": "museum-calendar-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "setup": "node scripts/tasks.mjs setup",
+    "dev": "node scripts/tasks.mjs dev",
+    "stop": "node scripts/tasks.mjs stop",
+    "seed": "node scripts/tasks.mjs seed",
+    "site": "node scripts/tasks.mjs site",
+    "site:package": "node scripts/site-package.mjs",
+    "site:deploy": "node scripts/site-package.mjs && node scripts/deploy-site-theme.mjs",
+    "wp": "node scripts/tasks.mjs wp",
+    "check": "node scripts/tasks.mjs check",
+    "test:unit": "node scripts/tasks.mjs unit",
+    "test:integration": "node scripts/tasks.mjs integration",
+    "test:e2e": "node scripts/tasks.mjs e2e",
+    "package": "node scripts/package.mjs",
+    "calendar:copy": "node scripts/copy-calendar.mjs",
+    "check:updates": "node scripts/check-updates.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@wordpress/env": "12.1.0"
+  },
+  "overrides": {
+    "isomorphic-git": "1.44.13",
+    "qs": "6.17.1",
+    "rimraf": "6.1.4"
+  }
+}

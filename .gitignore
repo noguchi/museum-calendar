@@ -1,0 +1,51 @@
+# 依存はコミットしたロックファイルから復元する。
+node_modules/
+vendor/
+
+# 生成したWordPress環境と、手元だけに置く作業メモ。
+/.cache/
+/.local/
+/.wp-env.*.json
+/wordpress/
+/wp-content/
+/uploads/
+wp-config.php
+
+# 認証情報と環境ごとの設定。
+.env
+.env.*
+.secrets/
+secrets/
+credentials*.json
+client_secret*.json
+service-account*.json
+service_account*.json
+*-credentials.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ビルドの成果物、テストの報告、DBのバックアップ。
+/dist/
+/test-results/
+/playwright-report/
+/.phpunit.cache/
+/coverage/
+*.log
+*.zip
+*.tar
+*.tar.gz
+*.sql
+*.sql.*
+*.sqlite
+*.sqlite3
+*.dump
+
+# OSとエディターの一時ファイル。
+.DS_Store
+._*
+.idea/
+*.swp
+*.swo
+*~

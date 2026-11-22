@@ -1,0 +1,12 @@
+{
+  "name": "noguchi/museum-calendar-workspace",
+  "description": "WordPressプラグイン Museum Calendar の開発とテスト",
+  "type": "project",
+  "license": "GPL-2.0-or-later",
+  "require-dev": { "phpunit/phpunit": "^11.5" },
+  "config": {
+    "platform": { "php": "8.5.12" },
+    "sort-packages": true,
+    "allow-plugins": false
+  }
+}

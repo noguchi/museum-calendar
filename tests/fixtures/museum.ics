@@ -1,0 +1,148 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Museum Calendar//Test calendar//JA
+X-WR-TIMEZONE:Asia/Tokyo
+BEGIN:VEVENT
+UID:weekly-tour
+DTSTART;TZID=Asia/Tokyo:20261102T103000
+DTEND;TZID=Asia/Tokyo:20261102T113000
+RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=5
+EXDATE;TZID=Asia/Tokyo:20261109T103000
+SUMMARY:週替わりガイド
+END:VEVENT
+BEGIN:VEVENT
+UID:weekly-tour
+RECURRENCE-ID;TZID=Asia/Tokyo:20261116T103000
+DTSTART;TZID=Asia/Tokyo:20261117T140000
+DTEND;TZID=Asia/Tokyo:20261117T150000
+SUMMARY:日時変更ガイド
+END:VEVENT
+BEGIN:VEVENT
+UID:weekly-tour
+RECURRENCE-ID;TZID=Asia/Tokyo:20261123T103000
+STATUS:CANCELLED
+END:VEVENT
+BEGIN:VEVENT
+UID:exhibition
+DTSTART;VALUE=DATE:20261105
+DTEND;VALUE=DATE:20261108
+SUMMARY:終日展示
+END:VEVENT
+BEGIN:VEVENT
+UID:one-day
+DTSTART;VALUE=DATE:20261110
+SUMMARY:一日休館
+END:VEVENT
+BEGIN:VEVENT
+UID:weekly-all-day
+DTSTART;VALUE=DATE:20261030
+DTEND;VALUE=DATE:20261031
+RRULE:FREQ=WEEKLY;COUNT=4
+SUMMARY:終日繰り返し
+END:VEVENT
+BEGIN:VEVENT
+UID:monthly
+DTSTART;TZID=Asia/Tokyo:20261013T130000
+DURATION:PT2H
+RRULE:FREQ=MONTHLY;BYDAY=TU;BYSETPOS=2;UNTIL=20270131T150000Z
+SUMMARY:第2火曜講座
+END:VEVENT
+BEGIN:VEVENT
+UID:daily
+DTSTART;VALUE=DATE:20261031
+RRULE:FREQ=DAILY;COUNT=3
+SUMMARY:連日開催
+END:VEVENT
+BEGIN:VEVENT
+UID:utc-next-month
+DTSTART:20261130T153000Z
+DTEND:20261130T163000Z
+SUMMARY:翌月の予定
+END:VEVENT
+BEGIN:VEVENT
+UID:utc-boundary
+DTSTART:20261031T150000Z
+DTEND:20261031T160000Z
+SUMMARY:月初深夜
+END:VEVENT
+BEGIN:VEVENT
+UID:midnight-end
+DTSTART;TZID=Asia/Tokyo:20261130T230000
+DTEND;TZID=Asia/Tokyo:20261201T000000
+SUMMARY:月末夜間
+END:VEVENT
+BEGIN:VEVENT
+UID:cancelled-series
+DTSTART;VALUE=DATE:20261101
+RRULE:FREQ=DAILY;COUNT=30
+STATUS:CANCELLED
+SUMMARY:中止した連日開催
+END:VEVENT
+BEGIN:VEVENT
+UID:additional-dates
+DTSTART;TZID=Asia/Tokyo:20261104T120000
+DURATION:PT1H
+RDATE;TZID=Asia/Tokyo:20261112T120000,20261119T120000
+SUMMARY:追加開催
+END:VEVENT
+BEGIN:VEVENT
+UID:guided-tour
+DTSTART;TZID=Asia/Tokyo:20261120T130000
+DTEND;TZID=Asia/Tokyo:20261120T140000
+SUMMARY:ガイドツアー開催日
+END:VEVENT
+BEGIN:VEVENT
+UID:described-html
+DTSTART;TZID=Asia/Tokyo:20261126T130000
+DTEND;TZID=Asia/Tokyo:20261126T140000
+SUMMARY:説明付きの催し
+DESCRIPTION:<p><b>午後の演奏会</b></p><p>曲目：A<br>B<br/>C<BR />D
+ </p><a href="https://example.com/concert">https://example.com/concert</a><
+ br><script>alert(1)</script>&lt\;script&gt\;alert(2)&lt\;/script&gt\;<styl
+ e>p { color: red\; }</style><ul><li>雨天決行 &amp\; 予約不要</li><
+ li>定員20名</li></ul>
+END:VEVENT
+BEGIN:VEVENT
+UID:described-long
+DTSTART;VALUE=DATE:20261128
+SUMMARY:長い説明の催し
+DESCRIPTION:あいうえおかきくけこあいうえおかきくけこあ
+ いうえおかきくけこあいうえおかきくけこあいうえお
+ かきくけこあいうえおかきくけこあいうえおかきくけ
+ こあいうえおかきくけこあいうえおかきくけこあいう
+ えおかきくけこあいうえおかきくけこあいうえおかき
+ くけこあいうえおかきくけこあいうえおかきくけこあ
+ いうえおかきくけこあいうえおかきくけこあいうえお
+ かきくけこあいうえおかきくけこあいうえおかきくけ
+ こあいうえおかきくけこあいうえおかきくけこあいう
+ えおかきくけこあいうえおかきくけこあいうえおかき
+ くけこあいうえおかきくけこあいうえおかきくけこあ
+ いうえおかきくけこあいうえおかきくけこあいうえお
+ かきくけこあいうえおかきくけこあいうえおかきくけ
+ こあいうえおかきくけこあいうえおかきくけこあいう
+ えおかきくけこあいうえおかきくけこあいうえおかき
+ くけこあいうえおかきくけこあいうえおかきくけこあ
+ いうえおかきくけこあいうえおかきくけこあいうえお
+ かきくけこあいうえおかきくけこあいうえおかきくけ
+ こあいうえおかきくけこあいうえおかきくけこあいう
+ えおかきくけこあいうえおかきくけこあいうえおかき
+ くけこあいうえおかきくけこあいうえおかきくけこあ
+ いうえおかきくけこあいうえおかきくけこあいうえお
+ かきくけこあいうえおかきくけこあいうえおかきくけ
+ こあいうえおかきくけこあいうえおかきくけこあいう
+ えおかきくけこあいうえおかきくけこあいうえおかき
+ くけこ
+END:VEVENT
+BEGIN:VEVENT
+UID:private-details
+DTSTART;TZID=Asia/Tokyo:20261124T100000
+DTEND;TZID=Asia/Tokyo:20261124T110000
+SUMMARY:場所付きの催し
+DESCRIPTION:受付で名前をお伝えください。\n持ち物：筆記
+ 用具\, 上履き\; 飲み物
+LOCATION:非公開の会議室 location-7f3a
+ATTENDEE;CN=attendee-91c2:mailto:attendee-91c2@example.com
+ORGANIZER;CN=organizer-5d8e:mailto:organizer-5d8e@example.com
+ATTACH:https://example.com/attachment-3b6f.pdf
+END:VEVENT
+END:VCALENDAR
