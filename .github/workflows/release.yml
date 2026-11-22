@@ -26,6 +26,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run check
+      - run: npm run check:audit
       - run: npm run package
       - name: Publish GitHub Release
         env:

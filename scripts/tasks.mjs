@@ -115,6 +115,12 @@ try {
       seed(true);
       run(path.join(root, 'node_modules/.bin/playwright'), ['test']);
       break;
+    case 'audit':
+      // 配布ZIPに入る実行用の依存だけを調べる。脆弱性の情報をPackagistから取得するので、check には含めない。
+      prepareTestConfig();
+      wpEnv(['start'], true);
+      wpEnv(['run', 'cli', '--env-cwd=workspace/plugins/museum-calendar', 'composer', 'audit', '--locked', '--no-interaction'], true);
+      break;
     default: throw new Error(`不明なタスクです: ${task}`);
   }
 } catch (error) {

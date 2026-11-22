@@ -39,9 +39,3 @@ jobs:
           STAGING_URL: ${{ vars.STAGING_URL }}
           STAGING_WP_USER: ${{ secrets.STAGING_WP_USER }}
           STAGING_WP_PASSWORD: ${{ secrets.STAGING_WP_PASSWORD }}
-      - uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: staging-failure
-          path: test-results/
-          if-no-files-found: ignore

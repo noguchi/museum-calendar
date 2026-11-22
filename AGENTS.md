@@ -53,7 +53,8 @@ GoogleカレンダーのiCal形式のURL（通常は組織内で共有した非�
 | `npm run test:integration` | `wp eval-file` で `tests/integration/plugin.php` と `ics.php` を実行 |
 | `npm run test:e2e` | Playwright。desktopとmobile（Pixel 7）の2プロジェクト、workers 1 |
 | `npm run wp -- <args>` | 開発環境でWP-CLI |
-| `npm run package` | `dist/` に配布ZIP。版はプラグインヘッダーから読む |
+| `npm run check:audit` | 実行用の依存の `composer audit`。Packagistに接続するので `check` には含めず、CIが別に実行する |
+| `npm run package` | `dist/` に配布ZIP。版はプラグインヘッダーから読む。ZIPの中身（実行用の依存、開発用のファイルの混入）も検査する |
 | `npm run calendar:copy -- '<URL>'` | 開発環境が読む写しを更新。ホストのNode.jsだけで動く |
 
 テストを1件だけ流すときは、テスト環境を起動した後（`npm run test:unit` を一度実行するなど）に次を使う。

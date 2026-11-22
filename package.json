@@ -20,6 +20,7 @@
     "test:e2e": "node scripts/tasks.mjs e2e",
     "package": "node scripts/package.mjs",
     "calendar:copy": "node scripts/copy-calendar.mjs",
+    "check:audit": "node scripts/tasks.mjs audit",
     "check:updates": "node scripts/check-updates.mjs"
   },
   "devDependencies": {

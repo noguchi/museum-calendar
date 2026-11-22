@@ -18,7 +18,7 @@ mainへのpushでチェックが通ると、最新のプラグインがステー
 
 - Docker EngineとDocker Composeプラグイン。`docker info` がsudoなしで通ること。
 - Node.js 26推奨（最低22.13.0）とnpm
-- `zip` コマンド（配布ZIPを作る場合）
+- `zip` と `unzip` コマンド（配布ZIPを作る場合）
 
 ```sh
 npm ci
@@ -66,8 +66,9 @@ Dockerは8888番、8889番、MariaDBのポートをホストの全インター�
 | `npm run test:unit` | 日付計算、ICS解析、予定の種類の表、サンプルのCSSのテスト |
 | `npm run test:integration` | 設定（非公開URLと公開URL、予定の種類の表）、取得、キャッシュ、失敗時処理、表示のテスト |
 | `npm run test:e2e` | PC/スマホの表示と管理画面操作。画像は `test-results` に保存 |
-| `npm run package` | vendorを含むプラグインZIPをdistに生成 |
+| `npm run package` | vendorを含むプラグインZIPをdistに生成し、実行用の依存がそろっていて開発用のファイルがないことを確認 |
 | `npm run calendar:copy -- '<URL>'` | 開発環境が読むサンプルカレンダーの写しを更新（上記） |
+| `npm run check:audit` | 配布ZIPに入る実行用の依存に、既知の脆弱性がないことを確認（Packagistに接続する） |
 | `npm run check:updates` | WordPress公開最新版を確認（更新はしない） |
 
 ## 実サイトのトップページ
@@ -93,7 +94,7 @@ Dockerは8888番、8889番、MariaDBのポートをホストの全インター�
 
 - ルートのComposerはPHPUnitなど開発用。`plugins/museum-calendar/composer.json` はsabre/vobjectなど実行用で、こちらのvendorだけを配布ZIPに含めます。
 - 対応バージョンの下限は本番環境の現行版です。変えるときは、プラグインヘッダー、2つの `composer.json`（`require` と `platform`）、両方のcomposer.lock、README、仕様をそろえます。
-- GitHub ActionsがPRとmainへの変更を検証します。mainの検証が通ると、ステージングに配備します（[運用手順](operations.md#ステージングへの配備)）。プラグインのVersionと同じ番号の `v*` タグ（例: `v1.0.0`）をpushすると、配布ZIPをGitHub Releasesに添付します。タグとVersionが一致しない場合は失敗します。本番への自動配備は行いません。
+- GitHub ActionsがPRと各ブランチへのpushを検証します（`npm run check`、`npm run check:audit`、`npm run package`）。mainの検証が通ると、ステージングに配備します（[運用手順](operations.md#ステージングへの配備)）。プラグインのVersionと同じ番号の `v*` タグ（例: `v1.0.0`）をpushすると、配布ZIPをGitHub Releasesに添付します。タグとVersionが一致しない場合は失敗します。本番への自動配備は行いません。
 
 ## 関連資料
 

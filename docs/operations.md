@@ -49,7 +49,7 @@ mainへのpushで「Calendar checks」が成功すると、「Deploy to staging�
 - 配備先はリポジトリ変数 `STAGING_URL`。現在の値は[開発の手引き](development.md#ステージング)にあります。
 - ログインはシークレット `STAGING_WP_USER` と `STAGING_WP_PASSWORD`。ログイン情報はリポジトリに書きません。
 - `scripts/deploy-staging.mjs` がPlaywrightで管理画面にログインし、「プラグインのアップロード」でZIPを上書きして有効化します。
-- 続けて、プラグインのVersion、カレンダーの登録状況、「今すぐ更新」の成否、トップページの月間カレンダーと本日の予定を確認します。どれかが満たされないと失敗し、画面の画像を `staging-failure` として残します。設定ページは保存したURLを表示しないため、この画像に非公開URLは写りません。
+- 続けて、プラグインのVersion、カレンダーの登録状況、「今すぐ更新」の成否、トップページの月間カレンダーと本日の予定を確認します。どれかが満たされないと失敗します。原因は実行ログの `ok:` の行とエラーメッセージで追います。管理画面の画像にはログインのユーザー名などが写るので、GitHub Actionsの成果物には残しません（手元で実行したときは `test-results/staging-failure.png` に残ります）。
 - 手元から実行するには、`npm run package` の後に `STAGING_URL=… STAGING_WP_USER=… STAGING_WP_PASSWORD=… node scripts/deploy-staging.mjs dist/museum-calendar-<版>.zip`。
 - 配備先を変えるときは、変数とシークレットを `gh variable set` と `gh secret set` で更新します。確認はトップページに両方のショートコードがある前提です。
 

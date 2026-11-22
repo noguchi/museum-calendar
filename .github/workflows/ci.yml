@@ -1,7 +1,8 @@
 name: Calendar checks
 on:
   push:
-    branches: [main]
+    # RenovateのブランチはPRで検査する。
+    branches-ignore: ['renovate/**']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -22,6 +23,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run check
+      - run: npm run check:audit
       - run: npm run package
       - uses: actions/upload-artifact@v7
         with:
