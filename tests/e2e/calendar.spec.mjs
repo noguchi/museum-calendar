@@ -91,7 +91,7 @@ test('administrator registers the private iCal URL without seeing it again, and 
     await expect(field).toHaveValue('');
     const html = await page.content();
     for (const secret of [token, 'museum-fixture', 'calendar.google.com']) {
-      expect(html.includes(secret), 'the settings page shows the calendar URL or ID').toBe(false);
+      expect(html.includes(secret), '設定画面にカレンダーのURLもIDも出ない').toBe(false);
     }
   };
   await expect(field).toHaveAttribute('type', 'password');
@@ -200,7 +200,7 @@ test('administrator adds a kind of event, sees an invalid one rejected and reset
     context.fillRect(0, 0, 1, 1);
     return [...context.getImageData(0, 0, 1, 1).data.slice(0, 3)];
   }, property);
-  const near = (actual, expected) => expect(actual.every((value, index) => Math.abs(value - expected[index]) <= 3), `${actual} is not near ${expected}`).toBe(true);
+  const near = (actual, expected) => expect(actual.every((value, index) => Math.abs(value - expected[index]) <= 3), `${actual} は ${expected} に近い`).toBe(true);
   const colorPage = await page.context().newPage();
   await colorPage.goto('/?pagename=calendar-demo&museum_month=2026-11');
   const coloredTour = colorPage.locator('.museum-calendar li[data-title="ガイドツアー開催日"]').first();

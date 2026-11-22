@@ -62,13 +62,13 @@ final class MonthTest extends TestCase
     public static function grids(): array
     {
         return [
-            '2026-11 starts on a Sunday, Monday first' => ['2026-11', 1, [null, null, null, null, null, null, 1], [30, null, null, null, null, null, null], 30],
-            '2026-11 starts on a Sunday, Sunday first' => ['2026-11', 7, [1, 2, 3, 4, 5, 6, 7], [29, 30, null, null, null, null, null], 30],
-            '2026-11 starts on a Sunday, Saturday first' => ['2026-11', 6, [null, 1, 2, 3, 4, 5, 6], [28, 29, 30, null, null, null, null], 30],
-            '2026-06 starts on a Monday, Monday first' => ['2026-06', 1, [1, 2, 3, 4, 5, 6, 7], [29, 30, null, null, null, null, null], 30],
-            '2026-06 starts on a Monday, Sunday first' => ['2026-06', 7, [null, 1, 2, 3, 4, 5, 6], [28, 29, 30, null, null, null, null], 30],
-            '2026-07 starts on a Wednesday, Monday first' => ['2026-07', 1, [null, null, 1, 2, 3, 4, 5], [27, 28, 29, 30, 31, null, null], 31],
-            '2026-07 starts on a Wednesday, Sunday first' => ['2026-07', 7, [null, null, null, 1, 2, 3, 4], [26, 27, 28, 29, 30, 31, null], 31],
+            '日曜日に始まる2026-11、月曜始まり' => ['2026-11', 1, [null, null, null, null, null, null, 1], [30, null, null, null, null, null, null], 30],
+            '日曜日に始まる2026-11、日曜始まり' => ['2026-11', 7, [1, 2, 3, 4, 5, 6, 7], [29, 30, null, null, null, null, null], 30],
+            '日曜日に始まる2026-11、土曜始まり' => ['2026-11', 6, [null, 1, 2, 3, 4, 5, 6], [28, 29, 30, null, null, null, null], 30],
+            '月曜日に始まる2026-06、月曜始まり' => ['2026-06', 1, [1, 2, 3, 4, 5, 6, 7], [29, 30, null, null, null, null, null], 30],
+            '月曜日に始まる2026-06、日曜始まり' => ['2026-06', 7, [null, 1, 2, 3, 4, 5, 6], [28, 29, 30, null, null, null, null], 30],
+            '水曜日に始まる2026-07、月曜始まり' => ['2026-07', 1, [null, null, 1, 2, 3, 4, 5], [27, 28, 29, 30, 31, null, null], 31],
+            '水曜日に始まる2026-07、日曜始まり' => ['2026-07', 7, [null, null, null, 1, 2, 3, 4], [26, 27, 28, 29, 30, 31, null], 31],
         ];
     }
 
@@ -89,15 +89,15 @@ final class MonthTest extends TestCase
     public static function navigableLimits(): array
     {
         return [
-            'mid-month' => ['2026-11-22 12:00', 'Asia/Tokyo', '2027-01'],
-            'November crosses the year' => ['2026-11-01 00:00', 'Asia/Tokyo', '2027-01'],
-            'December crosses the year' => ['2026-12-31 23:59:59', 'Asia/Tokyo', '2027-02'],
-            'the 31st does not skip a month' => ['2027-01-31 12:00', 'Asia/Tokyo', '2027-03'],
-            'the 29th of a leap year' => ['2028-12-29 12:00', 'Asia/Tokyo', '2029-02'],
-            'UTC evening already next month in Tokyo' => ['2026-11-30 15:00', 'UTC', '2027-02'],
-            'UTC evening still this month in Tokyo' => ['2026-11-30 14:59:59', 'UTC', '2027-01'],
-            'Los Angeles before Tokyo midnight' => ['2026-12-31 06:59:59', 'America/Los_Angeles', '2027-02'],
-            'Los Angeles after Tokyo midnight' => ['2026-12-31 07:00', 'America/Los_Angeles', '2027-03'],
+            '月の半ば' => ['2026-11-22 12:00', 'Asia/Tokyo', '2027-01'],
+            '11月は年をまたぐ' => ['2026-11-01 00:00', 'Asia/Tokyo', '2027-01'],
+            '12月は年をまたぐ' => ['2026-12-31 23:59:59', 'Asia/Tokyo', '2027-02'],
+            '31日でも月を飛ばさない' => ['2027-01-31 12:00', 'Asia/Tokyo', '2027-03'],
+            'うるう年の29日' => ['2028-12-29 12:00', 'Asia/Tokyo', '2029-02'],
+            '東京では翌月になっているUTCの夕方' => ['2026-11-30 15:00', 'UTC', '2027-02'],
+            '東京ではまだ当月のUTCの夕方' => ['2026-11-30 14:59:59', 'UTC', '2027-01'],
+            '東京の0時より前のロサンゼルス' => ['2026-12-31 06:59:59', 'America/Los_Angeles', '2027-02'],
+            '東京の0時より後のロサンゼルス' => ['2026-12-31 07:00', 'America/Los_Angeles', '2027-03'],
         ];
     }
 

@@ -29,13 +29,13 @@ final class EventListTest extends TestCase
     public static function days(): array
     {
         return [
-            'only open' => [['開館日', 'ガイドツアー開催日'], ['開館日', 'ガイドツアー開催日']],
-            'only closed' => [['休館日'], ['休館日']],
-            'open before closed' => [['開館日', 'ガイドツアー開催日', '休館日'], ['ガイドツアー開催日', '休館日']],
-            'closed before two open' => [['休館日', '開館日', '結婚式', ' 開館日 '], ['休館日', '結婚式']],
-            'neither' => [['ガイドツアー開催日', '臨時休館'], ['ガイドツアー開催日', '臨時休館']],
-            'titles outside the table' => [['open', 'CLOSED', '臨時休館'], ['open', 'CLOSED', '臨時休館']],
-            'English texts and short forms outside the table' => [['OPEN', 'CLOSE', '休館'], ['OPEN', 'CLOSE', '休館']],
+            'open だけ' => [['開館日', 'ガイドツアー開催日'], ['開館日', 'ガイドツアー開催日']],
+            'closed だけ' => [['休館日'], ['休館日']],
+            'closed より前の open' => [['開館日', 'ガイドツアー開催日', '休館日'], ['ガイドツアー開催日', '休館日']],
+            '2つの open より前の closed' => [['休館日', '開館日', '結婚式', ' 開館日 '], ['休館日', '結婚式']],
+            'どちらもない' => [['ガイドツアー開催日', '臨時休館'], ['ガイドツアー開催日', '臨時休館']],
+            '表にないタイトル' => [['open', 'CLOSED', '臨時休館'], ['open', 'CLOSED', '臨時休館']],
+            '表にない英語と短縮形' => [['OPEN', 'CLOSE', '休館'], ['OPEN', 'CLOSE', '休館']],
         ];
     }
 
@@ -103,14 +103,14 @@ final class EventListTest extends TestCase
     public static function statuses(): array
     {
         return [
-            'only OPEN' => [['tour', 'OPEN'], ['kind' => 'open', 'color' => '#ffebee', 'label' => 'label of 開館日', 'label_lang' => '', 'hours' => '10:30–16:30']],
-            'all-day OPEN' => [['all-day OPEN', 'tour'], ['kind' => 'open', 'color' => '#ffebee', 'label' => 'label of 開館日', 'label_lang' => '', 'hours' => '']],
-            'two OPEN' => [['late OPEN', 'OPEN'], ['kind' => 'open', 'color' => '#ffebee', 'label' => 'label of 開館日', 'label_lang' => '', 'hours' => '13:00–20:00']],
-            'only CLOSE' => [['CLOSE'], ['kind' => 'closed', 'color' => '#f5f5f5', 'label' => 'label of 休館日', 'label_lang' => '', 'hours' => '']],
-            'timed CLOSE' => [['timed CLOSE'], ['kind' => 'closed', 'color' => '#f5f5f5', 'label' => 'label of 休館日', 'label_lang' => '', 'hours' => '']],
-            'OPEN and CLOSE' => [['OPEN', 'tour', 'CLOSE'], ['kind' => 'closed', 'color' => '#f5f5f5', 'label' => 'label of 休館日', 'label_lang' => '', 'hours' => '']],
-            'neither' => [['tour'], null],
-            'no events' => [[], null],
+            'OPEN だけ' => [['tour', 'OPEN'], ['kind' => 'open', 'color' => '#ffebee', 'label' => 'label of 開館日', 'label_lang' => '', 'hours' => '10:30–16:30']],
+            '終日の OPEN' => [['all-day OPEN', 'tour'], ['kind' => 'open', 'color' => '#ffebee', 'label' => 'label of 開館日', 'label_lang' => '', 'hours' => '']],
+            '2つの OPEN' => [['late OPEN', 'OPEN'], ['kind' => 'open', 'color' => '#ffebee', 'label' => 'label of 開館日', 'label_lang' => '', 'hours' => '13:00–20:00']],
+            'CLOSE だけ' => [['CLOSE'], ['kind' => 'closed', 'color' => '#f5f5f5', 'label' => 'label of 休館日', 'label_lang' => '', 'hours' => '']],
+            '時刻付きの CLOSE' => [['timed CLOSE'], ['kind' => 'closed', 'color' => '#f5f5f5', 'label' => 'label of 休館日', 'label_lang' => '', 'hours' => '']],
+            'OPEN と CLOSE' => [['OPEN', 'tour', 'CLOSE'], ['kind' => 'closed', 'color' => '#f5f5f5', 'label' => 'label of 休館日', 'label_lang' => '', 'hours' => '']],
+            'どちらもない' => [['tour'], null],
+            '予定なし' => [[], null],
         ];
     }
 

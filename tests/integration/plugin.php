@@ -44,23 +44,23 @@ $sampleFeed = static function ($pre, $args, $url) use (&$sampleIcs) {
 };
 add_filter('pre_http_request', $sampleFeed, 10, 3);
 try {
-    $check(shortcode_exists('museum_calendar') && shortcode_exists('museum_calendar_today'), 'Shortcode registration failed.');
-    $check(wp_style_is('museum-calendar', 'registered'), 'Themes need the registered stylesheet handle.');
+    $check(shortcode_exists('museum_calendar') && shortcode_exists('museum_calendar_today'), 'ショートコードが登録されている。');
+    $check(wp_style_is('museum-calendar', 'registered'), 'テーマが使うスタイルシートのハンドルが登録されている。');
     update_option(Settings::OPTION, $sampleCalendar, false);
     $html = do_shortcode('[museum_calendar month="2024-02"]');
-    $check(str_contains($html, '<caption>February 2024</caption>'), 'Requested month was not rendered.');
-    $check(str_contains($html, '2024-02-29'), 'Leap day is missing.');
-    $check(!str_contains($html, '2024-02-30'), 'Impossible day was rendered.');
+    $check(str_contains($html, '<caption>February 2024</caption>'), '指定した月を表示する。');
+    $check(str_contains($html, '2024-02-29'), 'うるう日を表示する。');
+    $check(!str_contains($html, '2024-02-30'), 'ありえない日を表示しない。');
     foreach (['休館日' => 4, '開館日' => 25, 'ガイドツアー開催日' => 17, 'お茶室営業日' => 8] as $title => $count) {
-        $check(substr_count($html, "<strong>{$title}</strong>") === $count, "February 2024 must list {$title} {$count} times.");
+        $check(substr_count($html, "<strong>{$title}</strong>") === $count, "2024年2月は {$title} を {$count} 回表示する。");
     }
-    $check(!str_contains($html, 'museum-calendar__nav'), 'Fixed month must not show ineffective navigation.');
-    $check(!str_contains($html, 'aria-current'), 'A past month must not mark a current day.');
+    $check(!str_contains($html, 'museum-calendar__nav'), '固定月には効かない月送りを出さない。');
+    $check(!str_contains($html, 'aria-current'), '過去の月には本日の印を付けない。');
     $tokyo = new DateTimeZone('Asia/Tokyo');
     $now = new DateTimeImmutable('now', $tokyo);
     $today = $now->format('Y-m-d');
     $html = do_shortcode('[museum_calendar]');
-    $check(preg_match('/<td data-weekday="' . $now->format('N') . '" aria-current="date">\s*<time datetime="' . $today . '">/', $html) === 1, 'The current month must mark today.');
+    $check(preg_match('/<td data-weekday="' . $now->format('N') . '" aria-current="date">\s*<time datetime="' . $today . '">/', $html) === 1, '当月は本日に印を付ける。');
     $dateLine = static fn (string $date, string $label): string
         => '<p class="museum-calendar-today__date"><time datetime="' . $date . '">' . $label . '</time></p>';
     $weekdayNames = ['日', '月', '火', '水', '木', '金', '土'];
@@ -69,20 +69,20 @@ try {
     try {
         update_option('date_format', 'Y.m.d');
         $html = do_shortcode('[museum_calendar_today]');
-        $check(str_contains($html, $dateLine($today, $now->format('Y.m.d'))), 'Today shortcode must show the date in Asia/Tokyo, in the WordPress date format.');
-        $check(!str_contains($html, 'museum-calendar-today__weekday'), 'Today must not print a weekday outside the date format.');
+        $check(str_contains($html, $dateLine($today, $now->format('Y.m.d'))), '本日のショートコードは、Asia/Tokyoの日付をWordPressの日付形式で表示する。');
+        $check(!str_contains($html, 'museum-calendar-today__weekday'), '本日は、日付形式にない曜日を出さない。');
         update_option('date_format', 'n月j日(D)');
-        $check(str_contains($inJapanese(static fn (): string => do_shortcode('[museum_calendar_today]')), $dateLine($today, $now->format('n月j日') . '(' . $weekdayNames[(int) $now->format('w')] . ')')), 'A date format with a weekday must print the weekday of the site language.');
-        $check(str_contains(do_shortcode('[museum_calendar_today]'), $dateLine($today, wp_date('n月j日(D)', $now->getTimestamp(), $tokyo))), 'A date format with a weekday is wrong in the language of the test site.');
+        $check(str_contains($inJapanese(static fn (): string => do_shortcode('[museum_calendar_today]')), $dateLine($today, $now->format('n月j日') . '(' . $weekdayNames[(int) $now->format('w')] . ')')), '曜日を含む日付形式では、サイトの言語の曜日を出す。');
+        $check(str_contains(do_shortcode('[museum_calendar_today]'), $dateLine($today, wp_date('n月j日(D)', $now->getTimestamp(), $tokyo))), '曜日を含む日付形式が、テストのサイトの言語で正しく出る。');
         $fallback = $dateLine($today, $now->format('Y年n月j日'));
         update_option('date_format', '');
-        $check(get_option('date_format') === '', 'The empty date format was not stored.');
-        $check(str_contains(do_shortcode('[museum_calendar_today]'), $fallback), 'An empty date format must fall back to Y年n月j日.');
+        $check(get_option('date_format') === '', '空の日付形式を保存できる。');
+        $check(str_contains(do_shortcode('[museum_calendar_today]'), $fallback), '空の日付形式は Y年n月j日 になる。');
         foreach ([false, null, 0, []] as $invalid) {
             $stored = static fn () => $invalid;
             add_filter('option_date_format', $stored);
             try {
-                $check(str_contains(do_shortcode('[museum_calendar_today]'), $fallback), 'A date format that is not a string must fall back to Y年n月j日: ' . var_export($invalid, true));
+                $check(str_contains(do_shortcode('[museum_calendar_today]'), $fallback), '文字列でない日付形式は Y年n月j日 になる: ' . var_export($invalid, true));
             } finally {
                 remove_filter('option_date_format', $stored);
             }
@@ -96,13 +96,13 @@ try {
         default => ['開館日', 'ガイドツアー開催日'],
     };
     foreach (['休館日', '開館日', 'ガイドツアー開催日', 'お茶室営業日'] as $title) {
-        $check(str_contains($html, "<strong>{$title}</strong>") === in_array($title, $samples, true), "Today lists the wrong samples for its weekday: {$title}.");
+        $check(str_contains($html, "<strong>{$title}</strong>") === in_array($title, $samples, true), "本日はその曜日のサンプルの予定だけを表示する: {$title}。");
     }
     $sampleStatus = $samples === ['休館日']
         ? '<p class="museum-calendar-today__status" data-kind="closed" style="--museum-calendar-kind-color: #f5f5f5"><strong>休館日</strong></p>'
         : '<p class="museum-calendar-today__status" data-kind="open" style="--museum-calendar-kind-color: #ffebee"><strong>開館日</strong><span>10:30–16:30</span></p>';
-    $check(str_contains($html, $sampleStatus) && !str_contains($html, '<li data-title="開館日"') && !str_contains($html, '<li data-title="休館日"'), 'The sample today must show its 開館日 or 休館日 as the status, not in the list.');
-    $check(str_contains(do_shortcode('[museum_calendar month="invalid"]'), '正しくありません'), 'Invalid input was accepted.');
+    $check(str_contains($html, $sampleStatus) && !str_contains($html, '<li data-title="開館日"') && !str_contains($html, '<li data-title="休館日"'), 'サンプルの本日は、開館日か休館日を一覧でなく開館状況として表示する。');
+    $check(str_contains(do_shortcode('[museum_calendar month="invalid"]'), '正しくありません'), '不正な入力を受け付けない。');
 
     $grid = static function (string $html): array {
         preg_match_all('/<th scope="col" data-weekday="(\d)">([^<]*)<\/th>/', $html, $head);
@@ -118,43 +118,43 @@ try {
     try {
         update_option('start_of_week', 0);
         $sunday = $grid(do_shortcode('[museum_calendar month="2026-11"]'));
-        $check($sunday['labels'] === 'Sun Mon Tue Wed Thu Fri Sat' && $sunday['numbers'] === '7123456', 'Week start 0 must put Sunday in the first column.');
-        $check($sunday['rows'][0] === ['7 2026-11-01', '1 2026-11-02', '2 2026-11-03', '3 2026-11-04', '4 2026-11-05', '5 2026-11-06', '6 2026-11-07'], 'A month that starts on a Sunday must fill the first Sunday-first week.');
-        $check(count($sunday['rows']) === 5 && $sunday['rows'][4] === ['7 2026-11-29', '1 2026-11-30', '-', '-', '-', '-', '-'], 'The last Sunday-first week of November 2026 is wrong.');
+        $check($sunday['labels'] === 'Sun Mon Tue Wed Thu Fri Sat' && $sunday['numbers'] === '7123456', '週の始まりが0なら、最初の列は日曜日。');
+        $check($sunday['rows'][0] === ['7 2026-11-01', '1 2026-11-02', '2 2026-11-03', '3 2026-11-04', '4 2026-11-05', '5 2026-11-06', '6 2026-11-07'], '日曜日に始まる月は、日曜始まりの最初の週を埋める。');
+        $check(count($sunday['rows']) === 5 && $sunday['rows'][4] === ['7 2026-11-29', '1 2026-11-30', '-', '-', '-', '-', '-'], '2026年11月の日曜始まりの最後の週が正しい。');
         $html = do_shortcode('[museum_calendar month="2026-12"]');
         $sunday = $grid($html);
-        $check($sunday['rows'][0] === ['-', '-', '2 2026-12-01', '3 2026-12-02', '4 2026-12-03', '5 2026-12-04', '6 2026-12-05'], 'Tuesday 1 December 2026 must sit in the third Sunday-first column.');
-        $check($sunday['rows'][1][0] === '7 2026-12-06' && $sunday['rows'][4] === ['7 2026-12-27', '1 2026-12-28', '2 2026-12-29', '3 2026-12-30', '4 2026-12-31', '-', '-'], 'Sunday-first dates must sit under their weekday.');
-        $check(str_contains($html, '<caption>December 2026</caption>') && !str_contains($html, 'museum-calendar__nav'), 'A fixed month must still render without navigation when the week starts on Sunday.');
-        $check(preg_match('/<td data-weekday="1"[^>]*>\s*<time datetime="2026-12-07">7<\/time>\s*<ul>\s*<li data-title="休館日" data-kind="closed" style="--museum-calendar-kind-color: #f5f5f5">/', $html) === 1, 'The Monday sample must stay on Mondays when the week starts on Sunday.');
+        $check($sunday['rows'][0] === ['-', '-', '2 2026-12-01', '3 2026-12-02', '4 2026-12-03', '5 2026-12-04', '6 2026-12-05'], '2026年12月1日（火）は日曜始まりの3列目に入る。');
+        $check($sunday['rows'][1][0] === '7 2026-12-06' && $sunday['rows'][4] === ['7 2026-12-27', '1 2026-12-28', '2 2026-12-29', '3 2026-12-30', '4 2026-12-31', '-', '-'], '日曜始まりの日付は、その曜日の列に入る。');
+        $check(str_contains($html, '<caption>December 2026</caption>') && !str_contains($html, 'museum-calendar__nav'), '週の始まりが日曜日でも、固定月は月送りなしで表示する。');
+        $check(preg_match('/<td data-weekday="1"[^>]*>\s*<time datetime="2026-12-07">7<\/time>\s*<ul>\s*<li data-title="休館日" data-kind="closed" style="--museum-calendar-kind-color: #f5f5f5">/', $html) === 1, '週の始まりが日曜日でも、月曜日のサンプルは月曜日に出る。');
         $html = do_shortcode('[museum_calendar]');
-        $check($grid($html)['labels'] === 'Sun Mon Tue Wed Thu Fri Sat', 'The current month must follow the week start.');
-        $check(preg_match('/<td data-weekday="' . $now->format('N') . '" aria-current="date">\s*<time datetime="' . $today . '">/', $html) === 1, 'Today must keep its weekday when the week starts on Sunday.');
-        $check(preg_match_all('/<a href="[^"]*museum_month=\d{4}-\d{2}#museum-calendar"/', $html) === 2, 'Month links are missing when the week starts on Sunday.');
-        $check(do_shortcode('[museum_calendar_today]') === $todayHtml, 'The week start must not change the today shortcode.');
+        $check($grid($html)['labels'] === 'Sun Mon Tue Wed Thu Fri Sat', '当月は週の始まりに従う。');
+        $check(preg_match('/<td data-weekday="' . $now->format('N') . '" aria-current="date">\s*<time datetime="' . $today . '">/', $html) === 1, '週の始まりが日曜日でも、本日の曜日は変わらない。');
+        $check(preg_match_all('/<a href="[^"]*museum_month=\d{4}-\d{2}#museum-calendar"/', $html) === 2, '週の始まりが日曜日でも、月送りのリンクを出す。');
+        $check(do_shortcode('[museum_calendar_today]') === $todayHtml, '週の始まりで本日のショートコードは変わらない。');
 
         update_option('start_of_week', 3);
         $wednesday = $grid(do_shortcode('[museum_calendar month="2026-12"]'));
-        $check($wednesday['labels'] === 'Wed Thu Fri Sat Sun Mon Tue' && $wednesday['numbers'] === '3456712', 'Week start 3 must put Wednesday in the first column.');
+        $check($wednesday['labels'] === 'Wed Thu Fri Sat Sun Mon Tue' && $wednesday['numbers'] === '3456712', '週の始まりが3なら、最初の列は水曜日。');
         $japanese = $grid($inJapanese(static fn (): string => do_shortcode('[museum_calendar month="2026-12"]')));
-        $check($japanese['labels'] === '水 木 金 土 日 月 火' && $japanese['numbers'] === '3456712', 'Weekday headings must use the site language and keep their ISO 8601 numbers.');
-        $check($japanese['rows'] === $wednesday['rows'], 'The site language must not move the dates.');
-        $check($wednesday['rows'][0] === ['-', '-', '-', '-', '-', '-', '2 2026-12-01'] && $wednesday['rows'][1][0] === '3 2026-12-02', 'Wednesday-first dates must sit under their weekday.');
+        $check($japanese['labels'] === '水 木 金 土 日 月 火' && $japanese['numbers'] === '3456712', '曜日の見出しはサイトの言語で、ISO 8601の番号を保つ。');
+        $check($japanese['rows'] === $wednesday['rows'], 'サイトの言語で日付の位置は変わらない。');
+        $check($wednesday['rows'][0] === ['-', '-', '-', '-', '-', '-', '2 2026-12-01'] && $wednesday['rows'][1][0] === '3 2026-12-02', '水曜始まりの日付は、その曜日の列に入る。');
 
         update_option('start_of_week', 1);
         $monday = $grid(do_shortcode('[museum_calendar month="2026-11"]'));
-        $check($monday['labels'] === 'Mon Tue Wed Thu Fri Sat Sun' && $monday['numbers'] === '1234567', 'Week start 1 must put Monday in the first column.');
-        $check($monday['rows'][0] === ['-', '-', '-', '-', '-', '-', '7 2026-11-01'] && count($monday['rows']) === 6, 'Monday-first November 2026 must start in the last column.');
+        $check($monday['labels'] === 'Mon Tue Wed Thu Fri Sat Sun' && $monday['numbers'] === '1234567', '週の始まりが1なら、最初の列は月曜日。');
+        $check($monday['rows'][0] === ['-', '-', '-', '-', '-', '-', '7 2026-11-01'] && count($monday['rows']) === 6, '月曜始まりの2026年11月は最後の列から始まる。');
 
         update_option('start_of_week', 9);
-        $check((int) get_option('start_of_week') === 9, 'The out-of-range week start was not stored.');
-        $check($grid(do_shortcode('[museum_calendar month="2026-11"]')) === $monday, 'An out-of-range week start must render Monday first.');
+        $check((int) get_option('start_of_week') === 9, '範囲外の週の始まりを保存できる。');
+        $check($grid(do_shortcode('[museum_calendar month="2026-11"]')) === $monday, '範囲外の週の始まりでは月曜始まりで表示する。');
         update_option('start_of_week', 0);
         foreach (['abc', '1.5', '-1', false, []] as $invalid) {
             $stored = static fn () => $invalid;
             add_filter('option_start_of_week', $stored);
             try {
-                $check($grid(do_shortcode('[museum_calendar month="2026-11"]')) === $monday, 'A week start that is not 0 to 6 must render Monday first: ' . var_export($invalid, true));
+                $check($grid(do_shortcode('[museum_calendar month="2026-11"]')) === $monday, '0〜6でない週の始まりでは月曜始まりで表示する: ' . var_export($invalid, true));
             } finally {
                 remove_filter('option_start_of_week', $stored);
             }
@@ -178,20 +178,20 @@ try {
     };
     $currentCell = '/<td data-weekday="7" aria-current="date">\s*<time datetime="2026-11-15">/';
     $html = (new Renderer($source, KindTable::defaults()))->render(new Month('2026-11'), new DateTimeImmutable('2026-11-15 12:00', $tokyo));
-    $check(!str_contains($html, '<script>'), 'Event title was not escaped.');
-    $check(!str_contains($html, '<img'), 'Event time was not escaped.');
-    $check(str_contains($html, '&lt;script&gt;'), 'Escaped text was lost.');
-    $check(str_contains($html, '<li data-title="&lt;script&gt;alert(1)&lt;/script&gt;" data-kind="other">'), 'Event title attribute is missing or unescaped.');
-    $check(str_contains($html, '<section class="museum-calendar" id="museum-calendar"'), 'Calendar anchor is missing.');
-    $check(substr_count($html, 'aria-current="date"') === 1 && preg_match($currentCell, $html) === 1, 'Today must be the only current cell.');
+    $check(!str_contains($html, '<script>'), '予定のタイトルをエスケープする。');
+    $check(!str_contains($html, '<img'), '予定の時間をエスケープする。');
+    $check(str_contains($html, '&lt;script&gt;'), 'エスケープした文字を失わない。');
+    $check(str_contains($html, '<li data-title="&lt;script&gt;alert(1)&lt;/script&gt;" data-kind="other">'), '予定のタイトルの属性があり、エスケープされている。');
+    $check(str_contains($html, '<section class="museum-calendar" id="museum-calendar"'), 'カレンダーのアンカーがある。');
+    $check(substr_count($html, 'aria-current="date"') === 1 && preg_match($currentCell, $html) === 1, '本日のセルだけに印を付ける。');
     preg_match_all('/<a href="([^"]*)"/', $html, $links);
-    $check(count($links[1]) === 2, 'Month navigation is missing.');
-    $check(str_contains($links[1][0], 'museum_month=2026-10') && str_ends_with($links[1][0], '#museum-calendar'), 'Previous month link must return to the calendar.');
-    $check(str_contains($links[1][1], 'museum_month=2026-12') && str_ends_with($links[1][1], '#museum-calendar'), 'Next month link must return to the calendar.');
+    $check(count($links[1]) === 2, '月送りがある。');
+    $check(str_contains($links[1][0], 'museum_month=2026-10') && str_ends_with($links[1][0], '#museum-calendar'), '前月のリンクはカレンダーの位置に戻る。');
+    $check(str_contains($links[1][1], 'museum_month=2026-12') && str_ends_with($links[1][1], '#museum-calendar'), '翌月のリンクはカレンダーの位置に戻る。');
     $html = (new Renderer($source, KindTable::defaults()))->render(new Month('2026-11'), new DateTimeImmutable('2026-12-01 00:00', $tokyo));
-    $check(!str_contains($html, 'aria-current'), 'A month without today must have no current cell.');
+    $check(!str_contains($html, 'aria-current'), '本日を含まない月は、どのセルにも印を付けない。');
     $html = (new Renderer($source, KindTable::defaults()))->render(new Month('2026-11'), new DateTimeImmutable('2026-11-14 15:30', new DateTimeZone('UTC')));
-    $check(preg_match($currentCell, $html) === 1, 'Today must be judged in Asia/Tokyo.');
+    $check(preg_match($currentCell, $html) === 1, '本日はAsia/Tokyoで判定する。');
 
     $header = static function (string $html): array {
         preg_match('/<nav class="museum-calendar__nav" aria-label="([^"]*)">(.*?)<\/nav>/s', $html, $nav);
@@ -206,9 +206,9 @@ try {
     $monthHtml = static fn (string $month, bool $showNavigation = true): string
         => (new Renderer($source, KindTable::defaults()))->render(new Month($month), new DateTimeImmutable('2026-11-15 12:00', $tokyo), $showNavigation);
     $november = ['nav' => 'Previous and next months', 'links' => ['2026-10 &laquo; October', '2026-12 December &raquo;'], 'caption' => 'November 2026'];
-    $check($header($monthHtml('2026-11')) === $november, 'The month header is wrong in the language of the test site.');
-    $check($header($monthHtml('2026-11', false)) === ['nav' => null, 'links' => [], 'caption' => 'November 2026'], 'A month without navigation must keep its heading and print no links.');
-    $check($header($inJapanese(static fn (): string => $monthHtml('2026-11'))) === ['nav' => 'Previous and next months', 'links' => ['2026-10 &laquo; 10月', '2026-12 12月 &raquo;'], 'caption' => '11月 2026'], 'Month names in the header must use the site language.');
+    $check($header($monthHtml('2026-11')) === $november, '月の見出しが、テストのサイトの言語で正しく出る。');
+    $check($header($monthHtml('2026-11', false)) === ['nav' => null, 'links' => [], 'caption' => 'November 2026'], '月送りのない月は、見出しを保ちリンクを出さない。');
+    $check($header($inJapanese(static fn (): string => $monthHtml('2026-11'))) === ['nav' => 'Previous and next months', 'links' => ['2026-10 &laquo; 10月', '2026-12 12月 &raquo;'], 'caption' => '11月 2026'], '見出しの月の名前はサイトの言語で出す。');
     foreach ([
         '2026-01' => [['2025-12 &laquo; December', '2026-02 February &raquo;'], 'January 2026', ['2025-12 &laquo; 12月', '2026-02 2月 &raquo;']],
         '2026-12' => [['2026-11 &laquo; November', '2027-01 January &raquo;'], 'December 2026', ['2026-11 &laquo; 11月', '2027-01 1月 &raquo;']],
@@ -216,13 +216,13 @@ try {
         '2100-12' => [['2100-11 &laquo; November'], 'December 2100', ['2100-11 &laquo; 11月']],
     ] as $month => [$links, $caption, $japaneseLinks]) {
         $shown = $header($monthHtml($month));
-        $check($shown['links'] === $links && $shown['caption'] === $caption, "The month links or the heading are wrong for {$month}.");
-        $check($header($inJapanese(static fn (): string => $monthHtml($month)))['links'] === $japaneseLinks, "The month links are wrong in Japanese for {$month}.");
+        $check($shown['links'] === $links && $shown['caption'] === $caption, "月送りのリンクと見出しが正しい: {$month}。");
+        $check($header($inJapanese(static fn (): string => $monthHtml($month)))['links'] === $japaneseLinks, "日本語の月送りのリンクが正しい: {$month}。");
     }
     add_filter('pre_option_timezone_string', $losAngeles = static fn (): string => 'America/Los_Angeles');
     try {
-        $check(wp_timezone_string() === 'America/Los_Angeles', 'The site timezone was not replaced.');
-        $check($header($monthHtml('2026-11')) === $november, 'The month header must name months in Asia/Tokyo, whatever the site timezone is.');
+        $check(wp_timezone_string() === 'America/Los_Angeles', 'サイトのタイムゾーンを差し替えられる。');
+        $check($header($monthHtml('2026-11')) === $november, '月の見出しは、サイトのタイムゾーンにかかわらずAsia/Tokyoで月を決める。');
     } finally {
         remove_filter('pre_option_timezone_string', $losAngeles);
     }
@@ -235,56 +235,56 @@ try {
     add_filter('gettext_with_context', $monthlyFormat, 10, 4);
     add_filter('gettext', $navLabel, 10, 3);
     try {
-        $check($header($inJapanese(static fn (): string => $monthHtml('2026-11'))) === ['nav' => '前と次の月', 'links' => ['2026-10 &laquo; 10月', '2026-12 12月 &raquo;'], 'caption' => '2026年11月'], 'The month header must use the WordPress translations of the monthly format and of the navigation label.');
+        $check($header($inJapanese(static fn (): string => $monthHtml('2026-11'))) === ['nav' => '前と次の月', 'links' => ['2026-10 &laquo; 10月', '2026-12 12月 &raquo;'], 'caption' => '2026年11月'], '月の見出しは、月別の形式と月送りのラベルにWordPressの翻訳を使う。');
         $monthly = '<b>Y</b>';
-        $check(str_contains($monthHtml('2026-11'), '<caption>&lt;b&gt;2026&lt;/b&gt;</caption>'), 'The month heading was not escaped.');
+        $check(str_contains($monthHtml('2026-11'), '<caption>&lt;b&gt;2026&lt;/b&gt;</caption>'), '月の見出しをエスケープする。');
     } finally {
         remove_filter('gettext_with_context', $monthlyFormat, 10);
         remove_filter('gettext', $navLabel, 10);
     }
 
     $html = (new Renderer($source, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo), 'n/j');
-    $check(str_contains($html, $dateLine('2026-11-15', '11/15')), 'Today date is wrong on a Sunday.');
+    $check(str_contains($html, $dateLine('2026-11-15', '11/15')), '日曜日の本日の日付が正しい。');
     $order = array_map(static fn (string $item) => strpos($html, $item), ['<strong>Zebra</strong>', '<strong>&lt;script&gt;alert(1)&lt;/script&gt;</strong>', '<strong>Alpha</strong>']);
-    $check(!in_array(false, $order, true) && $order[0] < $order[1] && $order[1] < $order[2], 'Today must list its events in source order.');
-    $check(!str_contains($html, '<script>') && !str_contains($html, '<img'), 'Today event was not escaped.');
-    $check(str_contains($html, '<li data-title="&lt;script&gt;alert(1)&lt;/script&gt;" data-kind="other">'), 'Today event title attribute is missing or unescaped.');
-    $check(!str_contains($html, 'Tomorrow'), 'Today must not list another day.');
-    $check(!str_contains($html, '本日の予定はありません') && !str_contains($html, 'role="status"'), 'Today showed a message that does not apply.');
+    $check(!in_array(false, $order, true) && $order[0] < $order[1] && $order[1] < $order[2], '本日は予定を元の順に並べる。');
+    $check(!str_contains($html, '<script>') && !str_contains($html, '<img'), '本日の予定をエスケープする。');
+    $check(str_contains($html, '<li data-title="&lt;script&gt;alert(1)&lt;/script&gt;" data-kind="other">'), '本日の予定のタイトルの属性があり、エスケープされている。');
+    $check(!str_contains($html, 'Tomorrow'), '本日はほかの日の予定を出さない。');
+    $check(!str_contains($html, '本日の予定はありません') && !str_contains($html, 'role="status"'), '本日は当てはまらない案内を出さない。');
     $html = (new Renderer($source, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'Y年n月j日');
-    $check(str_contains($html, $dateLine('2026-11-14', '2026年11月14日')), 'Today date is wrong on a Saturday.');
-    $check(str_contains($html, '本日の予定はありません。') && !str_contains($html, '<ul') && !str_contains($html, '__status'), 'A day without events must say so and show no status.');
+    $check(str_contains($html, $dateLine('2026-11-14', '2026年11月14日')), '土曜日の本日の日付が正しい。');
+    $check(str_contains($html, '本日の予定はありません。') && !str_contains($html, '<ul') && !str_contains($html, '__status'), '予定のない日は、予定がないと表示し、開館状況を出さない。');
     $html = $inJapanese(static fn (): string => (new Renderer($source, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-16 12:00', $tokyo), 'n月j日(D)'));
-    $check(str_contains($html, $dateLine('2026-11-16', '11月16日(月)')) && str_contains($html, '<strong>Tomorrow</strong>'), 'Today is wrong on a Monday.');
+    $check(str_contains($html, $dateLine('2026-11-16', '11月16日(月)')) && str_contains($html, '<strong>Tomorrow</strong>'), '月曜日の本日が正しい。');
     $html = (new Renderer($source, KindTable::defaults()))->renderToday(new DateTimeImmutable('2027-01-05 12:00', $tokyo), 'Y/m/d n/j');
-    $check(str_contains($html, $dateLine('2027-01-05', '2027/01/05 1/5')), 'Today date must be padded only where the format says so.');
+    $check(str_contains($html, $dateLine('2027-01-05', '2027/01/05 1/5')), '本日の日付は、日付形式が指定するところだけ0で埋める。');
     $html = $inJapanese(static fn (): string => (new Renderer($source, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-14 15:30', new DateTimeZone('UTC')), 'n月j日(D) H:i'));
-    $check(str_contains($html, $dateLine('2026-11-15', '11月15日(日) 00:30')) && str_contains($html, '<strong>Zebra</strong>'), 'Today must be judged in Asia/Tokyo.');
+    $check(str_contains($html, $dateLine('2026-11-15', '11月15日(日) 00:30')) && str_contains($html, '<strong>Zebra</strong>'), '本日はAsia/Tokyoで判定する。');
     $html = (new Renderer($source, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo), '<b>n/j</b>');
-    $check(str_contains($html, $dateLine('2026-11-15', '&lt;b&gt;11/15&lt;/b&gt;')), 'Today date was not escaped.');
+    $check(str_contains($html, $dateLine('2026-11-15', '&lt;b&gt;11/15&lt;/b&gt;')), '本日の日付をエスケープする。');
     $html = (new Renderer($source, KindTable::defaults(), '<b>前回の予定</b>'))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo), 'n/j');
-    $check(str_contains($html, '<p class="museum-calendar-today__notice" role="status">&lt;b&gt;前回の予定&lt;/b&gt;</p>'), 'Stale notice is missing or unescaped in today.');
+    $check(str_contains($html, '<p class="museum-calendar-today__notice" role="status">&lt;b&gt;前回の予定&lt;/b&gt;</p>'), '本日に前回データの案内があり、エスケープされている。');
 
     $japaneseText = ['月間カレンダー', '本日の予定', '月間予定表', '予定はありません', '終日', '正しくありません', '表示できません', '設定されていません', '取得'];
     $allEnglish = static function (string $html, string $where) use ($check, $japaneseText): void {
         foreach ($japaneseText as $text) {
-            $check(!str_contains($html, $text), "{$where} printed the Japanese text {$text} with lang=\"en\".");
+            $check(!str_contains($html, $text), "{$where} は lang=\"en\" で日本語の {$text} を出さない。");
         }
     };
     $monthSection = '<section class="museum-calendar" id="museum-calendar" aria-label="%s"%s>' . "\n";
     $todaySection = '<section class="museum-calendar-today" aria-label="%s"%s>' . "\n";
     $html = do_shortcode('[museum_calendar month="2024-02" lang="en"]');
-    $check(str_starts_with($html, sprintf($monthSection, 'Monthly calendar', ' lang="en"')), 'An English month must declare its language on the section.');
-    $check(str_contains($html, '<div class="museum-calendar__scroll" tabindex="0" role="region" aria-label="Monthly schedule (scrolls sideways)">'), 'An English month must label its scroll region in English.');
-    $check(str_contains($html, '<caption>February 2024</caption>') && substr_count($html, '<time datetime=') === 29, 'An English month must show the requested month.');
-    $check(substr_count($html, '<li data-title="休館日" data-kind="closed" style="--museum-calendar-kind-color: #f5f5f5"><strong>CLOSED</strong><span>All day</span></li>') === 4, 'An English month must print the English text of a sample title next to the English all-day time.');
-    $check(substr_count($html, '<li data-title="開館日" data-kind="open" style="--museum-calendar-kind-color: #ffebee"><strong>OPEN</strong><span>10:30–16:30</span></li>') === 25, 'An English month must leave a time with hours as it is.');
-    $allEnglish($html, 'The month');
+    $check(str_starts_with($html, sprintf($monthSection, 'Monthly calendar', ' lang="en"')), '英語の月はsectionに言語を宣言する。');
+    $check(str_contains($html, '<div class="museum-calendar__scroll" tabindex="0" role="region" aria-label="Monthly schedule (scrolls sideways)">'), '英語の月は横スクロールの領域に英語のラベルを付ける。');
+    $check(str_contains($html, '<caption>February 2024</caption>') && substr_count($html, '<time datetime=') === 29, '英語の月は指定した月を表示する。');
+    $check(substr_count($html, '<li data-title="休館日" data-kind="closed" style="--museum-calendar-kind-color: #f5f5f5"><strong>CLOSED</strong><span>All day</span></li>') === 4, '英語の月は、サンプルのタイトルの英語での表示を英語の終日の時間と並べて出す。');
+    $check(substr_count($html, '<li data-title="開館日" data-kind="open" style="--museum-calendar-kind-color: #ffebee"><strong>OPEN</strong><span>10:30–16:30</span></li>') === 25, '英語の月は、時刻のある時間をそのまま出す。');
+    $allEnglish($html, '月間カレンダー');
     $html = do_shortcode('[museum_calendar month="2024-02"]');
-    $check(str_starts_with($html, sprintf($monthSection, '月間カレンダー', '')) && !str_contains($html, ' lang='), 'A month without lang must keep its Japanese text and declare no language.');
-    $check(str_contains($html, '<div class="museum-calendar__scroll" tabindex="0" role="region" aria-label="月間予定表（横にスクロールできます）">'), 'A month without lang must keep the Japanese label of its scroll region.');
-    $check(substr_count($html, '<li data-title="休館日" data-kind="closed" style="--museum-calendar-kind-color: #f5f5f5"><strong>休館日</strong><span>終日</span></li>') === 4, 'A month without lang must keep the markup of its events.');
-    $check(do_shortcode('[museum_calendar month="2024-02" lang=""]') === $html, 'An empty lang must render as no lang.');
+    $check(str_starts_with($html, sprintf($monthSection, '月間カレンダー', '')) && !str_contains($html, ' lang='), 'langのない月は日本語の文言を保ち、言語を宣言しない。');
+    $check(str_contains($html, '<div class="museum-calendar__scroll" tabindex="0" role="region" aria-label="月間予定表（横にスクロールできます）">'), 'langのない月は、横スクロールの領域の日本語のラベルを保つ。');
+    $check(substr_count($html, '<li data-title="休館日" data-kind="closed" style="--museum-calendar-kind-color: #f5f5f5"><strong>休館日</strong><span>終日</span></li>') === 4, 'langのない月は、予定のマークアップを保つ。');
+    $check(do_shortcode('[museum_calendar month="2024-02" lang=""]') === $html, '空のlangはlangなしと同じに表示する。');
 
     $dateFormat = get_option('date_format');
     $startOfWeek = get_option('start_of_week');
@@ -292,18 +292,18 @@ try {
         update_option('date_format', 'n月j日(D)');
         update_option('start_of_week', 1);
         $html = do_shortcode('[museum_calendar_today lang="en"]');
-        $check(str_starts_with($html, sprintf($todaySection, 'Today&#039;s schedule', ' lang="en"')), 'An English today must declare its language on the section.');
-        $check(str_contains($html, $dateLine($today, $now->format('D, M j'))), 'An English today must print the date as D, M j, whatever the date format is.');
+        $check(str_starts_with($html, sprintf($todaySection, 'Today&#039;s schedule', ' lang="en"')), '英語の本日はsectionに言語を宣言する。');
+        $check(str_contains($html, $dateLine($today, $now->format('D, M j'))), '英語の本日は、日付形式にかかわらず日付を D, M j で出す。');
         $english = ['ガイドツアー開催日' => 'Guided Tour', 'お茶室営業日' => 'Tea Room Open'];
         foreach (array_diff($samples, ['開館日', '休館日']) as $title) {
-            $check(str_contains($html, '<li data-title="' . $title . '" data-kind="' . KindTable::defaults()->kind($title) . '" style="--museum-calendar-kind-color: ' . KindTable::defaults()->color($title) . '"><strong>' . $english[$title] . '</strong><span>'), "An English today must print the English text of {$title}.");
+            $check(str_contains($html, '<li data-title="' . $title . '" data-kind="' . KindTable::defaults()->kind($title) . '" style="--museum-calendar-kind-color: ' . KindTable::defaults()->color($title) . '"><strong>' . $english[$title] . '</strong><span>'), "英語の本日は英語での表示を出す: {$title}。");
         }
-        $check(str_contains($html, str_replace(['<strong>休館日</strong>', '<strong>開館日</strong>'], ['<strong>CLOSED</strong>', '<strong>OPEN</strong>'], $sampleStatus)), 'An English today must print the status of the sample in English.');
-        $allEnglish($html, 'Today');
+        $check(str_contains($html, str_replace(['<strong>休館日</strong>', '<strong>開館日</strong>'], ['<strong>CLOSED</strong>', '<strong>OPEN</strong>'], $sampleStatus)), '英語の本日は、サンプルの開館状況を英語で出す。');
+        $allEnglish($html, '本日');
         $html = do_shortcode('[museum_calendar_today]');
-        $check(str_starts_with($html, sprintf($todaySection, '本日の予定', '')) && !str_contains($html, ' lang='), 'A today without lang must keep its Japanese text and declare no language.');
-        $check(str_contains($html, $dateLine($today, wp_date('n月j日(D)', $now->getTimestamp(), $tokyo))), 'A today without lang must keep the WordPress date format.');
-        $check(do_shortcode('[museum_calendar_today lang=""]') === $html, 'An empty lang must render today as no lang.');
+        $check(str_starts_with($html, sprintf($todaySection, '本日の予定', '')) && !str_contains($html, ' lang='), 'langのない本日は日本語の文言を保ち、言語を宣言しない。');
+        $check(str_contains($html, $dateLine($today, wp_date('n月j日(D)', $now->getTimestamp(), $tokyo))), 'langのない本日はWordPressの日付形式を保つ。');
+        $check(do_shortcode('[museum_calendar_today lang=""]') === $html, '空のlangでは本日をlangなしと同じに表示する。');
 
         $previousMonth = $now->modify('first day of previous month');
         $nextMonth = $now->modify('first day of next month');
@@ -329,23 +329,23 @@ try {
             $seen['after'] = $japanese();
             return '';
         });
-        $check($header($seen['before']) === $japaneseHeader && $grid($seen['before'])['labels'] === '月 火 水 木 金 土 日' && str_contains($seen['before'], $japaneseDate), 'The Japanese site of the tests must print Japanese names.');
-        $check($header($seen['month']) === $englishHeader, 'An English month on a Japanese site must print its heading, links and navigation label in English.');
-        $check($grid($seen['month'])['labels'] === 'Mon Tue Wed Thu Fri Sat Sun', 'An English month on a Japanese site must print English weekday names.');
-        $check(str_contains($seen['today'], $dateLine($today, $now->format('D, M j'))), 'An English today on a Japanese site must print English weekday and month names.');
-        $allEnglish($seen['month'], 'The month on a Japanese site');
-        $allEnglish($seen['today'], 'Today on a Japanese site');
-        $check($seen['locale after month'] === 'ja' && $seen['locale after today'] === 'ja', 'An English shortcode must restore the locale of the site.');
-        $check($seen['after'] === $seen['before'], 'A shortcode without lang must print the same after an English shortcode.');
-        $check(determine_locale() === 'en_US' && !is_locale_switched(), 'The test site must be back in its own locale.');
-        $check($header(do_shortcode('[museum_calendar lang="en"]')) === $englishHeader && !is_locale_switched(), 'An English month on an English site must render without a locale switch left behind.');
+        $check($header($seen['before']) === $japaneseHeader && $grid($seen['before'])['labels'] === '月 火 水 木 金 土 日' && str_contains($seen['before'], $japaneseDate), 'テストの日本語のサイトは日本語の名前を出す。');
+        $check($header($seen['month']) === $englishHeader, '日本語のサイトの英語の月は、見出し、リンク、月送りのラベルを英語で出す。');
+        $check($grid($seen['month'])['labels'] === 'Mon Tue Wed Thu Fri Sat Sun', '日本語のサイトの英語の月は、英語の曜日名を出す。');
+        $check(str_contains($seen['today'], $dateLine($today, $now->format('D, M j'))), '日本語のサイトの英語の本日は、英語の曜日名と月名を出す。');
+        $allEnglish($seen['month'], '日本語のサイトの月間カレンダー');
+        $allEnglish($seen['today'], '日本語のサイトの本日');
+        $check($seen['locale after month'] === 'ja' && $seen['locale after today'] === 'ja', '英語のショートコードはサイトのロケールに戻す。');
+        $check($seen['after'] === $seen['before'], 'langのないショートコードは、英語のショートコードの後も同じに出る。');
+        $check(determine_locale() === 'en_US' && !is_locale_switched(), 'テストのサイトは元のロケールに戻っている。');
+        $check($header(do_shortcode('[museum_calendar lang="en"]')) === $englishHeader && !is_locale_switched(), '英語のサイトの英語の月は、ロケールの切り替えを残さずに表示する。');
 
         $sample = (new DateTimeImmutable('2026-11-15 12:00', $tokyo))->getTimestamp();
         $names = static fn (): string => wp_date('D, F', $sample, $tokyo);
         $inJapanese(static function () use ($check, $names): string {
-            $check($names() === '日, 11月', 'The Japanese site of the tests must name weekdays and months in Japanese.');
-            $check(Language::English->withLocale($names) === 'Sun, November', 'English must run its rendering in the English locale.');
-            $check(Language::Japanese->withLocale($names) === '日, 11月', 'Japanese must run its rendering in the locale of the site.');
+            $check($names() === '日, 11月', 'テストの日本語のサイトは、曜日と月を日本語で出す。');
+            $check(Language::English->withLocale($names) === 'Sun, November', '英語は英語のロケールで描画する。');
+            $check(Language::Japanese->withLocale($names) === '日, 11月', '日本語はサイトのロケールで描画する。');
             $failure = null;
             try {
                 Language::English->withLocale(static function (): string {
@@ -354,16 +354,16 @@ try {
             } catch (RuntimeException $error) {
                 $failure = $error->getMessage();
             }
-            $check($failure === 'The rendering failed.', 'A failed rendering must reach the caller.');
-            $check(determine_locale() === 'ja' && $names() === '日, 11月', 'A failed English rendering must restore the locale of the site.');
-            $check(switch_to_locale('en_US'), 'The test could not switch to en_US.');
+            $check($failure === 'The rendering failed.', '描画の失敗は呼び出し元に届く。');
+            $check(determine_locale() === 'ja' && $names() === '日, 11月', '英語の描画に失敗しても、サイトのロケールに戻す。');
+            $check(switch_to_locale('en_US'), 'テストが en_US に切り替えられる。');
             try {
                 $html = do_shortcode('[museum_calendar_today lang="en"]');
-                $check(str_contains($html, 'lang="en"') && determine_locale() === 'en_US', 'An English shortcode must leave a locale switch of other code in place.');
+                $check(str_contains($html, 'lang="en"') && determine_locale() === 'en_US', '英語のショートコードは、ほかのコードのロケールの切り替えを残す。');
             } finally {
                 restore_previous_locale();
             }
-            $check(determine_locale() === 'ja', 'The test did not restore its own locale switch.');
+            $check(determine_locale() === 'ja', 'テストが自分のロケールの切り替えを戻せる。');
             return '';
         });
     } finally {
@@ -374,11 +374,11 @@ try {
     $invalidLanguage = '<p class="museum-calendar-notice">言語の指定が正しくありません。</p>';
     foreach (['ja', 'EN', 'en_US', 'en-US', 'english', 'fr'] as $invalid) {
         foreach (['museum_calendar', 'museum_calendar month="2026-11"', 'museum_calendar month="invalid"', 'museum_calendar_today'] as $shortcode) {
-            $check(do_shortcode("[{$shortcode} lang=\"{$invalid}\"]") === $invalidLanguage, "[{$shortcode}] accepted lang=\"{$invalid}\".");
+            $check(do_shortcode("[{$shortcode} lang=\"{$invalid}\"]") === $invalidLanguage, "[{$shortcode}] は lang=\"{$invalid}\" を受け付けない。");
         }
     }
-    $check(do_shortcode('[museum_calendar month="invalid" lang="en"]') === '<p class="museum-calendar-notice" lang="en">The month is not valid.</p>', 'An invalid month must be reported in English.');
-    $check(do_shortcode('[museum_calendar month="invalid"]') === '<p class="museum-calendar-notice">年月の指定が正しくありません。</p>', 'The notice of an invalid month changed.');
+    $check(do_shortcode('[museum_calendar month="invalid" lang="en"]') === '<p class="museum-calendar-notice" lang="en">The month is not valid.</p>', '不正な月は英語で案内する。');
+    $check(do_shortcode('[museum_calendar month="invalid"]') === '<p class="museum-calendar-notice">年月の指定が正しくありません。</p>', '不正な月の案内が変わっていない。');
 
     $fromNow = static fn (int $months): string => $now->modify('first day of this month')->modify(sprintf('%+d months', $months))->format('Y-m');
     $monthLinks = static function (string $html): array {
@@ -396,21 +396,21 @@ try {
         return do_shortcode("[museum_calendar{$attributes}]");
     };
     try {
-        $check($monthLinks(do_shortcode('[museum_calendar]')) === ['previous' => $fromNow(-1), 'next' => $fromNow(1)], 'The current month must link to the previous and the next month.');
+        $check($monthLinks(do_shortcode('[museum_calendar]')) === ['previous' => $fromNow(-1), 'next' => $fromNow(1)], '当月は前月と翌月にリンクする。');
         $html = $byQuery($fromNow(1));
-        $check(str_contains($html, $caption($fromNow(1))) && $monthLinks($html) === ['previous' => $fromNow(0), 'next' => $fromNow(2)], 'The next month must link to the month after next.');
+        $check(str_contains($html, $caption($fromNow(1))) && $monthLinks($html) === ['previous' => $fromNow(0), 'next' => $fromNow(2)], '翌月は翌々月にリンクする。');
         $html = $byQuery($fromNow(2));
-        $check(str_contains($html, $caption($fromNow(2))) && $monthLinks($html) === ['previous' => $fromNow(1), 'next' => null], 'The month after next must render with a previous link and no next link.');
-        $check(str_contains($byQuery($fromNow(2), ' lang="en"'), $caption($fromNow(2))), 'An English month after next must render.');
+        $check(str_contains($html, $caption($fromNow(2))) && $monthLinks($html) === ['previous' => $fromNow(1), 'next' => null], '翌々月は前月のリンクだけを出して表示する。');
+        $check(str_contains($byQuery($fromNow(2), ' lang="en"'), $caption($fromNow(2))), '英語の翌々月を表示する。');
         $future = '<p class="museum-calendar-notice">この月の予定はまだ表示できません。</p>';
-        $check($byQuery($fromNow(3)) === $future, 'A month after the month after next must show only the notice.');
-        $check($byQuery($fromNow(14)) === $future, 'A month a year ahead must show only the notice.');
-        $check($byQuery($fromNow(3), ' lang="en"') === '<p class="museum-calendar-notice" lang="en">This month cannot be shown yet.</p>', 'The notice of a later month must be in English with lang="en".');
-        $check($byQuery('2026-13') === '<p class="museum-calendar-notice">年月の指定が正しくありません。</p>', 'An invalid query month must keep the notice of an invalid month.');
+        $check($byQuery($fromNow(3)) === $future, '翌々月より後の月は案内だけを出す。');
+        $check($byQuery($fromNow(14)) === $future, '1年先の月は案内だけを出す。');
+        $check($byQuery($fromNow(3), ' lang="en"') === '<p class="museum-calendar-notice" lang="en">This month cannot be shown yet.</p>', '翌々月より後の月の案内は lang="en" の英語。');
+        $check($byQuery('2026-13') === '<p class="museum-calendar-notice">年月の指定が正しくありません。</p>', '不正なクエリの月では、不正な月の案内を保つ。');
         $html = $byQuery('1950-06');
-        $check(str_contains($html, $caption('1950-06')) && $monthLinks($html) === ['previous' => '1950-05', 'next' => '1950-07'], 'A month far in the past must render with both links.');
+        $check(str_contains($html, $caption('1950-06')) && $monthLinks($html) === ['previous' => '1950-05', 'next' => '1950-07'], 'ずっと過去の月は両方のリンクを出して表示する。');
         $html = $byQuery($fromNow(3), ' month="' . $fromNow(6) . '"');
-        $check(str_contains($html, $caption($fromNow(6))) && !str_contains($html, 'museum-calendar__nav') && !str_contains($html, 'まだ表示できません'), 'A fixed month must render whatever its distance from today, without navigation.');
+        $check(str_contains($html, $caption($fromNow(6))) && !str_contains($html, 'museum-calendar__nav') && !str_contains($html, 'まだ表示できません'), '固定月は、本日からの距離にかかわらず月送りなしで表示する。');
     } finally {
         if ($queried === null) {
             unset($_GET['museum_month']);
@@ -424,13 +424,13 @@ try {
     FeedRepository::clear();
     try {
         $html = do_shortcode('[museum_calendar lang="en"]');
-        $check(str_contains($html, '<p class="museum-calendar__empty">No events this month.</p>') && !str_contains($html, '<li'), 'An English month without events must say so in English.');
-        $allEnglish($html, 'The empty month');
+        $check(str_contains($html, '<p class="museum-calendar__empty">No events this month.</p>') && !str_contains($html, '<li'), '予定のない英語の月は、予定がないと英語で出す。');
+        $allEnglish($html, '予定のない月');
         $html = do_shortcode('[museum_calendar_today lang="en"]');
-        $check(str_contains($html, '<p class="museum-calendar-today__empty">No events today.</p>') && !str_contains($html, '<ul'), 'An English day without events must say so in English.');
-        $allEnglish($html, 'The empty day');
-        $check(str_contains(do_shortcode('[museum_calendar]'), '<p class="museum-calendar__empty">この月の予定はありません。</p>'), 'The message of an empty month changed.');
-        $check(str_contains(do_shortcode('[museum_calendar_today]'), '<p class="museum-calendar-today__empty">本日の予定はありません。</p>'), 'The message of an empty day changed.');
+        $check(str_contains($html, '<p class="museum-calendar-today__empty">No events today.</p>') && !str_contains($html, '<ul'), '予定のない英語の日は、予定がないと英語で出す。');
+        $allEnglish($html, '予定のない日');
+        $check(str_contains(do_shortcode('[museum_calendar]'), '<p class="museum-calendar__empty">この月の予定はありません。</p>'), '予定のない月の文言が変わっていない。');
+        $check(str_contains(do_shortcode('[museum_calendar_today]'), '<p class="museum-calendar-today__empty">本日の予定はありません。</p>'), '予定のない日の文言が変わっていない。');
     } finally {
         $sampleIcs = $sampleEvents;
         FeedRepository::clear();
@@ -438,8 +438,8 @@ try {
     delete_option(Settings::OPTION);
     try {
         foreach (['museum_calendar', 'museum_calendar_today'] as $shortcode) {
-            $check(do_shortcode("[{$shortcode} lang=\"en\"]") === '<p class="museum-calendar-notice" lang="en">The calendar connection is not set up.</p>', "[{$shortcode}] must report a missing connection in English.");
-            $check(do_shortcode("[{$shortcode}]") === '<p class="museum-calendar-notice">カレンダーの接続が設定されていません。</p>', "The notice of [{$shortcode}] without a connection changed.");
+            $check(do_shortcode("[{$shortcode} lang=\"en\"]") === '<p class="museum-calendar-notice" lang="en">The calendar connection is not set up.</p>', "[{$shortcode}] は接続がないことを英語で案内する。");
+            $check(do_shortcode("[{$shortcode}]") === '<p class="museum-calendar-notice">カレンダーの接続が設定されていません。</p>', "接続のない [{$shortcode}] の案内が変わっていない。");
         }
     } finally {
         update_option(Settings::OPTION, $sampleCalendar, false);
@@ -495,37 +495,37 @@ try {
         '<li data-title="（無題）" data-kind="other"><strong>（無題）</strong><span>10:00–16:00</span></li>',
     ];
     $listed = static function (string $html, array $items, string $where) use ($check): void {
-        $check(substr_count($html, '<li') === count($items), "{$where} lists the wrong number of events.");
+        $check(substr_count($html, '<li') === count($items), "{$where} は予定を正しい数だけ出す。");
         $offset = 0;
         foreach ($items as $item) {
             $position = strpos($html, $item, $offset);
-            $check($position !== false, "{$where} must print, in order: {$item}");
+            $check($position !== false, "{$where} は次を順に出す: {$item}");
             $offset = $position + strlen($item);
         }
     };
     $html = (new Renderer($facility, KindTable::defaults(), '', Language::English))->render(new Month('2026-11'), $sunday);
-    $listed($html, [$closed, ...$englishItems], 'The English month');
-    $check(!str_contains($html, '<b>'), 'A title without an English text was not escaped.');
+    $listed($html, [$closed, ...$englishItems], '英語の月');
+    $check(!str_contains($html, '<b>'), '英語での表示のないタイトルをエスケープする。');
     $html = (new Renderer($facility, KindTable::defaults(), '', Language::English))->renderToday($sunday, 'D, M j');
-    $listed($html, array_slice($englishItems, 1), 'The English today');
-    $check(str_contains($html, $dateLine('2026-11-15', 'Sun, Nov 15') . "\n" . '<p class="museum-calendar-today__status" data-kind="open" style="--museum-calendar-kind-color: #ffebee"><strong>OPEN</strong><span>10:00–16:00</span></p>'), 'The English today must print the status of its 開館日, with its hours, after the date.');
+    $listed($html, array_slice($englishItems, 1), '英語の本日');
+    $check(str_contains($html, $dateLine('2026-11-15', 'Sun, Nov 15') . "\n" . '<p class="museum-calendar-today__status" data-kind="open" style="--museum-calendar-kind-color: #ffebee"><strong>OPEN</strong><span>10:00–16:00</span></p>'), '英語の本日は、日付の後に開館日の開館状況を時間とともに出す。');
     $html = (new Renderer($facility, KindTable::defaults()))->render(new Month('2026-11'), $sunday);
-    $listed($html, $japaneseItems, 'The month without lang');
-    $check(!str_contains($html, ' lang='), 'A month without lang must mark no event as Japanese.');
+    $listed($html, $japaneseItems, 'langのない月');
+    $check(!str_contains($html, ' lang='), 'langのない月は、どの予定にも日本語の印を付けない。');
     $html = (new Renderer($facility, KindTable::defaults()))->renderToday($sunday, 'n/j');
-    $listed($html, array_slice($japaneseItems, 2), 'Today without lang');
-    $check(str_contains($html, '<p class="museum-calendar-today__status" data-kind="open" style="--museum-calendar-kind-color: #ffebee"><strong>開館日</strong><span>10:00–16:00</span></p>'), 'Today without lang must print the status of its 開館日.');
-    $check(!str_contains($html, ' lang='), 'A today without lang must mark no event as Japanese.');
+    $listed($html, array_slice($japaneseItems, 2), 'langのない本日');
+    $check(str_contains($html, '<p class="museum-calendar-today__status" data-kind="open" style="--museum-calendar-kind-color: #ffebee"><strong>開館日</strong><span>10:00–16:00</span></p>'), 'langのない本日は、開館日の開館状況を出す。');
+    $check(!str_contains($html, ' lang='), 'langのない本日は、どの予定にも日本語の印を付けない。');
     $status = static function (string $html): ?string {
         return preg_match('/<p class="museum-calendar-today__status"[^>]*>.*?<\/p>/', $html, $match) === 1 ? $match[0] : null;
     };
     $closedStatus = '<p class="museum-calendar-today__status" data-kind="closed" style="--museum-calendar-kind-color: #f5f5f5"><strong>%s</strong></p>';
     $html = (new Renderer($facility, KindTable::defaults(), '', Language::English))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'D, M j');
-    $check($status($html) === sprintf($closedStatus, 'CLOSED'), 'An English today with only 休館日 must show CLOSED.');
-    $check(!str_contains($html, '<ul') && !str_contains($html, '__empty') && !str_contains($html, 'No events'), 'A today with only 休館日 must print the status alone.');
-    $check($status((new Renderer($facility, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'n/j')) === sprintf($closedStatus, '休館日'), 'A today without lang must show the registered title 休館日.');
+    $check($status($html) === sprintf($closedStatus, 'CLOSED'), '休館日だけの英語の本日は CLOSED を出す。');
+    $check(!str_contains($html, '<ul') && !str_contains($html, '__empty') && !str_contains($html, 'No events'), '休館日だけの本日は開館状況だけを出す。');
+    $check($status((new Renderer($facility, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'n/j')) === sprintf($closedStatus, '休館日'), 'langのない本日は、登録したタイトル休館日を出す。');
     $html = (new Renderer($facility, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-16 12:00', $tokyo), 'n/j');
-    $check($status($html) === null && str_contains($html, '本日の予定はありません。'), 'A day without 開館日 and 休館日 must show no status, and must not read as closed.');
+    $check($status($html) === null && str_contains($html, '本日の予定はありません。'), '開館日も休館日もない日は、開館状況を出さず、休館とも読めない。');
     $openStatus = '<p class="museum-calendar-today__status" data-kind="open" style="--museum-calendar-kind-color: #ffebee"><strong>開館日</strong><span>10:00–16:00</span></p>';
     foreach ([
         ['2026-11-14 23:59:59', $tokyo, sprintf($closedStatus, '休館日')],
@@ -535,13 +535,13 @@ try {
         ['2026-11-14 14:59:59', new DateTimeZone('UTC'), sprintf($closedStatus, '休館日')],
         ['2026-11-14 15:00:00', new DateTimeZone('UTC'), $openStatus],
     ] as [$time, $zone, $expected]) {
-        $check($status((new Renderer($facility, KindTable::defaults()))->renderToday(new DateTimeImmutable($time, $zone), 'n/j')) === $expected, "The status at {$time} {$zone->getName()} must be that of the day in Asia/Tokyo.");
+        $check($status((new Renderer($facility, KindTable::defaults()))->renderToday(new DateTimeImmutable($time, $zone), 'n/j')) === $expected, "時刻 {$time} {$zone->getName()} の開館状況はAsia/Tokyoのその日のもの。");
     }
     $html = (new Renderer($facility, KindTable::defaults(), 'Shown <b>earlier</b>', Language::English))->renderToday($sunday, 'D, M j');
-    $check(str_starts_with($html, sprintf($todaySection, 'Today&#039;s schedule', ' lang="en"') . '<p class="museum-calendar-today__notice" role="status">Shown &lt;b&gt;earlier&lt;/b&gt;</p>' . "\n"), 'An English today must print the notice inside its section.');
+    $check(str_starts_with($html, sprintf($todaySection, 'Today&#039;s schedule', ' lang="en"') . '<p class="museum-calendar-today__notice" role="status">Shown &lt;b&gt;earlier&lt;/b&gt;</p>' . "\n"), '英語の本日は案内をsectionの中に出す。');
 
     // 予定の種類の表。ここまではオプションがなく、ここより上の出力は表を保存していないサイトのもの。
-    $check(get_option(Settings::KINDS_OPTION, null) === null && Settings::kinds()->rows() === KindTable::DEFAULTS, 'A site without the option must use the default table.');
+    $check(get_option(Settings::KINDS_OPTION, null) === null && Settings::kinds()->rows() === KindTable::DEFAULTS, 'オプションのないサイトは既定の表を使う。');
     $kindPages = static fn (): array => [
         'month' => do_shortcode('[museum_calendar month="2024-02"]'),
         'english month' => do_shortcode('[museum_calendar month="2024-02" lang="en"]'),
@@ -549,13 +549,13 @@ try {
         'english today' => do_shortcode('[museum_calendar_today lang="en"]'),
     ];
     $defaultPages = $kindPages();
-    $check(substr_count($defaultPages['english month'], '<li data-title="ガイドツアー開催日" data-kind="tour" style="--museum-calendar-kind-color: #e3f2fd"><strong>Guided Tour</strong><span>11:00–12:00</span></li>') === 17, 'The default table must give the sample tours their kind, color and English text.');
-    $check(substr_count($defaultPages['month'], '<li data-title="開館日" data-kind="open" style="--museum-calendar-kind-color: #ffebee">') === 25 && substr_count($defaultPages['month'], '<li data-title="休館日" data-kind="closed" style="--museum-calendar-kind-color: #f5f5f5">') === 4, 'The default table must give the sample events their colors.');
+    $check(substr_count($defaultPages['english month'], '<li data-title="ガイドツアー開催日" data-kind="tour" style="--museum-calendar-kind-color: #e3f2fd"><strong>Guided Tour</strong><span>11:00–12:00</span></li>') === 17, '既定の表は、サンプルのツアーに種類、色、英語での表示を付ける。');
+    $check(substr_count($defaultPages['month'], '<li data-title="開館日" data-kind="open" style="--museum-calendar-kind-color: #ffebee">') === 25 && substr_count($defaultPages['month'], '<li data-title="休館日" data-kind="closed" style="--museum-calendar-kind-color: #f5f5f5">') === 4, '既定の表は、サンプルの予定に色を付ける。');
     update_option(Settings::KINDS_OPTION, KindTable::DEFAULTS, false);
-    $check($kindPages() === $defaultPages, 'A stored default table must print the same as no table.');
+    $check($kindPages() === $defaultPages, '保存した既定の表は、表がないときと同じに出る。');
     foreach (['corrupt', 42, null, ['title' => '開館日'], [['title' => '開館日', 'kind' => 'other', 'english' => '', 'color' => '']], [['title' => '開館日', 'kind' => 'open', 'english' => '', 'color' => 'red']], [['title' => '開館日', 'kind' => 'open', 'english' => '', 'color' => null]], [['title' => '開館日', 'kind' => 'open', 'english' => '']], [['title' => '開館日', 'kind' => 'open']], [['title' => '開館日', 'kind' => 'open', 'english' => '', 'color' => ''], ['title' => '開館日', 'kind' => 'closed', 'english' => '', 'color' => '']]] as $corrupt) {
         update_option(Settings::KINDS_OPTION, $corrupt, false);
-        $check(Settings::kinds()->rows() === KindTable::DEFAULTS && $kindPages() === $defaultPages, 'A corrupt kind table must fall back to the defaults: ' . var_export($corrupt, true));
+        $check(Settings::kinds()->rows() === KindTable::DEFAULTS && $kindPages() === $defaultPages, '壊れた種類の表は既定に戻る: ' . var_export($corrupt, true));
     }
     delete_option(Settings::KINDS_OPTION);
 
@@ -567,13 +567,13 @@ try {
         ['title' => '臨時休館', 'kind' => 'closed', 'english' => 'Closed Today', 'color' => ''],
     ];
     wp_set_current_user(0);
-    $check(is_wp_error(Settings::saveKinds(['kinds' => $custom])) && get_option(Settings::KINDS_OPTION, null) === null, 'A visitor must not save the kind table.');
+    $check(is_wp_error(Settings::saveKinds(['kinds' => $custom])) && get_option(Settings::KINDS_OPTION, null) === null, '訪問者は種類の表を保存できない。');
     require_once ABSPATH . 'wp-admin/includes/user.php';
     $editor = get_user_by('login', 'museum-kinds-editor');
     $editorId = $editor ? $editor->ID : wp_insert_user(['user_login' => 'museum-kinds-editor', 'user_pass' => wp_generate_password(), 'role' => 'editor']);
     try {
         wp_set_current_user($editorId);
-        $check(!current_user_can('manage_options') && is_wp_error(Settings::saveKinds(['kinds' => $custom])) && get_option(Settings::KINDS_OPTION, null) === null, 'A user without manage_options must not save the kind table.');
+        $check(!current_user_can('manage_options') && is_wp_error(Settings::saveKinds(['kinds' => $custom])) && get_option(Settings::KINDS_OPTION, null) === null, 'manage_options のないユーザーは種類の表を保存できない。');
     } finally {
         wp_delete_user($editorId);
     }
@@ -581,37 +581,37 @@ try {
     $calendar = get_option(Settings::OPTION, null);
     $blank = ['title' => '', 'kind' => '', 'english' => '', 'color' => ''];
     $form = [['title' => ' 開館日 ', 'kind' => 'open', 'english' => ' OPEN ', 'color' => ' '], ...array_slice($custom, 1)];
-    $check(Settings::saveKinds(['kinds' => [5 => $form[0], 7 => $form[1], 9 => $blank, 10 => $form[2], 11 => $form[3], 12 => ['title' => '　', 'kind' => 'x!', 'english' => '', 'color' => 'red'], 13 => $form[4], 14 => $blank]]) === true, 'A valid kind table was rejected.');
-    $check(get_option(Settings::KINDS_OPTION) === $custom, 'The kind table must be stored trimmed, in the order of the form, without the rows without a title.');
+    $check(Settings::saveKinds(['kinds' => [5 => $form[0], 7 => $form[1], 9 => $blank, 10 => $form[2], 11 => $form[3], 12 => ['title' => '　', 'kind' => 'x!', 'english' => '', 'color' => 'red'], 13 => $form[4], 14 => $blank]]) === true, '正しい種類の表を受け付ける。');
+    $check(get_option(Settings::KINDS_OPTION) === $custom, '種類の表は、前後の空白を除き、フォームの順に、タイトルのない行を除いて保存する。');
     global $wpdb;
-    $check(in_array($wpdb->get_var($wpdb->prepare("SELECT autoload FROM {$wpdb->options} WHERE option_name = %s", Settings::KINDS_OPTION)), ['no', 'off'], true), 'The kind table must not be autoloaded.');
-    $check(get_option(Settings::OPTION, null) === $calendar, 'Saving the kind table changed the calendar.');
+    $check(in_array($wpdb->get_var($wpdb->prepare("SELECT autoload FROM {$wpdb->options} WHERE option_name = %s", Settings::KINDS_OPTION)), ['no', 'off'], true), '種類の表はautoloadしない。');
+    $check(get_option(Settings::OPTION, null) === $calendar, '種類の表を保存してもカレンダーは変わらない。');
 
     $pages = $kindPages();
-    $check(substr_count($pages['english month'], '<li data-title="開館日" data-kind="open"><strong>OPEN</strong><span>10:30–16:30</span></li>') === 8, 'A title saved as closed must hide the 開館日 of its day.');
-    $check(substr_count($pages['english month'], '<li data-title="ガイドツアー開催日" data-kind="closed"><strong>Closed for a Tour</strong><span>11:00–12:00</span></li>') === 17, 'A saved row must give its title its kind and English text.');
-    $check(substr_count($pages['english month'], '<li data-title="お茶室営業日" data-kind="tea-room"><strong>Tea House</strong><span>12:00–16:00</span></li>') === 8, 'A new kind must reach data-kind.');
-    $check(substr_count($pages['english month'], '<li data-title="休館日" data-kind="closed"><strong lang="ja">休館日</strong><span>All day</span></li>') === 4, 'A row without English must keep its kind and print its title as Japanese.');
-    $check(substr_count($pages['month'], 'data-kind="closed"><strong>ガイドツアー開催日</strong>') === 17 && substr_count($pages['month'], '<li data-title="開館日"') === 8, 'The month without lang must follow the saved table.');
+    $check(substr_count($pages['english month'], '<li data-title="開館日" data-kind="open"><strong>OPEN</strong><span>10:30–16:30</span></li>') === 8, 'closed として保存したタイトルは、その日の開館日を隠す。');
+    $check(substr_count($pages['english month'], '<li data-title="ガイドツアー開催日" data-kind="closed"><strong>Closed for a Tour</strong><span>11:00–12:00</span></li>') === 17, '保存した行は、そのタイトルに種類と英語での表示を付ける。');
+    $check(substr_count($pages['english month'], '<li data-title="お茶室営業日" data-kind="tea-room"><strong>Tea House</strong><span>12:00–16:00</span></li>') === 8, '新しい種類が data-kind に届く。');
+    $check(substr_count($pages['english month'], '<li data-title="休館日" data-kind="closed"><strong lang="ja">休館日</strong><span>All day</span></li>') === 4, '英語のない行は種類を保ち、タイトルを日本語として出す。');
+    $check(substr_count($pages['month'], 'data-kind="closed"><strong>ガイドツアー開催日</strong>') === 17 && substr_count($pages['month'], '<li data-title="開館日"') === 8, 'langのない月は保存した表に従う。');
     $todayStatus = static fn (string $kind, string $label, string $hours = ''): string
         => '<p class="museum-calendar-today__status" data-kind="' . $kind . '"><strong>' . $label . '</strong>' . ($hours === '' ? '' : '<span>' . $hours . '</span>') . '</p>';
     if ($samples === ['休館日']) {
-        $check(str_contains($pages['english today'], '<p class="museum-calendar-today__status" data-kind="closed"><strong lang="ja">休館日</strong></p>'), 'An English today must show a closed title without English as it is, marked as Japanese.');
+        $check(str_contains($pages['english today'], '<p class="museum-calendar-today__status" data-kind="closed"><strong lang="ja">休館日</strong></p>'), '英語の本日は、英語のない closed のタイトルをそのまま日本語の印を付けて出す。');
     } elseif (in_array('お茶室営業日', $samples, true)) {
-        $check(str_contains($pages['english today'], $todayStatus('open', 'OPEN', '10:30–16:30')) && str_contains($pages['english today'], '<li data-title="お茶室営業日" data-kind="tea-room"><strong>Tea House</strong><span>12:00–16:00</span></li>'), 'An English today must list a saved kind with its English text.');
+        $check(str_contains($pages['english today'], $todayStatus('open', 'OPEN', '10:30–16:30')) && str_contains($pages['english today'], '<li data-title="お茶室営業日" data-kind="tea-room"><strong>Tea House</strong><span>12:00–16:00</span></li>'), '英語の本日は、保存した種類を英語での表示で並べる。');
     } else {
-        $check(str_contains($pages['english today'], $todayStatus('closed', 'Closed for a Tour')) && str_contains($pages['today'], $todayStatus('closed', 'ガイドツアー開催日')), 'A title saved as closed must be the status of today.');
-        $check(!str_contains($pages['english today'], '<ul') && !str_contains($pages['english today'], '10:30–16:30'), 'A title saved as closed must hide the 開館日 of today.');
+        $check(str_contains($pages['english today'], $todayStatus('closed', 'Closed for a Tour')) && str_contains($pages['today'], $todayStatus('closed', 'ガイドツアー開催日')), 'closed として保存したタイトルは本日の開館状況になる。');
+        $check(!str_contains($pages['english today'], '<ul') && !str_contains($pages['english today'], '10:30–16:30'), 'closed として保存したタイトルは本日の開館日を隠す。');
     }
     $html = (new Renderer($facility, Settings::kinds(), '', Language::English))->renderToday($sunday, 'D, M j');
     // 15日の closed の予定のうちガイドツアーが最初に来るので、それが開館状況になる。
-    $check($status($html) === $todayStatus('closed', 'Closed for a Tour') && !str_contains($html, 'data-title="開館日"') && !str_contains($html, 'data-title="臨時休館"'), 'A second title for closed must win over 開館日.');
+    $check($status($html) === $todayStatus('closed', 'Closed for a Tour') && !str_contains($html, 'data-title="開館日"') && !str_contains($html, 'data-title="臨時休館"'), '2つ目の closed のタイトルは開館日に勝つ。');
     $html = (new Renderer($facility, Settings::kinds(), '', Language::English))->render(new Month('2026-11'), $sunday);
-    $check(str_contains($html, '<li data-title="臨時休館" data-kind="closed"><strong>Closed Today</strong>') && !str_contains($html, 'data-title="開館日"'), 'A saved closed title must hide the 開館日 of its day in the month.');
-    $check(str_contains($html, '<li data-title="結婚式" data-kind="other"><strong lang="ja">結婚式</strong>'), 'A default row that the saved table dropped must be other.');
+    $check(str_contains($html, '<li data-title="臨時休館" data-kind="closed"><strong>Closed Today</strong>') && !str_contains($html, 'data-title="開館日"'), '保存した closed のタイトルは、月間カレンダーでその日の開館日を隠す。');
+    $check(str_contains($html, '<li data-title="結婚式" data-kind="other"><strong lang="ja">結婚式</strong>'), '保存した表から消した既定の行は other になる。');
     $html = (new Renderer($facility, Settings::kinds(), '', Language::English))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'D, M j');
-    $check($status($html) === '<p class="museum-calendar-today__status" data-kind="closed"><strong lang="ja">休館日</strong></p>', 'An English status from a row without English must mark its label as Japanese.');
-    $check($status((new Renderer($facility, Settings::kinds()))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'n/j')) === '<p class="museum-calendar-today__status" data-kind="closed"><strong>休館日</strong></p>', 'A status without lang must not mark its label.');
+    $check($status($html) === '<p class="museum-calendar-today__status" data-kind="closed"><strong lang="ja">休館日</strong></p>', '英語のない行の英語の開館状況は、ラベルに日本語の印を付ける。');
+    $check($status((new Renderer($facility, Settings::kinds()))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'n/j')) === '<p class="museum-calendar-today__status" data-kind="closed"><strong>休館日</strong></p>', 'langのない開館状況はラベルに印を付けない。');
 
     foreach ([
         'duplicate_title' => [...$custom, ['title' => '　開館日', 'kind' => 'event', 'english' => '', 'color' => '']],
@@ -623,27 +623,27 @@ try {
         'invalid_rows' => 'OPEN',
     ] as $code => $rows) {
         $result = Settings::saveKinds(['kinds' => $rows]);
-        $check(is_wp_error($result) && $result->get_error_code() === $code && $result->get_error_message() !== '', "An invalid kind table must be rejected as {$code}.");
-        $check(get_option(Settings::KINDS_OPTION) === $custom, "A rejected kind table ({$code}) changed the saved one.");
+        $check(is_wp_error($result) && $result->get_error_code() === $code && $result->get_error_message() !== '', "不正な種類の表は次で拒否する: {$code}。");
+        $check(get_option(Settings::KINDS_OPTION) === $custom, "拒否した種類の表（{$code}）は保存済みの表を変えない。");
     }
-    $check(is_wp_error(Settings::saveKinds(['kinds' => [['title' => '開館日', 'kind' => 'open']]])) && get_option(Settings::KINDS_OPTION) === $custom, 'A row without English must be rejected.');
+    $check(is_wp_error(Settings::saveKinds(['kinds' => [['title' => '開館日', 'kind' => 'open']]])) && get_option(Settings::KINDS_OPTION) === $custom, '英語のない行は拒否する。');
     foreach (['#fff', '#12345g', '#1234567', '2f6f4f', 'rgb(0, 0, 0)', '#2f6f4f;color:red'] as $color) {
         $result = Settings::saveKinds(['kinds' => [...$custom, ['title' => '講座', 'kind' => 'event', 'english' => '', 'color' => $color]]]);
-        $check(is_wp_error($result) && $result->get_error_code() === 'invalid_color' && get_option(Settings::KINDS_OPTION) === $custom, "The color {$color} must be rejected without changing the saved table.");
+        $check(is_wp_error($result) && $result->get_error_code() === 'invalid_color' && get_option(Settings::KINDS_OPTION) === $custom, "色 {$color} は拒否し、保存済みの表を変えない。");
     }
     $result = Settings::saveKinds(['kinds' => [...$custom, ['title' => '講座', 'kind' => 'event', 'english' => '', 'color' => ['#2f6f4f']]]]);
-    $check(is_wp_error($result) && $result->get_error_code() === 'invalid_rows' && get_option(Settings::KINDS_OPTION) === $custom, 'A color that is not a string must be rejected as invalid_rows.');
+    $check(is_wp_error($result) && $result->get_error_code() === 'invalid_rows' && get_option(Settings::KINDS_OPTION) === $custom, '文字列でない色は invalid_rows で拒否する。');
 
-    $check(Settings::saveKinds(['kinds' => [$blank, ['title' => ' 　', 'kind' => 'open', 'english' => 'OPEN', 'color' => '']]]) === true && get_option(Settings::KINDS_OPTION, null) === [], 'A table without rows must be stored as an empty table.');
+    $check(Settings::saveKinds(['kinds' => [$blank, ['title' => ' 　', 'kind' => 'open', 'english' => 'OPEN', 'color' => '']]]) === true && get_option(Settings::KINDS_OPTION, null) === [], '行のない表は空の表として保存する。');
     $pages = $kindPages();
-    $check(!str_contains($pages['month'], 'data-kind="open"') && !str_contains($pages['month'], 'data-kind="closed"') && substr_count($pages['month'], '<li data-title="開館日" data-kind="other">') === 25, 'An empty table must make every title other.');
-    $check(substr_count($pages['english month'], '<strong lang="ja">休館日</strong>') === 4 && !str_contains($pages['english today'], 'museum-calendar-today__status'), 'An empty table must leave every title in Japanese and show no status.');
+    $check(!str_contains($pages['month'], 'data-kind="open"') && !str_contains($pages['month'], 'data-kind="closed"') && substr_count($pages['month'], '<li data-title="開館日" data-kind="other">') === 25, '空の表では、どのタイトルも other になる。');
+    $check(substr_count($pages['english month'], '<strong lang="ja">休館日</strong>') === 4 && !str_contains($pages['english today'], 'museum-calendar-today__status'), '空の表では、どのタイトルも日本語のままで、開館状況を出さない。');
 
-    $check(Settings::saveKinds(['kinds' => [...array_map(static fn (array $row): array => ['title' => ' ' . $row['title'], 'english' => $row['english'] . '　'] + $row, KindTable::DEFAULTS), $blank, $blank]]) === true, 'The default table was rejected.');
-    $check(get_option(Settings::KINDS_OPTION, null) === null, 'Saving the default table must delete the option.');
+    $check(Settings::saveKinds(['kinds' => [...array_map(static fn (array $row): array => ['title' => ' ' . $row['title'], 'english' => $row['english'] . '　'] + $row, KindTable::DEFAULTS), $blank, $blank]]) === true, '既定の表を受け付ける。');
+    $check(get_option(Settings::KINDS_OPTION, null) === null, '既定の表を保存するとオプションを削除する。');
     Settings::saveKinds(['kinds' => $custom]);
-    $check(Settings::saveKinds(['reset' => '1', 'kinds' => [['title' => '開館日', 'kind' => 'other', 'english' => '']]]) === true && get_option(Settings::KINDS_OPTION, null) === null, 'A reset must delete the option and ignore the rows.');
-    $check($kindPages() === $defaultPages && get_option(Settings::OPTION, null) === $calendar, 'After a reset the site must print as with the default table, and keep its calendar.');
+    $check(Settings::saveKinds(['reset' => '1', 'kinds' => [['title' => '開館日', 'kind' => 'other', 'english' => '']]]) === true && get_option(Settings::KINDS_OPTION, null) === null, 'リセットはオプションを削除し、行を無視する。');
+    $check($kindPages() === $defaultPages && get_option(Settings::OPTION, null) === $calendar, 'リセットの後は既定の表と同じに出て、カレンダーを保つ。');
 
     // 色。大文字と前後の空白は受け付け、小文字で保存する。色を空にすると、既定の行の色がなくなる。
     $colored = array_map(static fn (array $row): array => match ($row['title']) {
@@ -651,19 +651,19 @@ try {
         '開館日' => array_replace($row, ['color' => '']),
         default => $row,
     }, KindTable::DEFAULTS);
-    $check(Settings::saveKinds(['kinds' => [...$colored, $blank]]) === true, 'A kind table with colors was rejected.');
+    $check(Settings::saveKinds(['kinds' => [...$colored, $blank]]) === true, '色のある種類の表を受け付ける。');
     $stored = get_option(Settings::KINDS_OPTION, null);
-    $check(is_array($stored) && array_column($stored, 'color', 'title') === ['開館日' => '', '休館日' => '#e26b6b', 'お茶室営業日' => '#e8f5e9', 'ガイドツアー開催日' => '#e3f2fd', '結婚式' => '#fff0fc', '夜間特別開館' => '#fff9f4', 'コンサート' => '#f5f5f5', 'イベント' => '#f5f5f5'], 'The colors must be stored trimmed and in lower case, and a cleared color as empty.');
+    $check(is_array($stored) && array_column($stored, 'color', 'title') === ['開館日' => '', '休館日' => '#e26b6b', 'お茶室営業日' => '#e8f5e9', 'ガイドツアー開催日' => '#e3f2fd', '結婚式' => '#fff0fc', '夜間特別開館' => '#fff9f4', 'コンサート' => '#f5f5f5', 'イベント' => '#f5f5f5'], '色は前後の空白を除いた小文字で保存し、消した色は空で保存する。');
     $pages = $kindPages();
-    $check(substr_count($pages['month'], '<li data-title="休館日" data-kind="closed" style="--museum-calendar-kind-color: #e26b6b"><strong>休館日</strong>') === 4, 'A row with a changed color must set that color in the month.');
-    $check(substr_count($pages['month'], '<li data-title="開館日" data-kind="open"><strong>') === 25 && substr_count($pages['month'], '<li data-title="ガイドツアー開催日" data-kind="tour" style="--museum-calendar-kind-color: #e3f2fd">') === 17, 'An event of a row without a color must have no style attribute.');
+    $check(substr_count($pages['month'], '<li data-title="休館日" data-kind="closed" style="--museum-calendar-kind-color: #e26b6b"><strong>休館日</strong>') === 4, '色を変えた行は、月間カレンダーでその色を付ける。');
+    $check(substr_count($pages['month'], '<li data-title="開館日" data-kind="open"><strong>') === 25 && substr_count($pages['month'], '<li data-title="ガイドツアー開催日" data-kind="tour" style="--museum-calendar-kind-color: #e3f2fd">') === 17, '色のない行の予定にはstyle属性がない。');
     $html = (new Renderer($facility, Settings::kinds()))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'n/j');
-    $check($status($html) === '<p class="museum-calendar-today__status" data-kind="closed" style="--museum-calendar-kind-color: #e26b6b"><strong>休館日</strong></p>', 'The status must set the kind color of its row.');
+    $check($status($html) === '<p class="museum-calendar-today__status" data-kind="closed" style="--museum-calendar-kind-color: #e26b6b"><strong>休館日</strong></p>', '開館状況はその行の種類の色を付ける。');
     $html = (new Renderer($facility, Settings::kinds()))->renderToday($sunday, 'n/j');
-    $check($status($html) === '<p class="museum-calendar-today__status" data-kind="open"><strong>開館日</strong><span>10:00–16:00</span></p>', 'A status from a row without a color must have no style attribute.');
-    $check(str_contains($html, '<li data-title=" ガイドツアー開催日 " data-kind="tour" style="--museum-calendar-kind-color: #e3f2fd"><strong> ガイドツアー開催日 </strong>') && str_contains($html, '<li data-title="臨時休館" data-kind="other"><strong>'), 'Today must set the kind color only on the events of a row with a color.');
+    $check($status($html) === '<p class="museum-calendar-today__status" data-kind="open"><strong>開館日</strong><span>10:00–16:00</span></p>', '色のない行の開館状況にはstyle属性がない。');
+    $check(str_contains($html, '<li data-title=" ガイドツアー開催日 " data-kind="tour" style="--museum-calendar-kind-color: #e3f2fd"><strong> ガイドツアー開催日 </strong>') && str_contains($html, '<li data-title="臨時休館" data-kind="other"><strong>'), '本日は、色のある行の予定にだけ種類の色を付ける。');
     Settings::saveKinds(['reset' => '1']);
-    $check(get_option(Settings::KINDS_OPTION, null) === null && $kindPages() === $defaultPages, 'A reset must bring back the default colors.');
+    $check(get_option(Settings::KINDS_OPTION, null) === null && $kindPages() === $defaultPages, 'リセットで既定の色に戻る。');
     wp_set_current_user($previousUser);
 
     $style = wp_styles()->query('museum-calendar');
@@ -679,8 +679,8 @@ try {
         restore_error_handler();
         wp_register_style($style->handle, $style->src, $style->deps, $style->ver, $style->args);
     }
-    $check($problems === [], 'Rendering without the default stylesheet raised: ' . implode(' / ', $problems));
-    $check(str_contains($html, '<table') && str_contains($html, 'museum-calendar-today__date'), 'The shortcodes must render after a theme deregisters the default stylesheet.');
+    $check($problems === [], '既定のスタイルシートなしの描画で例外が出ない: ' . implode(' / ', $problems));
+    $check(str_contains($html, '<table') && str_contains($html, 'museum-calendar-today__date'), 'テーマが既定のスタイルシートの登録を解除しても、ショートコードを表示する。');
 
     // アンインストールは最後に実行する。finally のブロックが復元するオプションを削除するため。
     $options = array_values(array_filter(
@@ -693,15 +693,15 @@ try {
     if (!wp_next_scheduled('museum_calendar_refresh_feed')) {
         wp_schedule_event(time() + FeedRepository::INTERVAL, 'museum_calendar_quarter_hour', 'museum_calendar_refresh_feed');
     }
-    $check(in_array(Settings::SECRET_OPTION, $options, true) && in_array(FeedRepository::LOCK, $options, true) && get_option(Settings::SECRET_OPTION) === 'stored before uninstall' && wp_next_scheduled('museum_calendar_refresh_feed') !== false, 'Uninstalling must start from a site with every option and the refresh hook.');
+    $check(in_array(Settings::SECRET_OPTION, $options, true) && in_array(FeedRepository::LOCK, $options, true) && get_option(Settings::SECRET_OPTION) === 'stored before uninstall' && wp_next_scheduled('museum_calendar_refresh_feed') !== false, 'アンインストールは、すべてのオプションと定期取得のフックがあるサイトから始める。');
     require_once ABSPATH . 'wp-admin/includes/plugin.php';
     $plugin = plugin_basename(dirname((new ReflectionClass(Settings::class))->getFileName(), 3) . '/museum-calendar.php');
-    $check(is_uninstallable_plugin($plugin), 'WordPress must find the uninstall file of the plugin.');
+    $check(is_uninstallable_plugin($plugin), 'WordPressがプラグインのアンインストールのファイルを見つける。');
     uninstall_plugin($plugin);
-    $check(array_filter($options, static fn (string $option): bool => get_option($option, null) !== null) === [], 'Uninstalling must delete every option the plugin writes.');
+    $check(array_filter($options, static fn (string $option): bool => get_option($option, null) !== null) === [], 'アンインストールはプラグインが書くオプションをすべて削除する。');
     $left = $wpdb->get_col($wpdb->prepare("SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like('museum_calendar_') . '%'));
-    $check($left === [], 'Uninstalling left options: ' . implode(', ', $left));
-    $check(wp_next_scheduled('museum_calendar_refresh_feed') === false, 'Uninstalling must clear the refresh hook.');
+    $check($left === [], 'アンインストールでオプションを残さない: ' . implode(', ', $left));
+    $check(wp_next_scheduled('museum_calendar_refresh_feed') === false, 'アンインストールは定期取得のフックを消す。');
 } finally {
     if ($previousLock === null) {
         delete_option(FeedRepository::LOCK);
@@ -735,4 +735,4 @@ try {
         update_option(FeedRepository::CACHE, $previousFeed, false);
     }
 }
-WP_CLI::success("Integration: {$checks} checks passed.");
+WP_CLI::success("統合テスト: {$checks} 件の検査に合格しました。");

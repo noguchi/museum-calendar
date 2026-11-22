@@ -18,7 +18,7 @@ export async function withStagingAdmin(task) {
     await page.locator('#user_pass').fill(process.env.STAGING_WP_PASSWORD);
     await page.locator('#wp-submit').click();
     await page.waitForURL(/\/wp-admin\//);
-    check(true, 'logged in to the staging site');
+    check(true, 'ステージングのサイトにログインした');
     await task({ site, page, check });
   } catch (error) {
     await page.screenshot({ path: 'test-results/staging-failure.png', fullPage: true }).catch(() => {});

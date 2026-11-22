@@ -14,7 +14,7 @@ final class SampleStylesTest extends TestCase
         preg_match_all('/var\((--museum-calendar-[a-z-]+), ([^()]+?)\)/', self::read('/assets/calendar.css'), $used, PREG_SET_ORDER);
         $fallbacks = [];
         foreach ($used as [, $name, $value]) {
-            self::assertSame($fallbacks[$name] ?? $value, $value, $name . ' has two fallbacks in calendar.css');
+            self::assertSame($fallbacks[$name] ?? $value, $value, $name . ' の代替値は calendar.css で1つだけ');
             $fallbacks[$name] = $value;
         }
         preg_match_all('/^\s*(--museum-calendar-[a-z-]+): ([^;]+);/m', self::read('/samples/default.css'), $declared, PREG_SET_ORDER);
@@ -38,7 +38,7 @@ final class SampleStylesTest extends TestCase
                 continue;
             }
             foreach (explode(',', $selectors) as $selector) {
-                self::assertStringStartsWith(':root ', trim($selector), $file . ' sets a property without :root');
+                self::assertStringStartsWith(':root ', trim($selector), $file . ' は :root の外でプロパティを設定しない');
             }
         }
     }

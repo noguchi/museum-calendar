@@ -106,15 +106,15 @@ final class LanguageTest extends TestCase
     public static function unknownTitles(): array
     {
         return [
-            'not registered' => ['臨時休館'],
-            'longer than a row' => ['お茶室営業日（午後）'],
-            'part of a row' => ['お茶室'],
-            'two rows' => ['開館日 休館日'],
-            'an English word for closed' => ['CLOSE'],
-            'other case' => ['open'],
-            'an English text of the table' => ['Guided Tour'],
-            'empty' => [''],
-            'invalid UTF-8' => ["\xFF結婚式"],
+            '未登録' => ['臨時休館'],
+            '行より長い' => ['お茶室営業日（午後）'],
+            '行の一部' => ['お茶室'],
+            '2つの行' => ['開館日 休館日'],
+            'closed を表す英単語' => ['CLOSE'],
+            '大文字と小文字の違い' => ['open'],
+            '表の英語での表示' => ['Guided Tour'],
+            '空' => [''],
+            '不正なUTF-8' => ["\xFF結婚式"],
         ];
     }
 

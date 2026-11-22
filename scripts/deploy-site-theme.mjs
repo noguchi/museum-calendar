@@ -29,19 +29,19 @@ await withStagingAdmin(async ({ site, page, check }) => {
   for (const file of ['assets/js/museum-calendar.js', 'assets/css/museum-calendar.css']) {
     const response = await fetch(fresh(`${site}/wp-content/themes/${theme}/${file}`));
     const served = Buffer.from(await response.arrayBuffer());
-    check(response.ok && served.equals(readFileSync(path.join(local, file))), `staging serves the local ${file}`);
+    check(response.ok && served.equals(readFileSync(path.join(local, file))), `ステージングが手元の ${file} を配信する`);
   }
 
   await page.goto(fresh(`${site}/wp-admin/themes.php`));
   const active = await page.locator(`.theme.active[data-slug="${theme}"]`).count() === 1;
-  check(active, active ? `the theme ${theme} is active`
-    : `the theme ${theme} is not active. Activate it in wp-admin, or upload and activate dist/site-seed.zip, which also sets up the pages.`);
+  check(active, active ? `テーマ ${theme} が有効`
+    : `テーマ ${theme} が有効でない。wp-adminで有効にするか、ページも作る dist/site-seed.zip をアップロードして有効にする。`);
 
   for (const url of [`${site}/`, `${site}/en/`]) {
     const response = await page.goto(fresh(url));
-    check(response?.status() === 200, `${url} responds with 200`);
-    check(!(await page.content()).includes('critical error'), `${url} has no PHP fatal error`);
-    check(await page.locator('.c-cal table').count() === 1, `${url} shows the theme's calendar`);
-    check(await page.locator('section.museum-calendar-today').count() === 1, `${url} shows today's schedule`);
+    check(response?.status() === 200, `${url} が200で応答する`);
+    check(!(await page.content()).includes('critical error'), `${url} にPHPの致命的エラーがない`);
+    check(await page.locator('.c-cal table').count() === 1, `${url} にテーマのカレンダーが出る`);
+    check(await page.locator('section.museum-calendar-today').count() === 1, `${url} に本日の予定が出る`);
   }
 });
