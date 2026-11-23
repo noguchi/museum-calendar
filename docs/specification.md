@@ -1,4 +1,4 @@
-# Museum Calendar for WordPressの仕様（1.0.0）
+# Museum Calendar for WordPressの仕様（1.0.1）
 
 ## 動作環境
 

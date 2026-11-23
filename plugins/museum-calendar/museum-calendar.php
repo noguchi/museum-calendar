@@ -3,7 +3,7 @@
  * Plugin Name: Museum Calendar for WordPress
  * Plugin URI: https://github.com/noguchi/museum-calendar
  * Description: Googleカレンダーの予定をiCal形式の非公開URL（または公開URL）から取得し、日本時間の月間カレンダーと本日の予定を表示します。
- * Version: 1.0.0
+ * Version: 1.0.1
  * Requires at least: 7.1.4
  * Requires PHP: 8.5.12
  * License: GPL-2.0-or-later
@@ -57,7 +57,7 @@ add_action('init', static function (): void {
         wp_clear_scheduled_hook('museum_calendar_refresh_feed');
     }
     // テンプレートから do_shortcode() を呼ぶテーマでは head の出力に間に合わないので、テーマがこのハンドルを自分で読み込む。
-    wp_register_style('museum-calendar', plugins_url('assets/calendar.css', __FILE__), [], '1.0.0');
+    wp_register_style('museum-calendar', plugins_url('assets/calendar.css', __FILE__), [], '1.0.1');
 
     $notice = static fn (\MuseumCalendar\Frontend\Language $language, string $key, string $role = ''): string
         => '<p class="museum-calendar-notice"' . $role . $language->attribute() . '>' . esc_html($language->text($key)) . '</p>';
