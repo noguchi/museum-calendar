@@ -2,7 +2,7 @@
  * Museum Calendar のサンプル: monochrome
  *
  * 黒地に細い罫線。予定の種類は色相ではなく濃淡と枠線で区別する。
- * プラグインの既定のテンプレート用。テーマのCSSか「外観 → カスタマイズ → 追加CSS」に貼り付けて使う。
+ * プラグインの既定テンプレートと、美術館サイトの差し替えテンプレート用。テーマのCSSか「外観 → カスタマイズ → 追加CSS」に貼り付けて使う。
  * セレクターを :root から始めているのは、プラグインのCSSがどこで読み込まれても、こちらを優先させるため。
  */
 
@@ -38,6 +38,7 @@
 :root .museum-calendar {
   padding: 1.25rem;
   font-feature-settings: "tnum";
+  color: var(--mono-ink);
   background: var(--mono-ground);
   border: 1px solid #000;
   box-shadow: 0 18px 40px rgb(0 0 0 / 22%);
@@ -47,17 +48,21 @@
   margin: 0 0 1rem;
 }
 
-:root .museum-calendar__nav a {
+:root .museum-calendar__nav a,
+:root .museum-calendar .c-cal__nav {
+  color: var(--mono-ink);
   padding: .25rem 1rem;
   font-size: .875rem;
   letter-spacing: .12em;
   text-decoration: none;
-  border-color: #555;
+  background: var(--mono-ground);
+  border: 1px solid #555;
   border-radius: 0;
   transition: color .2s, background .2s;
 }
 
-:root .museum-calendar__nav a:hover {
+:root .museum-calendar__nav a:hover,
+:root .museum-calendar .c-cal__nav:hover {
   color: #000;
   background: #fff;
 }
@@ -74,21 +79,25 @@
   font-weight: 500;
   letter-spacing: .2em;
   color: var(--mono-mute);
+  background: var(--mono-ground);
   border: 0;
   border-bottom: 1px solid var(--mono-line);
 }
 
 /* その月に含まれないマス */
-:root .museum-calendar td:not([data-weekday]) {
+:root .museum-calendar__scroll td:not([data-weekday]),
+:root .museum-calendar .c-cal__table td.is-empty {
   background: repeating-linear-gradient(135deg, #0c0c0c 0 6px, #1b1b1b 6px 7px);
 }
 
-:root .museum-calendar td[data-weekday="7"] time {
+:root .museum-calendar td[data-weekday="7"] time,
+:root .museum-calendar td.is-sunday time {
   color: var(--mono-mute);
 }
 
 :root .museum-calendar td[aria-current="date"] {
   color: var(--mono-ink);
+  background: var(--mono-ground);
   box-shadow: none;
 }
 
@@ -98,14 +107,19 @@
 }
 
 /* 予定 */
-:root .museum-calendar li {
+:root .museum-calendar li[data-kind] {
   padding: .3rem .4rem;
-  color: inherit;
-  background: transparent;
-  border: 1px solid color-mix(in srgb, var(--mono-ink) 35%, transparent);
 }
 
-:root .museum-calendar li + li {
+:root .museum-calendar li[data-kind],
+:root .museum-calendar .c-calEvent,
+:root .museum-calendar-today .c-calEvent {
+  color: var(--mono-event-text, var(--mono-ink));
+  background: var(--mono-event-background, transparent);
+  border: 1px var(--mono-event-line-style, solid) var(--mono-event-line, color-mix(in srgb, var(--mono-ink) 35%, transparent));
+}
+
+:root .museum-calendar li[data-kind] + li[data-kind] {
   margin-top: .25rem;
 }
 
@@ -113,47 +127,48 @@
   font-weight: 500;
 }
 
-:root .museum-calendar li a,
+:root .museum-calendar li[data-kind] a,
 :root .museum-calendar-today__events li a {
   color: inherit;
 }
 
-:root .museum-calendar li[data-kind="open"] {
-  color: var(--mono-ground);
-  background: var(--mono-ink);
-  border-color: var(--mono-ink);
+:is(.museum-calendar, .museum-calendar-today) [data-kind="open"] {
+  --mono-event-text: var(--mono-ground);
+  --mono-event-background: var(--mono-ink);
+  --mono-event-line: var(--mono-ink);
 }
 
-:root .museum-calendar li[data-kind="closed"] {
-  color: var(--mono-mute);
-  border-style: dashed;
+:is(.museum-calendar, .museum-calendar-today) [data-kind="closed"] {
+  --mono-event-text: var(--mono-mute);
+  --mono-event-line-style: dashed;
 }
 
-:root .museum-calendar li[data-kind="tea"] {
-  border-color: var(--mono-ink);
+:is(.museum-calendar, .museum-calendar-today) [data-kind="tea"] {
+  --mono-event-line: var(--mono-ink);
 }
 
-:root .museum-calendar li[data-kind="tour"] {
-  background: color-mix(in srgb, var(--mono-ink) 20%, var(--mono-ground));
-  border-color: transparent;
+:is(.museum-calendar, .museum-calendar-today) [data-kind="tour"] {
+  --mono-event-background: color-mix(in srgb, var(--mono-ink) 20%, var(--mono-ground));
+  --mono-event-line: transparent;
 }
 
-:root .museum-calendar li[data-kind="evening"] {
-  color: var(--mono-ground);
-  background: color-mix(in srgb, var(--mono-ink) 48%, var(--mono-ground));
-  border-color: transparent;
+:is(.museum-calendar, .museum-calendar-today) [data-kind="evening"] {
+  --mono-event-text: var(--mono-ground);
+  --mono-event-background: color-mix(in srgb, var(--mono-ink) 48%, var(--mono-ground));
+  --mono-event-line: transparent;
 }
 
-:root .museum-calendar li[data-kind="wedding"] {
-  color: var(--mono-ground);
-  background: color-mix(in srgb, var(--mono-ink) 72%, var(--mono-ground));
-  border-color: transparent;
+:is(.museum-calendar, .museum-calendar-today) [data-kind="wedding"] {
+  --mono-event-text: var(--mono-ground);
+  --mono-event-background: color-mix(in srgb, var(--mono-ink) 72%, var(--mono-ground));
+  --mono-event-line: transparent;
 }
 
 /* 本日の予定 */
 :root .museum-calendar-today {
   padding: 1.25rem 1.5rem;
   font-feature-settings: "tnum";
+  color: var(--mono-ink);
   background: var(--mono-ground);
   border-color: #000;
   box-shadow: 0 18px 40px rgb(0 0 0 / 22%);
@@ -173,7 +188,9 @@
   border-left: 0;
 }
 
-:root .museum-calendar-today__status strong {
+:root .museum-calendar-today__status strong,
+:root .museum-calendar .c-today__label[data-kind],
+:root .museum-calendar-today .c-today__label[data-kind] {
   padding: .1rem .9rem;
   font-size: .875rem;
   letter-spacing: .12em;
@@ -182,7 +199,9 @@
   border: 1px solid var(--mono-ink);
 }
 
-:root .museum-calendar-today__status[data-kind="closed"] strong {
+:root .museum-calendar-today__status[data-kind="closed"] strong,
+:root .museum-calendar .c-today__label[data-kind="closed"],
+:root .museum-calendar-today .c-today__label[data-kind="closed"] {
   color: var(--mono-mute);
   background: transparent;
   border: 1px dashed var(--mono-mute);
@@ -194,4 +213,47 @@
 
 :root .museum-calendar-today__events li strong {
   font-weight: 500;
+}
+
+/* 美術館サイトの本日の予定は、外枠に余白がある。 */
+:root .museum-calendar-today > .c-today {
+  padding: 0;
+}
+
+/* 美術館サイトの月送り、本日の予定、日付を押して開く詳細 */
+:root .museum-calendar .c-cal,
+:root .museum-calendar .c-cal__header,
+:root .museum-calendar .c-cal__table td,
+:root .museum-calendar .c-calDay,
+:root .museum-calendar .c-today,
+:root .museum-calendar-today .c-today {
+  color: var(--mono-ink);
+  background-color: var(--mono-ground);
+  border-color: var(--mono-line);
+}
+
+:root .museum-calendar .c-calDay__close,
+:root .museum-calendar .c-today__time,
+:root .museum-calendar-today .c-today__time {
+  color: var(--mono-ink);
+}
+
+:root .museum-calendar .c-today__events,
+:root .museum-calendar-today .c-today__events,
+:root .museum-calendar .c-calDay__notes,
+:root .museum-calendar .c-calDay__none {
+  border-color: var(--mono-line);
+}
+
+:root .museum-calendar .museum-calendar__notice,
+:root .museum-calendar-today .museum-calendar-today__notice {
+  color: var(--mono-ink);
+  background: var(--museum-calendar-notice-background);
+  border-color: var(--mono-mute);
+}
+
+:root .museum-calendar .c-cal :focus-visible,
+:root .museum-calendar .c-calDay .c-today a:focus-visible,
+:root .museum-calendar-today .c-today :focus-visible {
+  outline-color: var(--museum-calendar-focus);
 }

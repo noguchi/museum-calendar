@@ -28,7 +28,7 @@ WordPress 7.1.4以上、PHP 8.5.12以上、MariaDB 10.11.18以上。
 
 ## カスタマイズ
 
-既定のテンプレートでは、予定の種類を `data-kind`、曜日を `data-weekday`（月曜が1）で指定して装飾できる。CSS変数の使い方は[サンプルCSS](../plugins/museum-calendar/samples/)を参照。
+既定のテンプレートでは、予定の種類を `data-kind`、曜日を `data-weekday`（月曜が1）で指定して装飾できる。`monochrome.css` と `pop.css` は、既定テンプレートと美術館サイトの差し替えテンプレートで、月間カレンダーと本日の予定に各サンプルの配色を使う。美術館サイトでは日付を押して開く詳細にも同じ配色を使う。[サンプルCSS](../plugins/museum-calendar/samples/)
 
 スタイルのハンドルは `museum-calendar`。テーマでショートコードを直接呼ぶ場合は `wp_enqueue_style('museum-calendar')` で読み込める。既定のCSSを外す場合は `wp_enqueue_scripts` で `wp_deregister_style('museum-calendar')` を呼ぶ。
 

@@ -2,7 +2,7 @@
  * Museum Calendar のサンプル: pop
  *
  * 明るい色と太い枠。曜日ごと、予定の種類ごとに色を変える。
- * プラグインの既定のテンプレート用。テーマのCSSか「外観 → カスタマイズ → 追加CSS」に貼り付けて使う。
+ * プラグインの既定テンプレートと、美術館サイトの差し替えテンプレート用。テーマのCSSか「外観 → カスタマイズ → 追加CSS」に貼り付けて使う。
  * セレクターを :root から始めているのは、プラグインのCSSがどこで読み込まれても、こちらを優先させるため。
  */
 
@@ -21,18 +21,19 @@
 }
 
 /* 予定の種類ごとの色。ここにない種類は var(--pop-kind, ...) の代替値になる。 */
-:is(.museum-calendar, .museum-calendar-today__events) li[data-kind="open"] { --pop-kind: #ffd23f; }
-:is(.museum-calendar, .museum-calendar-today__events) li[data-kind="closed"] { --pop-kind: #e7e6f0; }
-:is(.museum-calendar, .museum-calendar-today__events) li[data-kind="tea"] { --pop-kind: #8ff0c4; }
-:is(.museum-calendar, .museum-calendar-today__events) li[data-kind="tour"] { --pop-kind: #8fdcf7; }
-:is(.museum-calendar, .museum-calendar-today__events) li[data-kind="wedding"] { --pop-kind: #ffa8d2; }
-:is(.museum-calendar, .museum-calendar-today__events) li[data-kind="evening"] { --pop-kind: #c9b8ff; }
-:is(.museum-calendar, .museum-calendar-today__events) li[data-kind="concert"] { --pop-kind: #ffb86b; }
-:is(.museum-calendar, .museum-calendar-today__events) li[data-kind="event"] { --pop-kind: #ffe07a; }
+:is(.museum-calendar, .museum-calendar-today) [data-kind="open"] { --pop-kind: #ffd23f; }
+:is(.museum-calendar, .museum-calendar-today) [data-kind="closed"] { --pop-kind: #e7e6f0; }
+:is(.museum-calendar, .museum-calendar-today) [data-kind="tea"] { --pop-kind: #8ff0c4; }
+:is(.museum-calendar, .museum-calendar-today) [data-kind="tour"] { --pop-kind: #8fdcf7; }
+:is(.museum-calendar, .museum-calendar-today) [data-kind="wedding"] { --pop-kind: #ffa8d2; }
+:is(.museum-calendar, .museum-calendar-today) [data-kind="evening"] { --pop-kind: #c9b8ff; }
+:is(.museum-calendar, .museum-calendar-today) [data-kind="concert"] { --pop-kind: #ffb86b; }
+:is(.museum-calendar, .museum-calendar-today) [data-kind="event"] { --pop-kind: #ffe07a; }
 
 /* 月間カレンダー。白いカードをピンクの枠で囲む */
 :root .museum-calendar {
   padding: 1rem;
+  color: var(--pop-ink);
   background: var(--pop-pink);
   border: 3px solid var(--pop-ink);
   border-radius: 22px;
@@ -43,7 +44,9 @@
   margin: 0 0 .75rem;
 }
 
-:root .museum-calendar__nav a {
+:root .museum-calendar__nav a,
+:root .museum-calendar .c-cal__nav {
+  color: var(--pop-ink);
   padding: .2rem 1rem;
   font-size: .875rem;
   font-weight: 900;
@@ -55,12 +58,14 @@
   transition: transform .15s, box-shadow .15s;
 }
 
-:root .museum-calendar__nav a:hover {
+:root .museum-calendar__nav a:hover,
+:root .museum-calendar .c-cal__nav:hover {
   box-shadow: 0 0 0 var(--pop-ink);
   transform: translate(2px, 2px);
 }
 
-:root .museum-calendar__scroll {
+:root .museum-calendar__scroll,
+:root .museum-calendar .c-cal {
   background: #fff;
   border: 3px solid var(--pop-ink);
   border-radius: 16px;
@@ -72,24 +77,35 @@
   letter-spacing: .08em;
 }
 
-/* 曜日。data-weekday は、最初の列が何曜日でも、月曜日が1、日曜日が7。 */
+/* 曜日番号は月曜日が1、日曜日が7。曜日番号のない美術館サイトの見出しは列の順に配色する。 */
 :root .museum-calendar th {
   padding: .4rem 0;
   font-weight: 900;
+  color: var(--pop-ink);
+  background: var(--pop-yellow);
   border: 0;
   border-block: 3px solid var(--pop-ink);
 }
 
-:root .museum-calendar th[data-weekday="1"] { background: #ffd23f; }
-:root .museum-calendar th[data-weekday="2"] { background: #ff9f43; }
-:root .museum-calendar th[data-weekday="3"] { background: #3ddc97; }
-:root .museum-calendar th[data-weekday="4"] { background: #4cc9f0; }
-:root .museum-calendar th[data-weekday="5"] { background: #a78bfa; }
-:root .museum-calendar th[data-weekday="6"] { background: #7cc6ff; }
-:root .museum-calendar th[data-weekday="7"] { background: #ff8fb8; }
+:root .museum-calendar th[data-weekday="1"],
+:root .museum-calendar .c-cal__table th:not([data-weekday]):nth-child(1) { background: #ffd23f; }
+:root .museum-calendar th[data-weekday="2"],
+:root .museum-calendar .c-cal__table th:not([data-weekday]):nth-child(2) { background: #ff9f43; }
+:root .museum-calendar th[data-weekday="3"],
+:root .museum-calendar .c-cal__table th:not([data-weekday]):nth-child(3) { background: #3ddc97; }
+:root .museum-calendar th[data-weekday="4"],
+:root .museum-calendar .c-cal__table th:not([data-weekday]):nth-child(4) { background: #4cc9f0; }
+:root .museum-calendar th[data-weekday="5"],
+:root .museum-calendar .c-cal__table th:not([data-weekday]):nth-child(5) { background: #a78bfa; }
+:root .museum-calendar th[data-weekday="6"],
+:root .museum-calendar .c-cal__table th:not([data-weekday]):nth-child(6) { background: #7cc6ff; }
+:root .museum-calendar th[data-weekday="7"],
+:root .museum-calendar .c-cal__table th:not([data-weekday]):nth-child(7) { background: #ff8fb8; }
 
 /* 外周はカードが描くので、マスには内側の罫線だけを残す */
 :root .museum-calendar td {
+  color: var(--pop-ink);
+  border-color: var(--museum-calendar-line);
   border-top: 0;
 }
 
@@ -113,16 +129,19 @@
   color: #1d6fe0;
 }
 
-:root .museum-calendar td[data-weekday="7"] {
+:root .museum-calendar td[data-weekday="7"],
+:root .museum-calendar td.is-sunday {
   background: #fff3f8;
 }
 
-:root .museum-calendar td[data-weekday="7"] time {
+:root .museum-calendar td[data-weekday="7"] time,
+:root .museum-calendar td.is-sunday time {
   color: #e6246f;
 }
 
 /* その月に含まれないマス */
-:root .museum-calendar td:not([data-weekday]) {
+:root .museum-calendar__scroll td:not([data-weekday]),
+:root .museum-calendar .c-cal__table td.is-empty {
   background: #fff radial-gradient(#ffd6e6 2px, transparent 2.5px) 0 0 / 12px 12px;
 }
 
@@ -139,14 +158,14 @@
   display: inline-block;
   min-width: 1.9em;
   line-height: 1.9;
-  color: #fff;
+  color: var(--pop-ink);
   text-align: center;
   background: var(--pop-pink);
   border-radius: 999px;
 }
 
 /* 予定 */
-:root .museum-calendar li {
+:root .museum-calendar li[data-kind] {
   padding: .3rem .6rem;
   color: inherit;
   background: var(--pop-kind, #ece9ff);
@@ -154,7 +173,7 @@
   border-radius: .75rem;
 }
 
-:root .museum-calendar li + li {
+:root .museum-calendar li[data-kind] + li[data-kind] {
   margin-top: .25rem;
 }
 
@@ -162,7 +181,7 @@
   color: #6b6890;
 }
 
-:root .museum-calendar li a,
+:root .museum-calendar li[data-kind] a,
 :root .museum-calendar-today__events li a {
   color: inherit;
 }
@@ -171,7 +190,7 @@
 :root .museum-calendar-today {
   --museum-calendar-line: rgb(255 255 255 / 60%);
   padding: 1rem 1.25rem;
-  color: #fff;
+  color: var(--pop-ink);
   background: var(--pop-pink);
   border: 3px solid var(--pop-ink);
   border-radius: 22px;
@@ -202,11 +221,7 @@
 }
 
 :root .museum-calendar-today__status strong {
-  background: var(--pop-yellow);
-}
-
-:root .museum-calendar-today__status[data-kind="closed"] strong {
-  background: #e7e6f0;
+  background: var(--pop-kind, var(--pop-yellow));
 }
 
 :root .museum-calendar-today__events li {
@@ -220,6 +235,53 @@
   background: var(--pop-kind, #ece9ff);
 }
 
-:root .museum-calendar-today__notice {
+:root .museum-calendar .museum-calendar__notice,
+:root .museum-calendar-today .museum-calendar-today__notice {
   color: var(--pop-ink);
+  background: var(--museum-calendar-notice-background);
+  border-color: var(--pop-ink);
+}
+
+/* 美術館サイトの本日の予定は、外枠に余白がある。 */
+:root .museum-calendar-today > .c-today {
+  padding: 0;
+}
+
+/* 美術館サイトの月送り、本日の予定、日付を押して開く詳細 */
+:root .museum-calendar .c-cal__header {
+  color: var(--pop-ink);
+  background: var(--pop-pink);
+  border-radius: 12px 12px 0 0;
+}
+
+:root .museum-calendar .c-calDay {
+  color: var(--pop-ink);
+  background: #fff;
+  border-color: var(--pop-ink);
+}
+
+:root .museum-calendar .c-calDay__close,
+:root .museum-calendar .c-today,
+:root .museum-calendar-today .c-today,
+:root .museum-calendar .c-today__time,
+:root .museum-calendar-today .c-today__time {
+  color: inherit;
+  background: transparent;
+}
+
+:root .museum-calendar .c-calEvent,
+:root .museum-calendar-today .c-calEvent,
+:root .museum-calendar .c-today__label[data-kind],
+:root .museum-calendar-today .c-today__label[data-kind] {
+  color: var(--pop-ink);
+  background: var(--pop-kind, #ece9ff);
+  border: 2px solid var(--pop-ink);
+  border-radius: 999px;
+}
+
+:root .museum-calendar .c-today__events,
+:root .museum-calendar-today .c-today__events,
+:root .museum-calendar .c-calDay__notes,
+:root .museum-calendar .c-calDay__none {
+  border-color: var(--pop-ink);
 }

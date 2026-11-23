@@ -23,7 +23,7 @@ WordPress 7.1.4以上、PHP 8.5.12以上、MariaDB 10.11.18以上が必要です
 
 ## デザインをサイトに合わせる
 
-- 色や寸法を変えるには、プラグインの [samples/](plugins/museum-calendar/samples/) からCSSを1つ選び、中身をテーマのCSSか追加CSSにコピーして編集します。
+- 色や寸法を変えるには、プラグインの [samples/](plugins/museum-calendar/samples/) からCSSを1つ選び、中身をテーマのCSSか追加CSSにコピーして編集します。黒地にするには `monochrome.css`、明るい多色の配色にするには `pop.css` を使います。すでにサンプルを貼っている場合は、その部分を丸ごと差し替えます。
 - HTMLを変えるには、[templates/](plugins/museum-calendar/templates/) の `month.php` または `today.php` をテーマの `museum-calendar/` にコピーして編集します。予定名や説明は `esc_html()`、属性は `esc_attr()`、リンク先は `esc_url()` で出力します。[テンプレートに渡る値](docs/specification.md#テンプレートの差し替え)
 
 [仕様](docs/specification.md) ｜ [運用・復旧](docs/operations.md) ｜ [開発の手引き](docs/development.md)
