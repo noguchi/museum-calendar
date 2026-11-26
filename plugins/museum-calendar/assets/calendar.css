@@ -31,14 +31,11 @@
 .museum-calendar li strong, .museum-calendar li span { display: block; overflow-wrap: anywhere; }
 .museum-calendar li span { font-size: .75rem; margin-top: .25rem; }
 .museum-calendar li a { display: block; }
-.museum-calendar li a, .museum-calendar-today__events li a { color: var(--museum-calendar-kind-text, var(--museum-calendar-accent, #635440)); text-decoration: underline; }
+.museum-calendar li a { color: var(--museum-calendar-kind-text, var(--museum-calendar-accent, #635440)); text-decoration: underline; }
 .museum-calendar :focus-visible, .museum-calendar-today :focus-visible { outline: 3px solid var(--museum-calendar-focus, #3069a1); outline-offset: 3px; }
 .museum-calendar-today { color: var(--museum-calendar-text, #29251f); font-family: inherit; max-width: var(--museum-calendar-max-width, 960px); margin: 2rem auto; padding: 1rem; border: 1px solid var(--museum-calendar-line, #d6d0c4); }
 .museum-calendar-today__notice { margin: 0 0 1rem; padding: .75rem 1rem; background: var(--museum-calendar-notice-background, #f8f1dc); font-size: .875rem; }
 .museum-calendar-today__date { margin: 0; font-size: 1.5rem; font-weight: 600; }
 .museum-calendar-today__status { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem 1rem; margin: .75rem 0 0; padding: .5rem .75rem; border-left: 2px solid var(--museum-calendar-kind-accent, var(--museum-calendar-accent, #635440)); color: var(--museum-calendar-kind-text); background: var(--museum-calendar-kind-color, var(--museum-calendar-surface, #f4f1eb)); font-size: 1.125rem; }
 .museum-calendar-today__status strong, .museum-calendar-today__status span { overflow-wrap: anywhere; }
-.museum-calendar-today__events { margin: .75rem 0 0; padding: 0; list-style: none; }
-.museum-calendar-today__events li { display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: .4rem 0; border-top: 1px solid var(--museum-calendar-line, #d6d0c4); }
-.museum-calendar-today__events li strong, .museum-calendar-today__events li span { overflow-wrap: anywhere; }
 .museum-calendar-today__empty { margin: .75rem 0 0; font-size: .875rem; }

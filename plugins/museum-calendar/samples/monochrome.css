@@ -127,8 +127,7 @@
   font-weight: 500;
 }
 
-:root .museum-calendar li[data-kind] a,
-:root .museum-calendar-today__events li a {
+:root .museum-calendar li[data-kind] a {
   color: inherit;
 }
 
@@ -205,14 +204,6 @@
   color: var(--mono-mute);
   background: transparent;
   border: 1px dashed var(--mono-mute);
-}
-
-:root .museum-calendar-today__events li {
-  padding: .5rem 0;
-}
-
-:root .museum-calendar-today__events li strong {
-  font-weight: 500;
 }
 
 /* 美術館サイトの本日の予定は、外枠に余白がある。 */

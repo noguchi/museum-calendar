@@ -181,8 +181,7 @@
   color: #6b6890;
 }
 
-:root .museum-calendar li[data-kind] a,
-:root .museum-calendar-today__events li a {
+:root .museum-calendar li[data-kind] a {
   color: inherit;
 }
 
@@ -210,29 +209,14 @@
   border-left: 0;
 }
 
-:root .museum-calendar-today__status strong,
-:root .museum-calendar-today__events li strong {
+:root .museum-calendar-today__status strong {
   padding: 0 .9em;
   font-size: .875rem;
   font-weight: 900;
   color: var(--pop-ink);
   border: 2px solid var(--pop-ink);
-  border-radius: 999px;
-}
-
-:root .museum-calendar-today__status strong {
   background: var(--pop-kind, var(--pop-yellow));
-}
-
-:root .museum-calendar-today__events li {
-  align-items: center;
-  padding: .5rem 0;
-  font-weight: 700;
-}
-
-:root .museum-calendar-today__events li strong {
-  display: inline-block;
-  background: var(--pop-kind, #ece9ff);
+  border-radius: 999px;
 }
 
 :root .museum-calendar .museum-calendar__notice,
