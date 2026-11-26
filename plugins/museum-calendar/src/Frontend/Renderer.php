@@ -90,7 +90,6 @@ final class Renderer
             'date' => wp_date($dateFormat, $today->getTimestamp(), $tokyo),
             'weekday' => self::weekdayName((int) $today->format('N')),
             'status' => EventList::status($events),
-            'events' => $events,
             'lang' => $this->language->value,
             'text' => ['empty' => $this->language->text('empty_today')],
         ]));

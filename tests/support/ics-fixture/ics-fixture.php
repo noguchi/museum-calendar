@@ -28,10 +28,11 @@ add_filter('option_museum_calendar_feed', static function ($state) {
     $event = static fn (string $uid, string $title, string $start, string $end): string
         => "BEGIN:VEVENT\r\nUID:{$uid}@museum-fixture-today\r\n{$start}\r\n{$end}\r\nSUMMARY:{$title}\r\nEND:VEVENT\r\n";
     $open = $event('open', '開館日', "DTSTART:{$today}T103000", "DTEND:{$today}T163000");
+    $tour = $event('tour', 'ガイドツアー開催日', "DTSTART:{$today}T110000", "DTEND:{$today}T120000");
     $events = match ($fixture) {
-        'open' => $open . $event('tour', 'ガイドツアー開催日', "DTSTART:{$today}T110000", "DTEND:{$today}T120000"),
+        'open' => $open . $tour,
         'closed' => $open . $event('closed', '休館日', "DTSTART;VALUE=DATE:{$today}", 'DTEND;VALUE=DATE:' . $day->modify('+1 day')->format('Ymd')),
-        'none' => '',
+        'none' => $tour,
         default => null,
     };
     if ($events === null || !is_array($state)) {

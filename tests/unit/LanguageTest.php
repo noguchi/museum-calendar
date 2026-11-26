@@ -42,7 +42,7 @@ final class LanguageTest extends TestCase
             ['today_label', '本日の予定', "Today's schedule"],
             ['scroll_label', '月間予定表（横にスクロールできます）', 'Monthly schedule (scrolls sideways)'],
             ['empty_month', 'この月の予定はありません。', 'No events this month.'],
-            ['empty_today', '本日の予定はありません。', 'No events today.'],
+            ['empty_today', '本日の開館情報はありません。', 'No opening information today.'],
             ['unavailable', '現在、予定を取得できません。時間をおいてご確認ください。', 'The schedule is currently unavailable. Please check again later.'],
             ['not_connected', 'カレンダーの接続が設定されていません。', 'The calendar connection is not set up.'],
             ['invalid_month', '年月の指定が正しくありません。', 'The month is not valid.'],

@@ -23,7 +23,7 @@ enum Language: string
         'today_label' => ['ja' => '本日の予定', 'en' => "Today's schedule"],
         'scroll_label' => ['ja' => '月間予定表（横にスクロールできます）', 'en' => 'Monthly schedule (scrolls sideways)'],
         'empty_month' => ['ja' => 'この月の予定はありません。', 'en' => 'No events this month.'],
-        'empty_today' => ['ja' => '本日の予定はありません。', 'en' => 'No events today.'],
+        'empty_today' => ['ja' => '本日の開館情報はありません。', 'en' => 'No opening information today.'],
         'stale' => [
             'ja' => '更新を確認できていないため、前回取得した予定を表示しています。最終取得：%s（日本時間）',
             'en' => 'Updates could not be confirmed, so the previously fetched schedule is shown. Last fetched: %s (Japan time)',

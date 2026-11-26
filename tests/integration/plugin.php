@@ -95,13 +95,13 @@ try {
         6, 7 => ['開館日', 'お茶室営業日'],
         default => ['開館日', 'ガイドツアー開催日'],
     };
-    foreach (['休館日', '開館日', 'ガイドツアー開催日', 'お茶室営業日'] as $title) {
-        $check(str_contains($html, "<strong>{$title}</strong>") === in_array($title, $samples, true), "本日はその曜日のサンプルの予定だけを表示する: {$title}。");
+    foreach (['ガイドツアー開催日', 'お茶室営業日'] as $title) {
+        $check(!str_contains($html, $title), "サンプルの本日は開館状況以外の予定を出さない: {$title}。");
     }
     $sampleStatus = $samples === ['休館日']
         ? '<p class="museum-calendar-today__status" data-kind="closed" style="--museum-calendar-kind-color: #f5f5f5"><strong>休館日</strong></p>'
         : '<p class="museum-calendar-today__status" data-kind="open" style="--museum-calendar-kind-color: #ffebee"><strong>開館日</strong><span>10:30–16:30</span></p>';
-    $check(str_contains($html, $sampleStatus) && !str_contains($html, '<li data-title="開館日"') && !str_contains($html, '<li data-title="休館日"'), 'サンプルの本日は、開館日か休館日を一覧でなく開館状況として表示する。');
+    $check(str_contains($html, $sampleStatus) && !str_contains($html, '<ul') && !str_contains($html, '<li'), 'サンプルの本日は、その曜日の開館日か休館日を開館状況として表示する。');
     $check(str_contains(do_shortcode('[museum_calendar month="invalid"]'), '正しくありません'), '不正な入力を受け付けない。');
 
     $grid = static function (string $html): array {
@@ -245,21 +245,19 @@ try {
 
     $html = (new Renderer($source, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo), 'n/j');
     $check(str_contains($html, $dateLine('2026-11-15', '11/15')), '日曜日の本日の日付が正しい。');
-    $order = array_map(static fn (string $item) => strpos($html, $item), ['<strong>Zebra</strong>', '<strong>&lt;script&gt;alert(1)&lt;/script&gt;</strong>', '<strong>Alpha</strong>']);
-    $check(!in_array(false, $order, true) && $order[0] < $order[1] && $order[1] < $order[2], '本日は予定を元の順に並べる。');
-    $check(!str_contains($html, '<script>') && !str_contains($html, '<img'), '本日の予定をエスケープする。');
-    $check(str_contains($html, '<li data-title="&lt;script&gt;alert(1)&lt;/script&gt;" data-kind="other">'), '本日の予定のタイトルの属性があり、エスケープされている。');
-    $check(!str_contains($html, 'Tomorrow'), '本日はほかの日の予定を出さない。');
-    $check(!str_contains($html, '本日の予定はありません') && !str_contains($html, 'role="status"'), '本日は当てはまらない案内を出さない。');
+    foreach (['Zebra', 'Alpha', 'script', 'img', 'Tomorrow', '<ul', '<li'] as $hidden) {
+        $check(!str_contains($html, $hidden), "開館状況のない本日は、ほかの予定を出さない: {$hidden}");
+    }
+    $check(str_contains($html, '<p class="museum-calendar-today__empty">本日の開館情報はありません。</p>') && !str_contains($html, '__status') && !str_contains($html, 'role="status"'), 'ほかの予定だけの本日は、開館情報がないとだけ表示する。');
     $html = (new Renderer($source, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'Y年n月j日');
     $check(str_contains($html, $dateLine('2026-11-14', '2026年11月14日')), '土曜日の本日の日付が正しい。');
-    $check(str_contains($html, '本日の予定はありません。') && !str_contains($html, '<ul') && !str_contains($html, '__status'), '予定のない日は、予定がないと表示し、開館状況を出さない。');
+    $check(str_contains($html, '本日の開館情報はありません。') && !str_contains($html, '<ul') && !str_contains($html, '__status'), '予定のない日は、開館情報がないと表示し、開館状況を出さない。');
     $html = $inJapanese(static fn (): string => (new Renderer($source, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-16 12:00', $tokyo), 'n月j日(D)'));
-    $check(str_contains($html, $dateLine('2026-11-16', '11月16日(月)')) && str_contains($html, '<strong>Tomorrow</strong>'), '月曜日の本日が正しい。');
+    $check(str_contains($html, $dateLine('2026-11-16', '11月16日(月)')), '月曜日の本日が正しい。');
     $html = (new Renderer($source, KindTable::defaults()))->renderToday(new DateTimeImmutable('2027-01-05 12:00', $tokyo), 'Y/m/d n/j');
     $check(str_contains($html, $dateLine('2027-01-05', '2027/01/05 1/5')), '本日の日付は、日付形式が指定するところだけ0で埋める。');
     $html = $inJapanese(static fn (): string => (new Renderer($source, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-14 15:30', new DateTimeZone('UTC')), 'n月j日(D) H:i'));
-    $check(str_contains($html, $dateLine('2026-11-15', '11月15日(日) 00:30')) && str_contains($html, '<strong>Zebra</strong>'), '本日はAsia/Tokyoで判定する。');
+    $check(str_contains($html, $dateLine('2026-11-15', '11月15日(日) 00:30')), '本日はAsia/Tokyoで判定する。');
     $html = (new Renderer($source, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo), '<b>n/j</b>');
     $check(str_contains($html, $dateLine('2026-11-15', '&lt;b&gt;11/15&lt;/b&gt;')), '本日の日付をエスケープする。');
     $html = (new Renderer($source, KindTable::defaults(), '<b>前回の予定</b>'))->renderToday(new DateTimeImmutable('2026-11-15 12:00', $tokyo), 'n/j');
@@ -294,10 +292,7 @@ try {
         $html = do_shortcode('[museum_calendar_today lang="en"]');
         $check(str_starts_with($html, sprintf($todaySection, 'Today&#039;s schedule', ' lang="en"')), '英語の本日はsectionに言語を宣言する。');
         $check(str_contains($html, $dateLine($today, $now->format('D, M j'))), '英語の本日は、日付形式にかかわらず日付を D, M j で出す。');
-        $english = ['ガイドツアー開催日' => 'Guided Tour', 'お茶室営業日' => 'Tea Room Open'];
-        foreach (array_diff($samples, ['開館日', '休館日']) as $title) {
-            $check(str_contains($html, '<li data-title="' . $title . '" data-kind="' . KindTable::defaults()->kind($title) . '" style="--museum-calendar-kind-color: ' . KindTable::defaults()->color($title) . '"><strong>' . $english[$title] . '</strong><span>'), "英語の本日は英語での表示を出す: {$title}。");
-        }
+        $check(!str_contains($html, '<li') && !str_contains($html, 'Guided Tour') && !str_contains($html, 'Tea Room Open'), '英語の本日は、サンプルの開館状況以外の予定を出さない。');
         $check(str_contains($html, str_replace(['<strong>休館日</strong>', '<strong>開館日</strong>'], ['<strong>CLOSED</strong>', '<strong>OPEN</strong>'], $sampleStatus)), '英語の本日は、サンプルの開館状況を英語で出す。');
         $allEnglish($html, '本日');
         $html = do_shortcode('[museum_calendar_today]');
@@ -427,10 +422,10 @@ try {
         $check(str_contains($html, '<p class="museum-calendar__empty">No events this month.</p>') && !str_contains($html, '<li'), '予定のない英語の月は、予定がないと英語で出す。');
         $allEnglish($html, '予定のない月');
         $html = do_shortcode('[museum_calendar_today lang="en"]');
-        $check(str_contains($html, '<p class="museum-calendar-today__empty">No events today.</p>') && !str_contains($html, '<ul'), '予定のない英語の日は、予定がないと英語で出す。');
+        $check(str_contains($html, '<p class="museum-calendar-today__empty">No opening information today.</p>') && !str_contains($html, '<ul'), '予定のない英語の日は、開館情報がないと英語で出す。');
         $allEnglish($html, '予定のない日');
         $check(str_contains(do_shortcode('[museum_calendar]'), '<p class="museum-calendar__empty">この月の予定はありません。</p>'), '予定のない月の文言が変わっていない。');
-        $check(str_contains(do_shortcode('[museum_calendar_today]'), '<p class="museum-calendar-today__empty">本日の予定はありません。</p>'), '予定のない日の文言が変わっていない。');
+        $check(str_contains(do_shortcode('[museum_calendar_today]'), '<p class="museum-calendar-today__empty">本日の開館情報はありません。</p>'), '予定のない日の文言が変わっていない。');
     } finally {
         $sampleIcs = $sampleEvents;
         FeedRepository::clear();
@@ -507,25 +502,25 @@ try {
     $listed($html, [$closed, ...$englishItems], '英語の月');
     $check(!str_contains($html, '<b>'), '英語での表示のないタイトルをエスケープする。');
     $html = (new Renderer($facility, KindTable::defaults(), '', Language::English))->renderToday($sunday, 'D, M j');
-    $listed($html, array_slice($englishItems, 1), '英語の本日');
+    $check(!str_contains($html, '<ul') && !str_contains($html, '<li') && !str_contains($html, 'Guided Tour') && !str_contains($html, 'Tea Room Open') && !str_contains($html, '__empty'), '英語の本日は、開館状況のほかに予定を出さない。');
     $check(str_contains($html, $dateLine('2026-11-15', 'Sun, Nov 15') . "\n" . '<p class="museum-calendar-today__status" data-kind="open" style="--museum-calendar-kind-color: #ffebee"><strong>OPEN</strong><span>10:00–16:00</span></p>'), '英語の本日は、日付の後に開館日の開館状況を時間とともに出す。');
     $html = (new Renderer($facility, KindTable::defaults()))->render(new Month('2026-11'), $sunday);
     $listed($html, $japaneseItems, 'langのない月');
     $check(!str_contains($html, ' lang='), 'langのない月は、どの予定にも日本語の印を付けない。');
     $html = (new Renderer($facility, KindTable::defaults()))->renderToday($sunday, 'n/j');
-    $listed($html, array_slice($japaneseItems, 2), 'langのない本日');
+    $check(!str_contains($html, '<ul') && !str_contains($html, '<li') && !str_contains($html, 'ガイドツアー開催日') && !str_contains($html, 'お茶室営業日'), 'langのない本日は、開館状況のほかに予定を出さない。');
     $check(str_contains($html, '<p class="museum-calendar-today__status" data-kind="open" style="--museum-calendar-kind-color: #ffebee"><strong>開館日</strong><span>10:00–16:00</span></p>'), 'langのない本日は、開館日の開館状況を出す。');
-    $check(!str_contains($html, ' lang='), 'langのない本日は、どの予定にも日本語の印を付けない。');
+    $check(!str_contains($html, ' lang='), 'langのない本日は、開館状況に日本語の印を付けない。');
     $status = static function (string $html): ?string {
         return preg_match('/<p class="museum-calendar-today__status"[^>]*>.*?<\/p>/', $html, $match) === 1 ? $match[0] : null;
     };
     $closedStatus = '<p class="museum-calendar-today__status" data-kind="closed" style="--museum-calendar-kind-color: #f5f5f5"><strong>%s</strong></p>';
     $html = (new Renderer($facility, KindTable::defaults(), '', Language::English))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'D, M j');
     $check($status($html) === sprintf($closedStatus, 'CLOSED'), '休館日だけの英語の本日は CLOSED を出す。');
-    $check(!str_contains($html, '<ul') && !str_contains($html, '__empty') && !str_contains($html, 'No events'), '休館日だけの本日は開館状況だけを出す。');
+    $check(!str_contains($html, '<ul') && !str_contains($html, '__empty') && !str_contains($html, 'No opening information'), '休館日だけの本日は開館状況だけを出す。');
     $check($status((new Renderer($facility, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-14 12:00', $tokyo), 'n/j')) === sprintf($closedStatus, '休館日'), 'langのない本日は、登録したタイトル休館日を出す。');
     $html = (new Renderer($facility, KindTable::defaults()))->renderToday(new DateTimeImmutable('2026-11-16 12:00', $tokyo), 'n/j');
-    $check($status($html) === null && str_contains($html, '本日の予定はありません。'), '開館日も休館日もない日は、開館状況を出さず、休館とも読めない。');
+    $check($status($html) === null && str_contains($html, '本日の開館情報はありません。'), '開館日も休館日もない日は、開館状況を出さず、休館とも読めない。');
     $openStatus = '<p class="museum-calendar-today__status" data-kind="open" style="--museum-calendar-kind-color: #ffebee"><strong>開館日</strong><span>10:00–16:00</span></p>';
     foreach ([
         ['2026-11-14 23:59:59', $tokyo, sprintf($closedStatus, '休館日')],
@@ -598,7 +593,7 @@ try {
     if ($samples === ['休館日']) {
         $check(str_contains($pages['english today'], '<p class="museum-calendar-today__status" data-kind="closed"><strong lang="ja">休館日</strong></p>'), '英語の本日は、英語のない closed のタイトルをそのまま日本語の印を付けて出す。');
     } elseif (in_array('お茶室営業日', $samples, true)) {
-        $check(str_contains($pages['english today'], $todayStatus('open', 'OPEN', '10:30–16:30')) && str_contains($pages['english today'], '<li data-title="お茶室営業日" data-kind="tea-room"><strong>Tea House</strong><span>12:00–16:00</span></li>'), '英語の本日は、保存した種類を英語での表示で並べる。');
+        $check(str_contains($pages['english today'], $todayStatus('open', 'OPEN', '10:30–16:30')) && !str_contains($pages['english today'], 'Tea House'), '英語の本日は、保存した英語での表示で開館状況を出し、ほかの予定を出さない。');
     } else {
         $check(str_contains($pages['english today'], $todayStatus('closed', 'Closed for a Tour')) && str_contains($pages['today'], $todayStatus('closed', 'ガイドツアー開催日')), 'closed として保存したタイトルは本日の開館状況になる。');
         $check(!str_contains($pages['english today'], '<ul') && !str_contains($pages['english today'], '10:30–16:30'), 'closed として保存したタイトルは本日の開館日を隠す。');
@@ -661,7 +656,6 @@ try {
     $check($status($html) === '<p class="museum-calendar-today__status" data-kind="closed" style="--museum-calendar-kind-color: #e26b6b"><strong>休館日</strong></p>', '開館状況はその行の種類の色を付ける。');
     $html = (new Renderer($facility, Settings::kinds()))->renderToday($sunday, 'n/j');
     $check($status($html) === '<p class="museum-calendar-today__status" data-kind="open"><strong>開館日</strong><span>10:00–16:00</span></p>', '色のない行の開館状況にはstyle属性がない。');
-    $check(str_contains($html, '<li data-title=" ガイドツアー開催日 " data-kind="tour" style="--museum-calendar-kind-color: #e3f2fd"><strong> ガイドツアー開催日 </strong>') && str_contains($html, '<li data-title="臨時休館" data-kind="other"><strong>'), '本日は、色のある行の予定にだけ種類の色を付ける。');
     Settings::saveKinds(['reset' => '1']);
     $check(get_option(Settings::KINDS_OPTION, null) === null && $kindPages() === $defaultPages, 'リセットで既定の色に戻る。');
     wp_set_current_user($previousUser);

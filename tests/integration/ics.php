@@ -211,16 +211,15 @@ try {
         $received($englishMonth, ...$described);
         $concertDay = new DateTimeImmutable('2026-11-26 12:00', $tokyo);
         $meetingDay = new DateTimeImmutable('2026-11-24 12:00', $tokyo);
-        $describedToday = 'description=[説明付きの催し] "午後の演奏会\n曲目：A\nB\nC\nD\n雨天決行 & 予約不要\n定員20名"';
         $themeToday = [
             (new Renderer(new Source($fixture), KindTable::defaults()))->renderToday($concertDay, 'n/j'),
             (new Renderer(new Source($fixture), KindTable::defaults(), '', Language::English))->renderToday($concertDay, 'D, M j'),
+            (new Renderer(new Source($fixture), KindTable::defaults()))->renderToday($meetingDay, 'n/j'),
         ];
-        $received($themeToday[0], 'lang=ja', $describedToday, 'url=[説明付きの催し] [https://example.com/concert]');
-        $received($themeToday[1], 'lang=en', $describedToday, 'url=[説明付きの催し] [https://example.com/concert]');
-        $meetingToday = (new Renderer(new Source($fixture), KindTable::defaults()))->renderToday($meetingDay, 'n/j');
-        $received($meetingToday, 'description=[場所付きの催し] "受付で名前をお伝えください。\n持ち物：筆記用具, 上履き; 飲み物"');
-        $themed = $month . $englishMonth . implode('', $themeToday) . $meetingToday;
+        foreach (['説明付きの催し', '午後の演奏会', 'example.com', '場所付きの催し', '受付で名前'] as $event) {
+            $check(!str_contains(implode('', $themeToday), $event), "テーマの本日のテンプレートは当日の予定を受け取らない: {$event}");
+        }
+        $themed = $month . $englishMonth . implode('', $themeToday);
         foreach (['&lt;script', '&lt;style', '&lt;b&gt;', '&lt;p&gt;', '&lt;br', '&lt;a ', '&lt;li', 'alert(', 'color: red'] as $markup) {
             $check(!str_contains($themed, $markup), "テーマのテンプレートが説明のマークアップを受け取らない: {$markup}");
         }
@@ -259,14 +258,11 @@ try {
         $received(
             (new Renderer($facility, KindTable::defaults(), '', Language::English))->renderToday($tuesdayNoon, 'D, M j'),
             'lang=en',
-            'text=empty: No events today.',
+            'text=empty: No opening information today.',
             'date=Tue, Nov 10',
             'status=closed [CLOSED] []',
-            'event=[休館日] [All day] all-day [] []',
-            'label=[休館日] [CLOSED] []',
-            'kind=[休館日] [closed]',
         );
-        $received((new Renderer($facility, KindTable::defaults()))->renderToday($tuesdayNoon, 'n/j'), 'lang=ja', 'status=closed [休館日] []', 'event=[休館日] [終日] all-day [] []');
+        $received((new Renderer($facility, KindTable::defaults()))->renderToday($tuesdayNoon, 'n/j'), 'lang=ja', 'status=closed [休館日] []');
         $inJapanese(static function () use ($received, $check): string {
             $received(do_shortcode('[museum_calendar month="2026-11" lang="en"]'), 'lang=en', 'label=November 2026', 'weekdays=1Mon,2Tue,3Wed,4Thu,5Fri,6Sat,7Sun');
             $check(determine_locale() === 'ja', '英語の月はサイトのロケールに戻す。');
@@ -321,11 +317,11 @@ try {
         $check(!str_contains($today, 'museum-calendar-today__date'), 'テーマの本日のテンプレートが既定のテンプレートの代わりになる。');
         $received(
             $today,
-            'variables=today,date,weekday,status,events,lang,text',
+            'variables=today,date,weekday,status,lang,text',
             'this=hidden',
             'scope=none',
             'lang=ja',
-            'text=empty: 本日の予定はありません。',
+            'text=empty: 本日の開館情報はありません。',
             'today=' . $now->format('Y-m-d') . ' Asia/Tokyo',
             'date=' . $now->format('Y年n月j日'),
             'weekday=' . ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][(int) $now->format('N') - 1],
@@ -336,9 +332,9 @@ try {
             && str_ends_with(rtrim($englishToday), '</section>'), 'テーマの本日のテンプレートは、英語のsectionの中で、前回データの案内の後に出る。');
         $received(
             $englishToday,
-            'variables=today,date,weekday,status,events,lang,text',
+            'variables=today,date,weekday,status,lang,text',
             'lang=en',
-            'text=empty: No events today.',
+            'text=empty: No opening information today.',
             'today=' . $now->format('Y-m-d') . ' Asia/Tokyo',
             'date=' . $now->format('D, M j'),
             'weekday=' . $now->format('D'),
@@ -352,11 +348,8 @@ try {
             'date=11/10 00:30',
             'weekday=Tue',
             'status=none',
-            'event=[一日休館] [終日] all-day [] []',
-            'label=[一日休館] [一日休館] []',
-            'kind=[一日休館] [other]',
-            'event=[第2火曜講座] [13:00–15:00] timed [13:00] [15:00]',
         );
+        $check(!str_contains($tuesday, '一日休館') && !str_contains($tuesday, '第2火曜講座'), '開館状況のない日も、テーマの本日のテンプレートはその日の予定を受け取らない。');
         foreach (['museum-fixture', 'calendar.google.com'] as $secret) {
             $check(!str_contains($month . $december . $today . $tuesday . $englishMonth . $englishToday, $secret), 'テーマのテンプレートはカレンダーのURLを読めない。');
         }
@@ -387,27 +380,30 @@ try {
     $plain = implode('', [
         (new Renderer(new Source($fixture), KindTable::defaults()))->render(new Month('2026-11'), $meetingDay),
         (new Renderer(new Source($fixture), KindTable::defaults(), '', Language::English))->render(new Month('2026-11'), $meetingDay),
+    ]);
+    $plainToday = implode('', [
         (new Renderer(new Source($fixture), KindTable::defaults()))->renderToday($meetingDay, 'n/j'),
         (new Renderer(new Source($fixture), KindTable::defaults(), '', Language::English))->renderToday($meetingDay, 'D, M j'),
         (new Renderer(new Source($fixture), KindTable::defaults()))->renderToday($concertDay, 'n/j'),
     ]);
-    $check(substr_count($plain, '<li data-title="場所付きの催し"') === 4 && str_contains($plain, '<li data-title="説明付きの催し"'), '既定のテンプレートは説明のある予定を表示する。');
+    $check(substr_count($plain, '<li data-title="場所付きの催し"') === 2 && str_contains($plain, '<li data-title="説明付きの催し"'), '既定のテンプレートは説明のある予定を表示する。');
+    $check(!str_contains($plainToday, '<ul') && !str_contains($plainToday, '<li') && !str_contains($plainToday, '場所付きの催し') && !str_contains($plainToday, '説明付きの催し'), '既定の本日のテンプレートは、開館状況のほかに予定を出さない。');
     $linked = '/<li data-title="説明付きの催し" data-kind="other"><a href="https:\/\/example\.com\/concert"><strong(?: lang="ja")?>説明付きの催し<\/strong><\/a><span>13:00–14:00<\/span><\/li>/';
-    $check(preg_match_all($linked, $plain) === 3, '既定のテンプレートは、URLのある予定の名前を、月間カレンダーの両方と本日の一覧でリンクにする。');
-    $check(preg_match_all('/<li [^>]*><a /', $plain) === 3, '既定のテンプレートは、URLのない予定の名前をリンクにしない。');
+    $check(preg_match_all($linked, $plain) === 2, '既定のテンプレートは、URLのある予定の名前を、日本語と英語の月間カレンダーでリンクにする。');
+    $check(preg_match_all('/<li [^>]*><a /', $plain) === 2, '既定のテンプレートは、URLのない予定の名前をリンクにしない。');
     $quoted = new Source(implode("\n", [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
         "BEGIN:VEVENT\nUID:quoted\nDTSTART;TZID=Asia/Tokyo:20261126T130000\nDTEND;TZID=Asia/Tokyo:20261126T140000\nSUMMARY:説明付きの催し\nDESCRIPTION:https://example.com/?a=1&b=\"'>x\nEND:VEVENT",
         'END:VCALENDAR',
     ]));
-    $escaped = (new Renderer($quoted, KindTable::defaults()))->render(new Month('2026-11'), $meetingDay) . (new Renderer($quoted, KindTable::defaults()))->renderToday($concertDay, 'n/j');
-    $check(substr_count($escaped, '<a href="https://example.com/?a=1&#038;b=&#039;x"><strong>説明付きの催し</strong></a>') === 2 && !str_contains($escaped, '"\'>'), '既定のテンプレートは予定のURLをエスケープする。');
+    $escaped = (new Renderer($quoted, KindTable::defaults()))->render(new Month('2026-11'), $meetingDay);
+    $check(substr_count($escaped, '<a href="https://example.com/?a=1&#038;b=&#039;x"><strong>説明付きの催し</strong></a>') === 1 && !str_contains($escaped, '"\'>'), '既定のテンプレートは予定のURLをエスケープする。');
     foreach (['受付で名前', '午後の演奏会', 'あいうえおかきくけこ', '定員20名'] as $description) {
-        $check(!str_contains($plain, $description), "既定のテンプレートは説明を出さない: {$description}");
+        $check(!str_contains($plain . $plainToday, $description), "既定のテンプレートは説明を出さない: {$description}");
     }
     foreach (['非公開の会議室', 'location-7f3a', 'attendee-91c2', 'organizer-5d8e', 'attachment-3b6f'] as $private) {
-        $check(!str_contains($plain . $themed, $private), "場所、参加者、主催者、添付はページに出ない: {$private}");
+        $check(!str_contains($plain . $plainToday . $themed, $private), "場所、参加者、主催者、添付はページに出ない: {$private}");
     }
 
     $mode = 'timeout';
@@ -441,16 +437,12 @@ try {
             ? $match[1] . ' ' . $match[2] . ' ' . ($match[3] ?? '')
             : null;
     };
-    $todayItems = static function (string $html): array {
-        preg_match_all('/<li data-title="([^"]*)"/', $html, $titles);
-        return $titles[1];
-    };
     $closedDay = new DateTimeImmutable('2026-11-17 12:00', $tokyo);
     $html = (new Renderer($regular, KindTable::defaults()))->render(new Month('2026-11'), $closedDay);
     $check($cell($html, '2026-11-16') === ['開館日'] && $cell($html, '2026-11-18') === ['開館日'], '繰り返しの開館日は、休館日のない日に出る。');
     $check($cell($html, '2026-11-17') === ['休館日', 'ガイドツアー開催日'], '繰り返しの開館日に重なる1日だけの休館日は、月間カレンダーでその開館日を隠す。');
     $html = (new Renderer($regular, KindTable::defaults()))->renderToday($closedDay, 'n/j');
-    $check($statusOf($html) === 'closed 休館日 ' && $todayItems($html) === ['ガイドツアー開催日'], '繰り返しの開館日に重なる1日だけの休館日は、本日を休館にし、どちらも一覧に出さない。');
+    $check($statusOf($html) === 'closed 休館日 ' && !str_contains($html, '<li') && !str_contains($html, 'ガイドツアー開催日'), '繰り返しの開館日に重なる1日だけの休館日は、本日を休館にし、ほかの予定を出さない。');
     $check($statusOf((new Renderer($regular, KindTable::defaults()))->renderToday($closedDay->modify('+1 day'), 'n/j')) === 'open 開館日 10:30–16:30', '繰り返しの開館日は、ほかの日を開館にする。');
     $html = (new Renderer($regular, KindTable::defaults(), '', Language::English))->renderToday($closedDay, 'n/j');
     $check($statusOf($html) === 'closed CLOSED ' && $statusOf((new Renderer($regular, KindTable::defaults(), '', Language::English))->renderToday($closedDay->modify('+1 day'), 'n/j')) === 'open OPEN 10:30–16:30', '休館日と開館日の英語の開館状況は CLOSED と OPEN。');
