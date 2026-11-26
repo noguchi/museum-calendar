@@ -38,4 +38,4 @@ Git対象外の `.local/site/theme/otani-museum2026/` にテーマの写しを�
 
 - ローカルのWordPress・PHPの更新は、変更用ブランチで `.wp-env.json` の `core` または `phpVersion` を変更し、`npm run setup` と `npm run check` で検証します。開発DBの更新が必要なら `npm run wp -- core update-db` を実行します。本番を更新する前に旧版DBの複製で移行を検証してください。
 - PHP依存はコンテナ内のComposerで更新し、対応するlockファイルも含めます。ルートのComposerは開発用、`plugins/museum-calendar/` のComposerは配布用です。
-- CIはPRとpushで `check`、`check:audit`、`package` を実行します。mainへのpushで検証が通ると[ステージングへ配備](operations.md#ステージングへの配備)します。プラグインのVersionと一致するタグ（例 `v1.0.1`）をpushすると、配布ZIPがGitHub Releasesに付きます。本番は手動で切り替えます。
+- CIはPRとpushで `check`、`check:audit`、`package` を実行します。mainへのpushで検証が通ると[ステージングへ配備](operations.md#ステージングへの配備)します。プラグインのVersionと一致するタグ（例 `v1.0.2`）をpushすると、配布ZIPがGitHub Releasesに付きます。本番は手動で切り替えます。
