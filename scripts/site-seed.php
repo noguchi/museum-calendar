@@ -29,7 +29,7 @@ function museum_calendar_site_seed(string $theme): void
     update_option('show_on_front', 'page');
     update_option('page_on_front', $pages['top']);
     update_option('timezone_string', 'Asia/Tokyo');
-    update_option('start_of_week', 1);
+    update_option('start_of_week', 0);
     update_option('blog_public', 0);
     if (get_option('permalink_structure') !== '/%postname%/') {
         global $wp_rewrite;
