@@ -17,7 +17,7 @@ WordPress 7.1.4以上、PHP 8.5.12以上、MariaDB 10.11.18以上が必要です
 | ショートコード | 表示内容 |
 | --- | --- |
 | `[museum_calendar]` | 月間カレンダー。1ページにつき1つ |
-| `[museum_calendar_today]` | 本日の日付、開館状況、当日の予定 |
+| `[museum_calendar_today]` | 本日の日付と開館状況 |
 
 英語のページでは、それぞれに `lang="en"` を付けます。予定名の英訳と種類ごとの色は「設定 → Museum Calendar」で編集できます。Googleカレンダーの変更をすぐに反映したいときは、同じ画面の「今すぐ更新」を押します。[予定の登録手順](docs/operations.md#予定の登録)
 
